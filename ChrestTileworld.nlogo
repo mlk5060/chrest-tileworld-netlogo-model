@@ -58,6 +58,7 @@
 ;      action patterns?  Including them means that there are 8 extra action patterns to learn but remaining stationary 
 ;      or being surrounded does not need a heading since the turtle does not move so the extra time devoted to learning
 ;      all variations of these patterns is pointless.
+;TODO: When checking 'who' values for tiles/holes, make sure they haven't died.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;; EXTENSION DECLARATIONS ;;;;;;;;;;
@@ -212,6 +213,14 @@ breed [ holes ]
        ;Set user-defined model variables.
        setup-environment-using-user-selected-file
        
+       if(hole-birth-prob > 1)[
+         error ("The global 'hole-birth-prob' variable is greater than 1 ().  Please rectify this so that it is <= 1.")
+       ]
+       
+       if(tile-birth-prob > 1)[
+         error ("The global 'tile-birth-prob' variable is greater than 1 ().  Please rectify this so that it is <= 1.")
+       ]
+       
        ;Set variables for "chrest-turtles"
        ask chrest-turtles [
          set closest-tile ""
@@ -263,16 +272,18 @@ breed [ holes ]
                ;Selects a colour for the calling turtle's "sight-radius-colour" variable iff
                ;the calling turtle is a CHREST turtle.
                ;
-               ;The colour selected will be different to that of the calling turtle's colour
-               ;so that the calling turtle itself isn't lost in the colour of its sight radius. 
+               ;The colour selected will be the same colour as the calling turtle's colour but
+               ;brighter so that the calling turtle itself isn't lost in the colour of its sight 
+               ;radius. 
                ;
                ;         Name              Data Type     Description
                ;         ----              ---------     -----------
                ;@returns -                 Integer       A non-shaded base colour
+               ;
+               ;@author  Martyn Lloyd-Kelly <martynlloydkelly@gmail.com>
                to-report select-sight-radius-colour 
-                 
                  ifelse(breed = chrest-turtles)[
-                   set sight-radius-colour (one-of (remove 45 (remove 105 (remove color base-colors))))
+                   set sight-radius-colour (color + 2)
                    report sight-radius-colour
                  ]
                  [
@@ -288,6 +299,8 @@ breed [ holes ]
                ;by the user.
                ;
                ;TODO: This could be extracted into its own extension for use by the Netlogo community.
+               ;
+               ;@author  Martyn Lloyd-Kelly <martynlloydkelly@gmail.com>
                to setup-environment-using-user-selected-file
   
                  file-close ;This must be done just in case the previous file errored out (Netlogo does not reset file pointers automatically).
@@ -412,38 +425,34 @@ breed [ holes ]
                  ]
                end
                
-                    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-                    ;;;;; "SETUP-ENVIRONMENT-USING-USER-SELECTED-FILE" SUB-PROCEDURES ;;;;;
-                    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-          
-                         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-                         ;;; "PRINT-AND-RUN" PROCEDURE ;;;
-                         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-                         
-                         ;Takes a string as a parameter which should contain some Netlogo code.
-                         ;It would appear that providing a string concatonation to the "run"
-                         ;primitive causes an error so the Netlogo code to be run should first
-                         ;be concatonated and then passed to the "run" primitive.  This procedure
-                         ;provides such a service since you can provide a string concatonation to 
-                         ;this procedure and the result of that concatonation is then passed to 
-                         ;the "run" primitive.
-                         ;
-                         ;The function also prints the string to be run for debugging purposes.
-                         ;
-                         ;         Name              Data Type     Description
-                         ;         ----              ---------     -----------
-                         ;@param   string-to-be-run  String        A string containing Netlogo code that should
-                         ;                                         be passed to the "run" primitive. 
-                         to print-and-run [string-to-be-run]
-                           
-                           set debug-indent-level (debug-indent-level + 1)
-                           output-debug-message ("EXECUTING THE 'print-and-run' PROCEDURE...") ("")
-                           set debug-indent-level (debug-indent-level + 1)
-                           output-debug-message (word "NETLOGO COMMAND TO BE PASSED TO 'run' PRIMITIVE: '" string-to-be-run "'.") ("")
-                           set debug-indent-level (debug-indent-level - 2)
-                           
-                           run string-to-be-run
-                         end
+               ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+               ;;; "PRINT-AND-RUN" PROCEDURE ;;;
+               ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+               
+               ;Takes a string as a parameter which should contain some Netlogo code.
+               ;It would appear that providing a string concatonation to the "run"
+               ;primitive causes an error so the Netlogo code to be run should first
+               ;be concatonated and then passed to the "run" primitive.  This procedure
+               ;provides such a service since you can provide a string concatonation to 
+               ;this procedure and the result of that concatonation is then passed to 
+               ;the "run" primitive.
+               ;
+               ;The function also prints the string to be run for debugging purposes.
+               ;
+               ;         Name              Data Type     Description
+               ;         ----              ---------     -----------
+               ;@param   string-to-be-run  String        A string containing Netlogo code that should
+               ;                                         be passed to the "run" primitive.
+               ;
+               ;@author  Martyn Lloyd-Kelly <martynlloydkelly@gmail.com> 
+               to print-and-run [string-to-be-run]
+                 set debug-indent-level (debug-indent-level + 1)
+                 output-debug-message ("EXECUTING THE 'print-and-run' PROCEDURE...") ("")
+                 set debug-indent-level (debug-indent-level + 1)
+                 output-debug-message (word "NETLOGO COMMAND TO BE PASSED TO 'run' PRIMITIVE: '" string-to-be-run "'.") ("")
+                 set debug-indent-level (debug-indent-level - 2)
+                 run string-to-be-run
+               end
                          
                ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
                ;;; "SETUP-PLOT-PEN" PROCEDURE ;;;
@@ -456,8 +465,9 @@ breed [ holes ]
                ;         ----              ---------     -----------
                ;@param   name-of-plot      String        The name of the plot to create the calling 
                ;                                         turtle's pen on.
+               ;
+               ;@author  Martyn Lloyd-Kelly <martynlloydkelly@gmail.com>
                to setup-plot-pen [name-of-plot]
-                 
                  set debug-indent-level (debug-indent-level + 1)
                  output-debug-message ("EXECUTING THE 'setup-plot-pen' PROCEDURE...") ("")
                  set debug-indent-level (debug-indent-level + 1)
@@ -561,8 +571,9 @@ breed [ holes ]
           ;Decreases the calling turtle's "time-to-live" variable by 0.1.
           ;If the calling turtles "time-to-live" variable is less than
           ;or equal to 0, the turtle dies.
+          ;
+          ;@author  Martyn Lloyd-Kelly <martynlloydkelly@gmail.com>
           to age
-            
             set debug-indent-level (debug-indent-level + 1)
             output-debug-message ("EXECUTING THE 'age' PROCEDURE...") ("")
             set debug-indent-level (debug-indent-level + 1)
@@ -573,6 +584,13 @@ breed [ holes ]
             
             if(time-to-live <= 0)[
               output-debug-message (word "My 'time-to-live' variable is equal to : '" time-to-live "' so I will now die.") (who)
+              
+              ask chrest-turtles[
+                if(myself = closest-tile)[
+                  set closest-tile ""
+                ]
+              ]
+              
               set debug-indent-level (debug-indent-level - 2)
               die
             ]
@@ -590,12 +608,14 @@ breed [ holes ]
           ; - East (90): calling turtle will turn north or south.
           ; - South (180): calling turtle will turn east or west.
           ; - West (270): calling turtle will turn north or south.
+          ;
+          ;@author  Martyn Lloyd-Kelly <martynlloydkelly@gmail.com>
           to alter-heading-randomly-by-adding-or-subtracting-90
             set debug-indent-level (debug-indent-level + 1)
             output-debug-message ("EXECUTING THE 'alter-heading-randomly-by-adding-or-subtracting-90' PROCEDURE...") ("")
             set debug-indent-level (debug-indent-level + 1)
             
-            ifelse (random-float 1.0 < .5)[
+            ifelse( (random 2) = 0)[
               output-debug-message ("Altering current heading by adding 90.") (who)
               set heading ( heading + 90 )
             ]
@@ -623,7 +643,7 @@ breed [ holes ]
           ;                                         calling turtle along its current heading.
           ;                                         False is reported if not.
           ;
-          ;@author  Martyn Lloyd-Kelly <martynlloydkelly@gmail.com> 
+          ;@author  Martyn Lloyd-Kelly <martynlloydkelly@gmail.com>
           to-report any-tiles-on-patch-ahead?
             set debug-indent-level (debug-indent-level + 1)
             output-debug-message ("EXECUTING THE 'any-tiles-on-patch-ahead?' PROCEDURE...") ("")
@@ -659,8 +679,9 @@ breed [ holes ]
           ;@param   needle            String        The substring to be searched for.
           ;@param   haystack          String        The string to search in for the substring.
           ;@returns -                 Integer       The number of occurrences of needle in haystack.
+          ;
+          ;@author  Martyn Lloyd-Kelly <martynlloydkelly@gmail.com>
           to-report check-for-substring-in-string-and-report-occurrences [needle haystack]
-            
             set debug-indent-level (debug-indent-level + 1)
             output-debug-message ("EXECUTING THE 'check-for-substring-in-string-and-report-occurrences' PROCEDURE...") ("")
             set debug-indent-level (debug-indent-level + 1)
@@ -679,7 +700,6 @@ breed [ holes ]
               output-debug-message (word "After removing '" needle "' from the haystack, the haystack is now equal to: '" copy-of-haystack "'.") ("")
               output-debug-message (word "CHECKING '" copy-of-haystack "' FOR '" needle "'...") ("")  
             ]
-            
             output-debug-message(word "'" needle "' OCCURS IN '" haystack "' " number-of-occurrences " TIMES.") ("")
             
             set debug-indent-level (debug-indent-level - 2)
@@ -699,6 +719,8 @@ breed [ holes ]
           ;@param   seconds           Number        A measure of time in seconds.
           ;@returns -                 Number        The value of "seconds" in milliseconds with no 
           ;                                         significant figures.
+          ;
+          ;@author  Martyn Lloyd-Kelly <martynlloydkelly@gmail.com>
           to-report convert-seconds-to-milliseconds [seconds]
             report (precision (seconds * 1000) (0))
           end
@@ -715,6 +737,8 @@ breed [ holes ]
           ;@param   milliseconds      Number        A measure of time in milliseconds.
           ;@returns -                 Number        The value of "milliseconds" in seconds with one 
           ;                                         significant figure.
+          ;
+          ;@author  Martyn Lloyd-Kelly <martynlloydkelly@gmail.com>
           to-report convert-milliseconds-to-seconds [milliseconds]
             report (precision (milliseconds / 1000) (1))
           end
@@ -735,6 +759,8 @@ breed [ holes ]
           ;@returns -                 Boolean       True if the closest tile is 1 patch 
           ;                                         away along heading-to-check, false 
           ;                                         if not.
+          ;
+          ;@author  Martyn Lloyd-Kelly <martynlloydkelly@gmail.com>
           to-report correctly-positioned-to-push-closest-tile-to-closest-hole? [heading-to-check]
             ifelse(member? (turtle (first ([who] of closest-tile))) (turtles-on patch-at-heading-and-distance (heading-to-check) (1)))[
               report true
@@ -749,6 +775,8 @@ breed [ holes ]
           ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
           
           ;Probabilistically creates a new hole in the environment.
+          ;
+          ;@author  Martyn Lloyd-Kelly <martynlloydkelly@gmail.com>
           to create-a-hole
             set debug-indent-level (debug-indent-level + 1)
             output-debug-message ("EXECUTING THE 'create-a-hole' PROCEDURE...") ("")
@@ -774,6 +802,8 @@ breed [ holes ]
           ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
           
           ;Probabilistically creates a new tile in the environment.
+          ;
+          ;@author  Martyn Lloyd-Kelly <martynlloydkelly@gmail.com>
           to create-a-tile
             set debug-indent-level (debug-indent-level + 1)
             output-debug-message ("EXECUTING THE 'create-a-tile' PROCEDURE...") ("")
@@ -800,6 +830,8 @@ breed [ holes ]
           
           ;Used to determine whether new tiles and holes should be created in the 
           ;simulation environment.
+          ;
+          ;@author  Martyn Lloyd-Kelly <martynlloydkelly@gmail.com>
           to create-new-tiles-and-holes
             set debug-indent-level (debug-indent-level + 1)
             output-debug-message ("EXECUTING THE 'create-new-tiles-and-holes' PROCEDURE...") ("")
@@ -889,23 +921,23 @@ breed [ holes ]
             
             if(breed = chrest-turtles)[
               output-debug-message ("I am a chrest-turtle so I can continue to deliberate.") (who)
-              let actions-associated-with-visual-pattern []
-              ;set time-to-perform-next-action -1
               
-              ;output-debug-message (word "Since I am not currently scheduled to do anything in the future I'll reset my 'time-to-perform-next-action' variable to '" time-to-perform-next-action "'.") (who)
-              ;output-debug-message (word "My 'time-to-perform-next-action' variable is now set to: '" time-to-perform-next-action "'.") (who)
+              output-debug-message ("Setting the local 'actions-associated-with-visual-pattern' variable to an empty list...") (who)
+              let actions-associated-with-visual-pattern []
+              output-debug-message (word "The local 'actions-associated-with-visual-pattern' variable is set to: " actions-associated-with-visual-pattern "...") (who)
               
               output-debug-message (word "Checking to see if my 'current-visual-pattern' variable: '" current-visual-pattern "' is empty...") (who)
               if(not empty? current-visual-pattern)[
-                output-debug-message (word "'" current-visual-pattern "' isn't empty so I'll check to see if I have any actions associated with it in LTM...") (who)
-                set actions-associated-with-visual-pattern chrest:recognise-pattern-and-return-patterns-of-specified-modality "visual" "item_square" current-visual-pattern "action"
+                output-debug-message (word "'" current-visual-pattern "' isn't empty so I'll check to see if I have any action-patterns associated with it in LTM...") (who)
+                output-debug-message ("If I do, I'll add these action-patterns to the local 'actions-associated-with-visual-pattern' variable...") (who)
+                set actions-associated-with-visual-pattern (chrest:recognise-pattern-and-return-patterns-of-specified-modality ("visual") ("item_square") (current-visual-pattern) ("action"))
               ]
+              output-debug-message (word "The 'actions-associated-with-visual-pattern' variable is now set to: '" actions-associated-with-visual-pattern "'.") (who)
               
-              output-debug-message (word "The result of checking to see if I have any action patterns associated with '" current-visual-pattern "' in LTM is: '" actions-associated-with-visual-pattern "'.") (who)
-              output-debug-message (word "Checking to see if '" actions-associated-with-visual-pattern "' is empty...") (who)
+              output-debug-message (word "Checking to see if the 'actions-associated-with-visual-pattern' variable value is empty...") (who)
               ifelse(not empty? actions-associated-with-visual-pattern)[
-                output-debug-message (word "'" actions-associated-with-visual-pattern "' is not empty.  Checking to see how many actions there are...") (who)
-                output-debug-message (word "I have " length actions-associated-with-visual-pattern " action patterns associated with '" current-visual-pattern ".") (who)
+                output-debug-message (word "The 'actions-associated-with-visual-pattern' variable value is not empty.  Checking to see how many items there are in this list...") (who)
+                output-debug-message (word "I have " length actions-associated-with-visual-pattern " action-patterns associated with '" current-visual-pattern ".") (who)
                 
                 if( (length actions-associated-with-visual-pattern) > 1 )[
                   output-debug-message (word "I have more than one action associated with '" current-visual-pattern "' so I'll pick one of the actions to perform at random...") (who)
@@ -933,18 +965,15 @@ breed [ holes ]
                   output-debug-message (word "I can see " number-of-holes " holes") (who)
                     
                   ifelse(number-of-holes > 0)[
-                    ;THIS IS WORKING FINE
                     output-debug-message ("Since I can see one or more tiles and holes, I'll try to push the tile closest to my closest hole into my closest hole...") (who)
                     generate-push-closest-tile-to-closest-hole-action
                   ]
                   [
-                    ;THIS IS WORKING FINE.
                     output-debug-message ("I can't see a hole, I'll either move to my closest tile if its not adjacent to me or turn to face it and push it along this heading if it is...") (who)
                     generate-move-to-or-push-closest-tile-action
                   ] 
                 ]
                 [
-                  ;THIS IS WORKING FINE.
                   output-debug-message ("I can't see any tiles, I'll just select a random heading to move 1 patch forward...") (who)
                   generate-random-move-action
                 ]
@@ -1470,7 +1499,7 @@ breed [ holes ]
                 load-action (action-pattern) 
               ]
             ]
-         end
+          end
           
           ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
           ;;; "GENERATE-RANDOM-MOVE-ACTION" PROCEDURE ;;;
@@ -1492,13 +1521,13 @@ breed [ holes ]
             output-debug-message ("Checking to see if I'm surrounded, if not, I'll continue...") (who)
             if(not surrounded?)[
               output-debug-message ("Since I'm not surrounded I'll continue trying to move randomly...") (who)
-               output-debug-message (word "Selecting a heading at random from '" movement-headings "' with a 1 in " (length movement-headings) " probability and setting my heading to that value...") (who)
-               set heading (item (random (length movement-headings)) (movement-headings))
-               output-debug-message (word "I've set my heading to " heading ".") (who)
-               output-debug-message (word "Generating action pattern...") (who)
-               let action-pattern (chrest:create-item-square-pattern move-randomly-token heading 1)
-               output-debug-message (word "Action pattern generated: '" action-pattern "'.  Loading this action for execution...") (who)
-               load-action (action-pattern)
+              output-debug-message (word "Selecting a heading at random from '" movement-headings "' with a 1 in " (length movement-headings) " probability and setting my heading to that value...") (who)
+              set heading (item (random (length movement-headings)) (movement-headings))
+              output-debug-message (word "I've set my heading to " heading ".") (who)
+              output-debug-message (word "Generating action pattern...") (who)
+              let action-pattern (chrest:create-item-square-pattern move-randomly-token heading 1)
+              output-debug-message (word "Action pattern generated: '" action-pattern "'.  Loading this action for execution...") (who)
+              load-action (action-pattern)
             ]
             
             set debug-indent-level (debug-indent-level - 2)
@@ -1585,7 +1614,6 @@ breed [ holes ]
               output-debug-message ("If I'm not a CHREST turtle and I'm not moving randomly, I'll attempt to associate this action and contents of 'current-visual-pattern together...") (who)
               output-debug-message (word "Checking my 'breed' variable value (" breed ") and the value of the local 'action-token?' variable (" action-token ")...") (who)
               if( (breed = chrest-turtles) and (action-token != move-randomly-token) )[
-                
                 output-debug-message ("I am a CHREST turtle and I'm not moving randomly so I'll generate an action pattern and associate this with my current visual pattern...") (who)
                 output-debug-message ("Generating the action pattern...") (who)
                 let action-pattern (chrest:create-item-square-pattern (action-token) (heading) (patches-to-move))
@@ -1672,8 +1700,15 @@ breed [ holes ]
             ]
             [
               ifelse(action = push-tile-token)[
-                output-debug-message (word "'" action "' is equal to: '" push-tile-token "' so I'll execute the 'push-tile' procedure...") (who)
-                push-tile (heading-to-move-along)
+                output-debug-message (word "'" action "' is equal to: '" push-tile-token "' so I'll execute the 'push-tile' procedure if my'closest-tile' variable is not empty (" closest-tile ")...") (who)
+                ifelse(closest-tile != "")[
+                  output-debug-message ("My 'closest-tile' variable is not empty so I'll push this tile...") (who)
+                  push-tile (heading-to-move-along)
+                ]
+                [
+                  output-debug-message ("My 'closest-tile' variable is empty so I won't do anything...") (who)
+                  stop
+                ]
               ]
               [
                 ifelse(action = surrounded-token)[
