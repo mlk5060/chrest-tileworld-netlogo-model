@@ -507,8 +507,8 @@ breed [ holes ]
        ]
        set debug-indent-level (debug-indent-level + 1)
        
-       ;output-debug-message ("CHECKING TO SEE IF NEW TILES/HOLES SHOULD BE CREATED...") ("")
-       ;create-new-tiles-and-holes
+       output-debug-message ("CHECKING TO SEE IF NEW TILES/HOLES SHOULD BE CREATED...") ("")
+       create-new-tiles-and-holes
   
        output-debug-message ("UPDATING 'chrest-turtles'...") ("")
        set debug-indent-level (debug-indent-level + 1)
@@ -2620,7 +2620,7 @@ SWITCH
 111
 debug?
 debug?
-0
+1
 1
 -1000
 
