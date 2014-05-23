@@ -39,13 +39,15 @@
 ; Each turtle has an internal clock which is incremented by the CHREST architecture and this model as visual/action
 ; patterns are learned, stored, retrieved and as heuristics are used. 
 
+;INPROG: Reinforce visual-action links in STM if a turtle successfully pushes a tile into a hole.
+
+;TODO: Investigate 'get-stm-by-modality' primitive since the graphs being plotted are always at 5 on y-axis.
 ;TODO: Have turtles decide between using learnt action patterns or to deliberate about next action.
 ;      Currently, if a visual-pattern has:
 ;      - No associated action-pattern, the turtle it will deliberate about what to do.
 ;      - One associated action-pattern, the turtle will perform the action.
 ;      - More than one associated action-pattern: the turtle will pick one at random and perform it.
 ;TODO: Implement non-training game cycle.
-;TODO: Reinforce visual-action links in STM if a turtle successfully pushes a tile into a hole.
 ;TODO: Determine how long it should take to reinforce a link between two patterns.
 ;TODO: Implement decision-making times for heuristics and add this to the time it takes to perform an action when
 ;      the action is loaded.
@@ -248,6 +250,8 @@ breed [ holes ]
          setup-plot-pen "Visual LTM Avg. Depth"
          setup-plot-pen "Action LTM Size"
          setup-plot-pen "Action LTM Avg. Depth"
+         setup-plot-pen "Visual STM Size"
+         setup-plot-pen "Action STM Size"
          
          output-debug-message (word "My 'closest-tile' variable is set to: '" closest-tile "'.") (who)
          output-debug-message (word "My 'current-visual-pattern' variable is set to: '" current-visual-pattern "'.") (who)
@@ -550,6 +554,8 @@ breed [ holes ]
            update-plot "Visual LTM Avg. Depth" (chrest:get-ltm-modality-avg-depth "visual")
            update-plot "Action LTM Size" (chrest:get-ltm-modality-size "action")
            update-plot "Action LTM Avg. Depth" (chrest:get-ltm-modality-avg-depth "action")
+           update-plot "Visual STM Size" (chrest:get-stm-modality-size "visual")
+           update-plot "Action STM Size" (chrest:get-stm-modality-size "action")
          ]
        ]
        set debug-indent-level (debug-indent-level - 1)
@@ -1480,7 +1486,7 @@ breed [ holes ]
                   output-debug-message ("Checking to see if there is anything blocking the tile from being pushed along my current heading...") (who)
                   ifelse(any? (turtles-on patch-at-heading-and-distance (heading) (2)) with [breed != holes and hidden? = false])[
                     output-debug-message(word "There is something blocking the closest tile from being pushed along heading " heading ". This could only be another agent so I'll remain stationary and hope it moves...") (who)
-                    set action-pattern (chrest:create-item-square-pattern (remain-stationary-token) ("-") ("-"))
+                    set action-pattern (chrest:create-item-square-pattern (remain-stationary-token) (0) (0))
                   ]
                   [
                     output-debug-message(word "There is nothing blocking the closest tile from being pushed along heading " heading " so I'll generate an action pattern to do this...") (who)
@@ -2204,7 +2210,7 @@ breed [ holes ]
            ifelse( (length headings-blocked) = (length movement-headings) )[
              output-debug-message ("The length of the local 'headings-blocked' list is equal to the length of the global 'movement-headings' list so I am surrounded...") (who)
              output-debug-message ("Generating an action pattern indicating that I am surrounded...") (who)
-             let action-pattern (chrest:create-item-square-pattern (surrounded-token) ("-") ("-"))
+             let action-pattern (chrest:create-item-square-pattern (surrounded-token) (0) (0))
              output-debug-message (word "Action pattern generated: '" action-pattern "', loading this action for execution...") (who)
              load-action (action-pattern)
              
@@ -2357,9 +2363,9 @@ breed [ holes ]
   
 @#$#@#$#@
 GRAPHICS-WINDOW
-173
+147
 10
-603
+577
 461
 17
 17
@@ -2401,9 +2407,9 @@ NIL
 1
 
 PLOT
-614
+579
 10
-873
+805
 174
 Scores
 Time
@@ -2424,7 +2430,7 @@ BUTTON
 76
 NIL
 play
-T
+NIL
 1
 T
 OBSERVER
@@ -2435,10 +2441,10 @@ NIL
 1
 
 PLOT
-614
-174
-872
-338
+579
+324
+739
+471
 Visual LTM Size
 Time
 # Nodes
@@ -2452,10 +2458,10 @@ false
 PENS
 
 PLOT
-614
-338
-872
-502
+899
+324
+1059
+471
 Visual LTM Avg. Depth
 Time
 Avg. Depth
@@ -2480,10 +2486,10 @@ current-training-time
 11
 
 PLOT
-872
-174
-1131
-338
+739
+324
+899
+471
 Action LTM Size
 Time
 #Nodes
@@ -2497,10 +2503,10 @@ false
 PENS
 
 PLOT
-872
-338
-1131
-502
+1059
+324
+1219
+471
 Action LTM Avg. Depth
 Time
 Avg. Depth
@@ -2569,9 +2575,9 @@ hole-lifespan
 11
 
 PLOT
-873
+804
 10
-1130
+1030
 174
 Num Visual-Action Links
 Time
@@ -2617,6 +2623,40 @@ debug?
 1
 1
 -1000
+
+PLOT
+579
+174
+739
+324
+Visual STM Size
+Time
+# Nodes
+0.0
+10.0
+0.0
+10.0
+true
+false
+"" ""
+PENS
+
+PLOT
+739
+174
+899
+324
+Action STM Size
+Time
+# Nodes
+0.0
+10.0
+0.0
+10.0
+true
+false
+"" ""
+PENS
 
 @#$#@#$#@
 # Tileworld  
