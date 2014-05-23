@@ -39,9 +39,6 @@
 ; Each turtle has an internal clock which is incremented by the CHREST architecture and this model as visual/action
 ; patterns are learned, stored, retrieved and as heuristics are used. 
 
-;INPROG: Investigate how tiles are being pushed diagonally by turtles (this appears to now be fixed but keep an eye out for it).
-;INPROG: Need to test the 'generate-push-tile-action' and tidying up the 'push-tile' procedure.
-
 ;TODO: Have turtles decide between using learnt action patterns or to deliberate about next action.
 ;      Currently, if a visual-pattern has:
 ;      - No associated action-pattern, the turtle it will deliberate about what to do.
@@ -50,15 +47,12 @@
 ;TODO: Implement non-training game cycle.
 ;TODO: Reinforce visual-action links in STM if a turtle successfully pushes a tile into a hole.
 ;TODO: Determine how long it should take to reinforce a link between two patterns.
-;TODO: Implement periods of inactivity for mobile turtles to simulate decision-making.
+;TODO: Implement decision-making times for heuristics and add this to the time it takes to perform an action when
+;      the action is loaded.
 ;TODO: Tidy up code layout.
 ;TODO: Should turtles generate visual patterns if they are scheduled to perform an action in the future?  Check with
 ;      Peter and Fernand.
-;TODO: Check with Peter and Fernand to see if we need to include headings for "remain-stationary" or "surrounded" 
-;      action patterns?  Including them means that there are 8 extra action patterns to learn but remaining stationary 
-;      or being surrounded does not need a heading since the turtle does not move so the extra time devoted to learning
-;      all variations of these patterns is pointless.
-;TODO: When checking 'who' values for tiles/holes, make sure they haven't died.
+;TODO: Extract action-pattern creation into independent procedures so code is DRY.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;; EXTENSION DECLARATIONS ;;;;;;;;;;
@@ -1486,7 +1480,7 @@ breed [ holes ]
                   output-debug-message ("Checking to see if there is anything blocking the tile from being pushed along my current heading...") (who)
                   ifelse(any? (turtles-on patch-at-heading-and-distance (heading) (2)) with [breed != holes and hidden? = false])[
                     output-debug-message(word "There is something blocking the closest tile from being pushed along heading " heading ". This could only be another agent so I'll remain stationary and hope it moves...") (who)
-                    set action-pattern (chrest:create-item-square-pattern (remain-stationary-token) (heading) (1))
+                    set action-pattern (chrest:create-item-square-pattern (remain-stationary-token) ("-") ("-"))
                   ]
                   [
                     output-debug-message(word "There is nothing blocking the closest tile from being pushed along heading " heading " so I'll generate an action pattern to do this...") (who)
@@ -1522,9 +1516,9 @@ breed [ holes ]
                     set action-pattern (chrest:create-item-square-pattern push-tile-token heading 1)
                   ]
                   [
-                    output-debug-message ("There isn't a tile on the patch immediately along my current heading so I'll generate a 'move-to-tile' action pattern...") (who)
+                    output-debug-message ("There isn't a tile on the patch immediately along my current heading so I'll generate a 'move-around-tile' action pattern...") (who)
                     output-debug-message ("Generating the action pattern...") (who)
-                    set action-pattern (chrest:create-item-square-pattern move-to-tile-token heading 1)
+                    set action-pattern (chrest:create-item-square-pattern move-around-tile-token heading 1)
                   ] 
                 ]
               ]
@@ -2210,7 +2204,7 @@ breed [ holes ]
            ifelse( (length headings-blocked) = (length movement-headings) )[
              output-debug-message ("The length of the local 'headings-blocked' list is equal to the length of the global 'movement-headings' list so I am surrounded...") (who)
              output-debug-message ("Generating an action pattern indicating that I am surrounded...") (who)
-             let action-pattern (chrest:create-item-square-pattern (surrounded-token) (heading) (0))
+             let action-pattern (chrest:create-item-square-pattern (surrounded-token) ("-") ("-"))
              output-debug-message (word "Action pattern generated: '" action-pattern "', loading this action for execution...") (who)
              load-action (action-pattern)
              
@@ -2430,7 +2424,7 @@ BUTTON
 76
 NIL
 play
-NIL
+T
 1
 T
 OBSERVER
