@@ -507,8 +507,8 @@ breed [ holes ]
        ]
        set debug-indent-level (debug-indent-level + 1)
        
-       output-debug-message ("CHECKING TO SEE IF NEW TILES/HOLES SHOULD BE CREATED...") ("")
-       create-new-tiles-and-holes
+       ;output-debug-message ("CHECKING TO SEE IF NEW TILES/HOLES SHOULD BE CREATED...") ("")
+       ;create-new-tiles-and-holes
   
        output-debug-message ("UPDATING 'chrest-turtles'...") ("")
        set debug-indent-level (debug-indent-level + 1)
@@ -1120,7 +1120,7 @@ breed [ holes ]
             if(not surrounded?)[
               output-debug-message ("I'm not surrounded so I'll set my 'closest-tile' variable value to be equal to one of the tiles closest to me...") (who) 
               set closest-tile min-one-of tiles [distance myself]
-              output-debug-message (word "The 'who' variable value of the tile indicated by the value of my 'closest'tile' value is: " [who] of closest-tile "...") (who)
+              output-debug-message (word "The 'who' variable value of the tile indicated by the value of my 'closest-tile' value is: " [who] of closest-tile "...") (who)
               let action-pattern ""
               
               output-debug-message (word "Checking to see how far away my closest-tile is from me (" distance closest-tile ")...") (who)
@@ -1138,10 +1138,12 @@ breed [ holes ]
                 ;that is north-east of it and there is a tile immediately north of it which would need to be 
                 ;moved out of the way.  In this case, the tile to the north would be the one that would be 
                 ;pushed in the first place.
-                if(any? (turtles-on (patch-at-heading-and-distance (heading) (1)) ) with [hidden? = false])[
+                while[not way-clear?][
                   output-debug-message (word "There is something on the patch ahead along heading " heading " so I'll alter my heading randomly by +/- 90 to get around it...") (who)
                   alter-heading-randomly-by-adding-or-subtracting-90
                 ]
+                output-debug-message (word "The patch immediately ahead with heading " heading " is free, so I'll move there...") (who)
+                
                 output-debug-message (word "Generating the action pattern...") (who)
                 set action-pattern (chrest:create-item-square-pattern move-to-tile-token heading 1)
               ]
@@ -1149,11 +1151,34 @@ breed [ holes ]
                 output-debug-message ("My closest tile is 1 patch away from me or less so I'll turn to face it and attempt to push it...")(who)
                 face closest-tile
                 output-debug-message ("Checking to see if there is anything blocking my closest tile from being pushed (other players or tiles, holes can't block a tile)...") (who)
+                
                 ifelse(any? (turtles-on (patch-at-heading-and-distance (heading) (2)) ) with [ (breed != holes) and (hidden? = false) ] )[
                   output-debug-message ("There are turtles on the patch in front of the tile I am facing that aren't holes so I'll have to move around the tile to try and push it from another direction...") (who)
                   alter-heading-randomly-by-adding-or-subtracting-90
-                  output-debug-message ("Now I'll generate the action pattern...") (who)
-                  set action-pattern (chrest:create-item-square-pattern move-around-tile-token heading 1)
+                  output-debug-message (word "Checking to see if the patch immediately ahead with heading " heading " is clear...") (who)
+                  
+                  while[ 
+                    ( any? (turtles-on (patch-at-heading-and-distance (heading) (1))) with [breed != tiles] and hidden? = false) or
+                    ( (any? (turtles-on (patch-at-heading-and-distance (heading) (1))) with [breed = tiles]) and (any? (turtles-on patch-at-heading-and-distance (heading) (2)) with [breed != holes] and hidden? = false) )
+                  ]
+                  [ 
+                    output-debug-message (word "There is something on the patch ahead with heading " heading "; either a non-tile or a tile that is blocked...") (who)
+                    output-debug-message ("I'll alter my current heading by +/- 90 and check again...") (who)
+                    alter-heading-randomly-by-adding-or-subtracting-90
+                  ]
+                  output-debug-message (word "The patch ahead with heading " heading " is either free or has a tile that can be pushed on it.  Checking to see if I need to push a tile or not...") (who)
+                
+                  ifelse(any-tiles-on-patch-ahead?)[
+                    output-debug-message ("Since there is a tile on the patch immediately along my current heading, I'll set this to be my closest-tile so that it is pushed when the 'push-tile' action I'm to generate is performed..." ) (who)
+                    set closest-tile (tiles-on patch-at-heading-and-distance (heading) (1))
+                    output-debug-message ("Generating the action pattern...") (who)
+                    set action-pattern (chrest:create-item-square-pattern push-tile-token heading 1)
+                  ]
+                  [
+                    output-debug-message ("There isn't a tile on the patch immediately along my current heading so I'll generate a 'move-to-tile' action pattern...") (who)
+                    output-debug-message ("Generating the action pattern...") (who)
+                    set action-pattern (chrest:create-item-square-pattern move-around-tile-token heading 1)
+                  ]
                 ]
                 [
                   output-debug-message ("There aren't any turtles on the patch in front of the tile I am facing (or there is a hole there) so I'll push this tile...") (who)
@@ -1334,6 +1359,8 @@ breed [ holes ]
                 ;No need for a 'headings-tried' killswitch here in the 'while' conditional since
                 ;the turtle checks to see if it is surrounded when this procedure starts so there
                 ;must be a free path if it gets to here.
+                ;
+                ;Unlike the 
                 while[ 
                   ( any? (turtles-on (patch-at-heading-and-distance (heading) (1))) with [breed != tiles] and hidden? = false) or
                   ( (any? (turtles-on (patch-at-heading-and-distance (heading) (1))) with [breed = tiles]) and (any? (turtles-on patch-at-heading-and-distance (heading) (2)) with [breed != holes] and hidden? = false) )
@@ -2403,7 +2430,7 @@ BUTTON
 76
 NIL
 play
-T
+NIL
 1
 T
 OBSERVER
@@ -2593,7 +2620,7 @@ SWITCH
 111
 debug?
 debug?
-1
+0
 1
 -1000
 
