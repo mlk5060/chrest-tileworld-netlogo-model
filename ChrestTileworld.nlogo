@@ -175,6 +175,7 @@ breed [ holes ]
        __clear-all-and-reset-ticks
        
        ;Set some non-specific global variables.
+       set-default-shape chrest-turtles "turtle"
        set-default-shape tiles "box"
        set-default-shape holes "circle"
        set current-training-time 0
@@ -213,6 +214,10 @@ breed [ holes ]
        ;Set user-defined model variables.
        setup-environment-using-user-selected-file
        
+       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+       ;;; CHECK FOR VALID GLOBAL VARIABLE VALUES ;;;
+       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+       
        if(hole-birth-prob > 1)[
          error ("The global 'hole-birth-prob' variable is greater than 1 ().  Please rectify this so that it is <= 1.")
        ]
@@ -223,6 +228,10 @@ breed [ holes ]
        
        ;Set variables for "chrest-turtles"
        ask chrest-turtles [
+         if(sight-radius < 2)[
+           error (word "Turtle " who "'s sight radius is < 2 (" sight-radius ").  This value must be >= 2 since player turtles must be able to see 1 patch past a tile they are adjacent to.")
+         ]
+         
          set closest-tile ""
          set current-visual-pattern ""
          set heading 0
@@ -231,7 +240,7 @@ breed [ holes ]
          set time-to-perform-next-action -1 ;Set to -1 initially since if it is set to 0 the turtle will think it has some action to perform in the initial round.
          set visual-pattern-used-to-generate-action []
          set sight-radius-colour (select-sight-radius-colour)
-      
+         
          chrest:instantiate-chrest-in-turtle
          chrest:set-add-link-time (convert-seconds-to-milliseconds (add-link-time))
          chrest:set-discrimination-time (convert-seconds-to-milliseconds (discrimination-time))
