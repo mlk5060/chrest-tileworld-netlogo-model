@@ -1,43 +1,9 @@
 ; ===========================
+; ===========================
 ; ===== CHREST Tileword =====
+; ===========================
 ; =========================== 
-; by
-; Martyn Lloyd-Kelly
-;
-; "Tileworld" was first formally described in:
-;
-; Martha Pollack and Marc Ringuette. "Introducing the Tileworld: experimentally evaluating agent architectures."
-; Thomas Dietterich and William Swartout ed. In Proceedings of the Eighth National Conference on Artificial 
-; Intelligence,  p. 183--189, AAAI Press. 1990.
-;
-; This model is built upon the Tileworld Netlogo model originally developed by Jose M. Vidal.  Details of this 
-; Netlogo model can be found at and downloaded from:
-; http://jmvidal.cse.sc.edu/netlogomas/tileworld/index.html
-;
-; The player turtles in this model are endowed with instances of the CHREST architecture developed by Fernand Gobet. 
-; See http://www.chrest.info/ for more information regarding the architecture.
-;
-; The behaviour of player turtles (hereafter referred to simply as "turtles") is rather dumb since they only use a 
-; few basic heuristics.  This is intentional since the aim is to investigate the interplay between talent and 
-; expertise in enabling turtles with CHREST architectures to become better players.  
-
-; "Talent" equates to the size of a turtle's the sight-radius, larger sight-radii equates to greater talent since 
-; increasing the amount of the Tileworld that can be seen equates to greater complexity and more opportunities to 
-; score (more tiles and holes can be seen in one percept).
-;
-; "Expertise" equates to the size of a turtle's long-term memory (hereafter referred to as "LTM").  The size of a
-; CHREST turtle's LTM should increase if they are allowed to train for longer periods of time therefore, greater
-; expertise = greater training times.  The exmplanation for this relationship is as follows: during training, 
-; CHREST turtles learn visual patterns and associate these visual patterns with action patterns.  It follows then, 
-; that the longer a CHREST turtle trains for, the more visual and action patterns are generated, stored and 
-; associated in LTM.  When deciding what to do given a visual pattern, a turtle can either use a heuristic or use
-; an action pattern retreieved from a node in the turtle's action LTM (which is associated with the node from visual
-; LTM using the current visual pattern).  Retrieving an action pattern from LTM takes less time than using a heuristic 
-; so, it is reasonable to expect that, the more an agent has seen/done in training, the less time they will spend 
-; deliberating about what to do given particular visual patterns.
-;
-; Each turtle has an internal clock which is incremented by the CHREST architecture and this model as visual/action
-; patterns are learned, stored, retrieved and as heuristics are used. 
+; by Martyn Lloyd-Kelly
 
 ;INPROG: Reinforce visual-action links in STM if a turtle successfully pushes a tile into a hole.
 
@@ -55,25 +21,33 @@
 ;TODO: Should turtles generate visual patterns if they are scheduled to perform an action in the future?  Check with
 ;      Peter and Fernand.
 ;TODO: Extract action-pattern creation into independent procedures so code is DRY.
+;TODO: Closest tile still throws an error since a dead tile is not removed from a turtle's closest-tile variable
+;      despite the "fix" implemented.
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;;;;;;;; EXTENSION DECLARATIONS ;;;;;;;;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;******************************************;
+;******************************************;
+;********* EXTENSION DECLARATIONS *********;
+;******************************************;
+;******************************************;
 
 extensions [ chrest string ]
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;;;;;;;; BREED DECLARATIONS ;;;;;;;;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;**************************************;
+;**************************************;
+;********* BREED DECLARATIONS *********;
+;**************************************;
+;**************************************;
 
 breed [ chrest-turtles ]
 breed [ tiles ]
 breed [ non-chrest-turtles ]
 breed [ holes ]
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;;;;;;;; VARIABLE DECLARATIONS ;;;;;;;;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;*****************************************;
+;*****************************************;
+;********* VARIABLE DECLARATIONS *********;
+;*****************************************;
+;*****************************************;
 
      ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
      ;;;;; GLOBAL VARIABLES ;;;;;
@@ -151,24 +125,42 @@ breed [ holes ]
        time-to-live    ;Stores the time (in seconds) that a hole has left before it dies.
      ]
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;;;;;;;; PROCEDURES ;;;;;;;;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;************************************************;
+;************************************************;
+;********* SIMULATION SET-UP PROCEDURES *********;
+;************************************************;
+;************************************************;
 
-     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-     ;;;;;;;;;; "SETUP" PROCEDURE ;;;;;;;;;;
-     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
+     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+     ;;;;; "SETUP" PROCEDURE ;;;;;
+     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+     
+     ;The setup procedure performs a number of tasks in the following order:
+     ;
+     ; 1) Clear all model variables
+     ; 2) Set global and turtle-specific variables using hard-coded information.
+     ; 3) Set global and turtle-specific variables using user-specified information.
+     ; 4) Check for valid user-specified global variable values.
+     ; 5) Set hard-coded turtle-specific variable values.
+     ;
+     ;@author  Martyn Lloyd-Kelly <martynlloydkelly@gmail.com>
      to setup
-       
        set debug-indent-level 0
        output-debug-message ("EXECUTING THE 'setup' PROCEDURE...") ("")
+       
+       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+       ;;; CLEAR ALL MODEL VARIABLES ;;;
+       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   
        ;For this model to work with NetLogo's new plotting features,
        ;"__clear-all-and-reset-ticks" should be replaced with "clear-all" 
        ;at the beginning of your setup procedure and "reset-ticks" at the 
        ;end of the procedure.
        __clear-all-and-reset-ticks
+       
+       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+       ;;; SET GLOBAL AND TURTLE-SPECIFIC VARIABLES USING HARD-CODED VALUES ;;;
+       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
        
        ;Set some non-specific global variables.
        set-default-shape chrest-turtles "turtle"
@@ -207,12 +199,15 @@ breed [ holes ]
        output-debug-message (word "THE 'turtle-token' GLOBAL VARIABLE IS SET TO: '" turtle-token "'.") ("")
        output-debug-message (word "THE 'remain-stationary-token' GLOBAL VARIABLE IS SET TO: '" remain-stationary-token "'.") ("")
   
-       ;Set user-defined model variables.
+       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+       ;;; SET GLOBAL AND TURTLE-SPECIFIC VARIABLES USING USER-SPECIFIED VALUES ;;;
+       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+       
        setup-environment-using-user-selected-file
        
-       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-       ;;; CHECK FOR VALID GLOBAL VARIABLE VALUES ;;;
-       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+       ;;; CHECK FOR VALID USER-SPECIFIED GLOBAL VARIABLE VALUES ;;;
+       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
        
        if(hole-birth-prob > 1)[
          error ("The global 'hole-birth-prob' variable is greater than 1 ().  Please rectify this so that it is <= 1.")
@@ -222,7 +217,10 @@ breed [ holes ]
          error ("The global 'tile-birth-prob' variable is greater than 1 ().  Please rectify this so that it is <= 1.")
        ]
        
-       ;Set variables for "chrest-turtles"
+       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+       ;;; SET HARD-CODED TURTLE-SPECIFIC VARIABLE VALUES ;;;
+       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+       
        ask chrest-turtles [
          if(sight-radius < 2)[
            error (word "Turtle " who "'s sight radius is < 2 (" sight-radius ").  This value must be >= 2 since player turtles must be able to see 1 patch past a tile they are adjacent to.")
@@ -267,184 +265,173 @@ breed [ holes ]
        
        set debug-indent-level (debug-indent-level - 1)
      end
-
-          ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-          ;;;;; "SETUP" SUB-PROCEDURES ;;;;;
-          ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-          
-               ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-               ;;; "SELECT-SIGHT-RADIUS-COLOUR" PROCEDURE ;;;
-               ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-               
-               ;Selects a colour for the calling turtle's "sight-radius-colour" variable iff
-               ;the calling turtle is a CHREST turtle.
-               ;
-               ;The colour selected will be the same colour as the calling turtle's colour but
-               ;brighter so that the calling turtle itself isn't lost in the colour of its sight 
-               ;radius. 
-               ;
-               ;         Name              Data Type     Description
-               ;         ----              ---------     -----------
-               ;@returns -                 Integer       A non-shaded base colour
-               ;
-               ;@author  Martyn Lloyd-Kelly <martynlloydkelly@gmail.com>
-               to-report select-sight-radius-colour 
-                 ifelse(breed = chrest-turtles)[
-                   set sight-radius-colour (color + 2)
-                   report sight-radius-colour
-                 ]
-                 [
-                   error (word "Turtle " who "'s 'breed' variable (" breed ") is not equal to 'chrest-turtles'.")
-                 ]
-               end
      
-               ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-               ;;; "SETUP-ENVIRONMENT-USING-USER-SELECTED-FILE" SUB-PROCEDURE ;;;
-               ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-          
-               ;Sets various global and turtle variables using an external .txt file selected
-               ;by the user.
-               ;
-               ;TODO: This could be extracted into its own extension for use by the Netlogo community.
-               ;
-               ;@author  Martyn Lloyd-Kelly <martynlloydkelly@gmail.com>
-               to setup-environment-using-user-selected-file
-  
-                 file-close ;This must be done just in case the previous file errored out (Netlogo does not reset file pointers automatically).
-                 file-open user-file
-                 
-                 let variable-name ""
-                 
-                 while[not file-at-end?][
-                   set debug-indent-level (debug-indent-level + 1)
-                   output-debug-message ("EXECUTING THE 'setup-environment-using-user-selected-file' PROCEDURE...") ("")
-                   set debug-indent-level (debug-indent-level + 1)
-                   let line file-read-line
-                   
-                   output-debug-message (word "LINE BEING READ FROM EXTERNAL FILE IS: '" line "'") ("")
-                   
-                   ifelse(not empty? line)[
-                     
-                     output-debug-message (word "'" line "' IS NOT EMPTY SO IT WILL BE PROCESSED.") ("")
-                     
-                     ifelse(string:rex-match "[a-zA-Z_\\-]+" line )[
-                       set variable-name line
-                       
-                       output-debug-message (word "'" line "' ONLY CONTAINS EITHER ALPHABETICAL CHARACTERS, HYPHENS OR UNDERSCORES SO IT MUST BE A VARIABLE NAME.") ("")
-                       output-debug-message (word "THE 'variable-name' VARIABLE IS NOW SET TO: '" variable-name "'.") ("")
-                     ]
-                     [
-                       ifelse(string:rex-match "\"(.)*\"" line)[
-                         output-debug-message (word "'" line "' IS SURROUNDED WITH DOUBLE QUOTES INDICATING THAT THIS IS A NETLOGO COMMAND.  THIS COMMAND SHOULD BE RUN USING THE 'print-and-run' PROCEDURE..." ) ("")
-                         print-and-run (read-from-string line)
-                       ]
-                       [
-                         output-debug-message (word "'" line "' MUST BE A VALUE.") ("")
-                         
-                         ifelse( member? ":" line )[
-                           
-                           output-debug-message (word "'" line "' CONTAINS A COLON SO THE VALUE IS TO BE SET FOR ONE OR MORE TURTLE VARIABLES.  CHECKING FORMATTING OF THE LINE...") ("")
-                           
-                           ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-                           ;;; CHECK EXTERNAL LINE FORMATTING ;;;
-                           ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-                           
-                           output-debug-message ("CHECKING FOR MATCHING PARENTHESIS...") ("")
-                           if( (check-for-substring-in-string-and-report-occurrences "(" line) != (check-for-substring-in-string-and-report-occurrences ")" line) )[
-                             error (word "ERROR: External model settings file line: '" line "' does not contain matching parenthesis!" )
-                           ]
-                           output-debug-message ("PARENTHESIS MATCH OR PARENTHESIS DO NOT EXIST...") ("")
-                           
-                           output-debug-message ("CHECKING FOR MORE THAN ONE PAIR OF MATCHING PARENTHESIS...") ("")
-                           if(
-                             (check-for-substring-in-string-and-report-occurrences "(" line) = (check-for-substring-in-string-and-report-occurrences ")" line) and 
-                             (check-for-substring-in-string-and-report-occurrences "(" line) > 1
-                           )[
-                             error (word "ERROR: External model settings file line: '" line "' contains more than one pair of matching parenthesis!" )
-                           ]
-                           output-debug-message ("NO MORE THAN ONE PAIR OF MATCHING PARENTHESIS EXISTS...")  ("")
-                           
-                           output-debug-message ("CHECKING FOR A HYPHEN IF MATCHING PARENTHESIS EXIST...") ("")
-                           if(
-                             (check-for-substring-in-string-and-report-occurrences "(" line) = (check-for-substring-in-string-and-report-occurrences ")" line) and
-                             (check-for-substring-in-string-and-report-occurrences "(" line) = 1 and 
-                             not member? "-" line 
-                           )[
-                             error (word "ERROR: External model settings file line: '" line "' does not contain a hyphen in turtle ID specification!" )
-                           ]
-                           output-debug-message ("LINE CONTAINS A HYPHEN AND ONE PAIR OF MATCHING PARENTHESIS...") ("")
-                           
-                           output-debug-message ("CHECKING FOR MATCHING PARENTHESIS IF A HYPHEN EXISTS...") ("")
-                           if( member? "-" line and not member? "(" line and not member? ")" line )[
-                             error (word "ERROR: External model settings file line: '" line "' contains a hyphen but no parenthesis in group ID specification!" )
-                           ]
-                           output-debug-message ("HYPHEN IS SPECIFIED ALONG WITH MATCHING PARENTHESIS") ("")
-                           
-                           output-debug-message (word "'" line "' IS FORMATTED CORRECTLY.") ("")
-                           
-                           ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-                           ;;; END EXTERNAL LINE FORMATTING ;;;
-                           ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-                           
-                           ifelse( member? "(" line )[
-                             
-                             output-debug-message (word "'" line "' CONTAINS A '(' SO THE '" variable-name "' VARIABLE FOR A NUMBER OF TURTLES SHOULD BE SET...") ("")
-                             
-                             let turtle-id read-from-string ( substring line ( (position "(" line) + 1 ) (position "-" line) )
-                             let last-turtle-id read-from-string ( substring line ( (position "-" line) + 1 ) (position ")" line) )
-                             let value-specified read-from-string ( substring line ( (position ":" line) + 1 ) (length line) )
-                             
-                             while[turtle-id <= last-turtle-id][
-                               
-                               output-debug-message (word "TURTLE " turtle-id "'s '" variable-name "' VARIABLE WILL BE SET TO: '" value-specified "'.") ("")
-                               
-                               ask turtle turtle-id[ 
-                                 print-and-run (word "set " variable-name " " value-specified)
-                               ]
-                               
-                               set turtle-id (turtle-id + 1)
-                             ]
-                           ]
-                           [
-                             output-debug-message (word "'" line "' DOES NOT CONTAIN A '(' SO THE '" variable-name "' VARIABLE FOR ONE TURTLE SHOULD BE SET...") ("")
-                             
-                             let turtle-id read-from-string ( substring line 0 (position ":" line ) )
-                             let value-specified read-from-string ( substring line ( (position ":" line) + 1 ) (length line) )
-                             output-debug-message (word "TURTLE " turtle-id "'s '" variable-name "' VARIABLE WILL BE SET TO: '" value-specified "'.") ("")
-                             
-                             ask turtle turtle-id[ 
-                               print-and-run (word "set " variable-name " " value-specified)
-                             ]
-                           ]
-                         ]
-                         [
-                           output-debug-message (word "'" line "' DOES NOT CONTAIN A ':' SO '" variable-name "' IS A GLOBAL VARIABLE AND WILL BE SET TO: '" read-from-string line "'.") ("")
-                           print-and-run (word "set " variable-name " " (read-from-string line) )
-                         ] 
-                       ]
-                     ]
-                   ]
-                   [
-                     output-debug-message (word "'" line "' IS EMPTY SO IT WILL NOT BE PROCESSED.") ("")
-                   ]
-                   
-                   set debug-indent-level (debug-indent-level - 2)
-                 ]
-               end
+     ;******************************************;
+     ;******************************************;
+     ;**** "SETUP" PROCEDURE SUB-PROCEDURES ****;
+     ;******************************************;
+     ;******************************************;
+     
+          ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+          ;;;;; "SELECT-SIGHT-RADIUS-COLOUR" PROCEDURE ;;;;;
+          ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
                
-               ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-               ;;; "PRINT-AND-RUN" PROCEDURE ;;;
-               ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+          ;Selects a colour for the calling turtle's "sight-radius-colour" variable iff
+          ;the calling turtle is a CHREST turtle.
+          ;
+          ;The colour selected will be the same colour as the calling turtle's colour but
+          ;brighter so that the calling turtle itself isn't lost in the colour of its sight 
+          ;radius. 
+          ;
+          ;         Name              Data Type     Description
+          ;         ----              ---------     -----------
+          ;@returns -                 Integer       A non-shaded base colour
+          ;
+          ;@author  Martyn Lloyd-Kelly <martynlloydkelly@gmail.com>
+          to-report select-sight-radius-colour 
+            ifelse(breed = chrest-turtles)[
+              set sight-radius-colour (color + 2)
+              report sight-radius-colour
+            ]
+            [
+              error (word "Turtle " who "'s 'breed' variable (" breed ") is not equal to 'chrest-turtles'.")
+            ]
+          end
+     
+          ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+          ;;;;; "SETUP-ENVIRONMENT-USING-USER-SELECTED-FILE" PROCEDURE ;;;;;
+          ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+          ;Sets various global and turtle variables using an external .txt file selected
+          ;by the user.
+          ;
+          ;TODO: This could be extracted into its own extension for use by the Netlogo community.
+          ;
+          ;@author  Martyn Lloyd-Kelly <martynlloydkelly@gmail.com>
+          to setup-environment-using-user-selected-file
+            file-close ;This must be done just in case the previous file errored out (Netlogo does not reset file pointers automatically).
+            file-open user-file
+            
+            let variable-name ""
+            
+            while[not file-at-end?][
+              set debug-indent-level (debug-indent-level + 1)
+              output-debug-message ("EXECUTING THE 'setup-environment-using-user-selected-file' PROCEDURE...") ("")
+              set debug-indent-level (debug-indent-level + 1)
+              let line file-read-line
+              output-debug-message (word "LINE BEING READ FROM EXTERNAL FILE IS: '" line "'") ("")
+              
+              ifelse(not empty? line)[
+                output-debug-message (word "'" line "' IS NOT EMPTY SO IT WILL BE PROCESSED.") ("")
+                ifelse(string:rex-match "[a-zA-Z_\\-]+" line )[
+                  set variable-name line
+                  output-debug-message (word "'" line "' ONLY CONTAINS EITHER ALPHABETICAL CHARACTERS, HYPHENS OR UNDERSCORES SO IT MUST BE A VARIABLE NAME.") ("")
+                  output-debug-message (word "THE 'variable-name' VARIABLE IS NOW SET TO: '" variable-name "'.") ("")
+                ]
+                [
+                  ifelse(string:rex-match "\"(.)*\"" line)[
+                    output-debug-message (word "'" line "' IS SURROUNDED WITH DOUBLE QUOTES INDICATING THAT THIS IS A NETLOGO COMMAND.  THIS COMMAND SHOULD BE RUN USING THE 'print-and-run' PROCEDURE..." ) ("")
+                    print-and-run (read-from-string line)
+                  ]
+                  [
+                    output-debug-message (word "'" line "' MUST BE A VALUE.") ("")
+             
+                    ifelse( member? ":" line )[
+                      output-debug-message (word "'" line "' CONTAINS A COLON SO THE VALUE IS TO BE SET FOR ONE OR MORE TURTLE VARIABLES.  CHECKING FORMATTING OF THE LINE...") ("")
+                 
+                      output-debug-message ("CHECKING FOR MATCHING PARENTHESIS...") ("")
+                      if( (check-for-substring-in-string-and-report-occurrences "(" line) != (check-for-substring-in-string-and-report-occurrences ")" line) )[
+                        error (word "ERROR: External model settings file line: '" line "' does not contain matching parenthesis!" )
+                      ]
+                      output-debug-message ("PARENTHESIS MATCH OR PARENTHESIS DO NOT EXIST...") ("")
+                 
+                      output-debug-message ("CHECKING FOR MORE THAN ONE PAIR OF MATCHING PARENTHESIS...") ("")
+                      if(
+                        (check-for-substring-in-string-and-report-occurrences "(" line) = (check-for-substring-in-string-and-report-occurrences ")" line) and 
+                        (check-for-substring-in-string-and-report-occurrences "(" line) > 1
+                      )[
+                       error (word "ERROR: External model settings file line: '" line "' contains more than one pair of matching parenthesis!" )
+                      ]
+                      output-debug-message ("NO MORE THAN ONE PAIR OF MATCHING PARENTHESIS EXISTS...")  ("")
+                 
+                      output-debug-message ("CHECKING FOR A HYPHEN IF MATCHING PARENTHESIS EXIST...") ("")
+                      if(
+                        (check-for-substring-in-string-and-report-occurrences "(" line) = (check-for-substring-in-string-and-report-occurrences ")" line) and
+                        (check-for-substring-in-string-and-report-occurrences "(" line) = 1 and 
+                        not member? "-" line 
+                      )[
+                       error (word "ERROR: External model settings file line: '" line "' does not contain a hyphen in turtle ID specification!" )
+                      ]
+                      output-debug-message ("LINE CONTAINS A HYPHEN AND ONE PAIR OF MATCHING PARENTHESIS...") ("")
+                 
+                      output-debug-message ("CHECKING FOR MATCHING PARENTHESIS IF A HYPHEN EXISTS...") ("")
+                      if( member? "-" line and not member? "(" line and not member? ")" line )[
+                        error (word "ERROR: External model settings file line: '" line "' contains a hyphen but no parenthesis in group ID specification!" )
+                      ]
+                      output-debug-message ("HYPHEN IS SPECIFIED ALONG WITH MATCHING PARENTHESIS") ("")
+                 
+                      output-debug-message (word "'" line "' IS FORMATTED CORRECTLY.") ("")
+                 
+                      ifelse( member? "(" line )[
+                        output-debug-message (word "'" line "' CONTAINS A '(' SO THE '" variable-name "' VARIABLE FOR A NUMBER OF TURTLES SHOULD BE SET...") ("")
+                   
+                        let turtle-id read-from-string ( substring line ( (position "(" line) + 1 ) (position "-" line) )
+                        let last-turtle-id read-from-string ( substring line ( (position "-" line) + 1 ) (position ")" line) )
+                        let value-specified read-from-string ( substring line ( (position ":" line) + 1 ) (length line) )
+                   
+                        while[turtle-id <= last-turtle-id][
+                          output-debug-message (word "TURTLE " turtle-id "'s '" variable-name "' VARIABLE WILL BE SET TO: '" value-specified "'.") ("")
+                     
+                          ask turtle turtle-id[ 
+                            print-and-run (word "set " variable-name " " value-specified)
+                          ]
+                     
+                          set turtle-id (turtle-id + 1)
+                        ]
+                      ]
+                      [
+                        output-debug-message (word "'" line "' DOES NOT CONTAIN A '(' SO THE '" variable-name "' VARIABLE FOR ONE TURTLE SHOULD BE SET...") ("")
+                   
+                        let turtle-id read-from-string ( substring line 0 (position ":" line ) )
+                        let value-specified read-from-string ( substring line ( (position ":" line) + 1 ) (length line) )
+                        output-debug-message (word "TURTLE " turtle-id "'s '" variable-name "' VARIABLE WILL BE SET TO: '" value-specified "'.") ("")
+                   
+                        ask turtle turtle-id[ 
+                          print-and-run (word "set " variable-name " " value-specified)
+                        ]
+                      ]
+                    ]
+                    [
+                      output-debug-message (word "'" line "' DOES NOT CONTAIN A ':' SO '" variable-name "' IS A GLOBAL VARIABLE AND WILL BE SET TO: '" read-from-string line "'.") ("")
+                      print-and-run (word "set " variable-name " " (read-from-string line) )
+                    ] 
+                  ]
+                ]
+              ]
+              [
+                output-debug-message (word "'" line "' IS EMPTY SO IT WILL NOT BE PROCESSED.") ("")
+              ]
+              
+              set debug-indent-level (debug-indent-level - 2)
+            ]
+          end
+          
+          ;*******************************************************************************;
+          ;*******************************************************************************;
+          ;**** "SETUP-ENVIRONMENT-USING-USER-SELECTED-FILE" PROCEDURE SUB-PROCEDURES ****;
+          ;*******************************************************************************;
+          ;*******************************************************************************;
+               
+               ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+               ;;;;; "PRINT-AND-RUN" PROCEDURE ;;;;;
+               ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
                
                ;Takes a string as a parameter which should contain some Netlogo code.
                ;It would appear that providing a string concatonation to the "run"
                ;primitive causes an error so the Netlogo code to be run should first
                ;be concatonated and then passed to the "run" primitive.  This procedure
-               ;provides such a service since you can provide a string concatonation to 
-               ;this procedure and the result of that concatonation is then passed to 
-               ;the "run" primitive.
-               ;
-               ;The function also prints the string to be run for debugging purposes.
+               ;provides such a service and also prints the string to be run for debugging 
+               ;purposes.
                ;
                ;         Name              Data Type     Description
                ;         ----              ---------     -----------
@@ -460,38 +447,70 @@ breed [ holes ]
                  set debug-indent-level (debug-indent-level - 2)
                  run string-to-be-run
                end
-                         
-               ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-               ;;; "SETUP-PLOT-PEN" PROCEDURE ;;;
-               ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-               
-               ;Creates a pen for the turtle calling this function on the plot specified by
-               ;the parameter passed to this procedure.
-               ;
-               ;         Name              Data Type     Description
-               ;         ----              ---------     -----------
-               ;@param   name-of-plot      String        The name of the plot to create the calling 
-               ;                                         turtle's pen on.
-               ;
-               ;@author  Martyn Lloyd-Kelly <martynlloydkelly@gmail.com>
-               to setup-plot-pen [name-of-plot]
-                 set debug-indent-level (debug-indent-level + 1)
-                 output-debug-message ("EXECUTING THE 'setup-plot-pen' PROCEDURE...") ("")
-                 set debug-indent-level (debug-indent-level + 1)
-                 output-debug-message (word "Setting my plot pen for the '" name-of-plot "' plot.") (who)
-                 set debug-indent-level (debug-indent-level - 2)
-                 
-                 set-current-plot name-of-plot
-                 create-temporary-plot-pen (word "Turtle " who)
-                 set-current-plot-pen (word "Turtle " who)
-                 set-plot-pen-interval time-increment
-                 set-plot-pen-color color
-               end
+          
+          ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+          ;;;;; "SETUP-PLOT-PEN" PROCEDURE ;;;;;
+          ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-     ;;;;;;;;;; "PLAY" PROCEDURE ;;;;;;;;;;
-     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+          ;Creates a pen for the turtle calling this function on the plot specified by
+          ;the parameter passed to this procedure and sets the x-axis interval to be
+          ;whatever the 'time-increment' value is currently set to.
+          ;
+          ;         Name              Data Type     Description
+          ;         ----              ---------     -----------
+          ;@param   name-of-plot      String        The name of the plot to create the calling 
+          ;                                         turtle's pen on.
+          ;
+          ;@author  Martyn Lloyd-Kelly <martynlloydkelly@gmail.com>
+          to setup-plot-pen [name-of-plot]
+            set debug-indent-level (debug-indent-level + 1)
+            output-debug-message ("EXECUTING THE 'setup-plot-pen' PROCEDURE...") ("")
+            set debug-indent-level (debug-indent-level + 1)
+            output-debug-message (word "Setting my plot pen for the '" name-of-plot "' plot.") (who)
+            set debug-indent-level (debug-indent-level - 2)
+            
+            set-current-plot name-of-plot
+            create-temporary-plot-pen (word "Turtle " who)
+            set-current-plot-pen (word "Turtle " who)
+            set-plot-pen-interval time-increment
+            set-plot-pen-color color
+          end
 
+;*********************************************;
+;*********************************************;
+;********* RUN SIMULATION PROCEDURES *********;
+;*********************************************;
+;*********************************************;
+
+     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+     ;;;;; "PLAY" PROCEDURE ;;;;;
+     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+     ;Enables Tileworld games to be played.  The game progresses in the following stages:
+     ;  1) Create new tiles and holes.
+     ;  2) CHREST turtles act:
+     ;    2.1) CHREST turtles determine if they are hidden or not:
+     ;      2.1.1) If not hidden, they determine if they are to perform an action in the future
+     ;         or now:
+     ;        2.1.1.1) If they are scheduled to perform an action in the future, they will not
+     ;                 do anything.
+     ;        2.1.1.2) If they are scheduled to perform an action now they will generate a visual
+     ;                 a visual pattern and check to see if this matches the visual pattern generated
+     ;                 when they decided on the action they are to perform now:
+     ;          2.1.1.2.1) If the current visual pattern matches the new visual pattern generated, the
+     ;                     CHREST turtle will perform their action and then deliberate about what to do
+     ;                     next.
+     ;          2.1.1.2.2) If the current visual pattern does not match the new visual pattern generated,
+     ;                     the CHREST turtle will not perform their action but will deliberate about what
+     ;                     to do next.
+     ;        2.1.1.3) If they are not scheduled to perform an action in the future or now, they 
+     ;                 will generate a visual pattern and deliberate about what to do next.
+     ;      2.1.2) If hidden they do not do anything.
+     ;    2.2) CHREST turtles update plots
+     ;  3) Update environment.
+     ;  4) Check end game condition.
+     ;
+     ;@author  Martyn Lloyd-Kelly <martynlloydkelly@gmail.com>
      to play
        
        set debug-indent-level 0
@@ -505,9 +524,17 @@ breed [ holes ]
        ]
        set debug-indent-level (debug-indent-level + 1)
        
+       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+       ;;; CREATE NEW TILES AND HOLES ;;;
+       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+       
        output-debug-message ("CHECKING TO SEE IF NEW TILES/HOLES SHOULD BE CREATED...") ("")
        create-new-tiles-and-holes
-  
+       
+       ;;;;;;;;;;;;;;;;;;;;;;;;;;
+       ;;; CHREST TURTLES ACT ;;;
+       ;;;;;;;;;;;;;;;;;;;;;;;;;;
+       
        output-debug-message ("UPDATING 'chrest-turtles'...") ("")
        set debug-indent-level (debug-indent-level + 1)
        ask chrest-turtles [
@@ -560,8 +587,16 @@ breed [ holes ]
        ]
        set debug-indent-level (debug-indent-level - 1)
        
+       ;;;;;;;;;;;;;;;;;;;;;;;;;;
+       ;;; UPDATE ENVIRONMENT ;;;
+       ;;;;;;;;;;;;;;;;;;;;;;;;;;
+       
        output-debug-message ("UPDATING THE ENVIRONMENT...") ("")
        update-environment
+       
+       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+       ;;; CHECK END GAME CONDITION ;;;
+       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
        
        output-debug-message ("CHECKING TO SEE IF THERE ARE ANY NON-TILE/HOLE TURTLES STILL PLAYING (VISIBLE)...") ("")
        if(player-turtles-finished?)[
@@ -569,13 +604,162 @@ breed [ holes ]
        ]
      end
      
-     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-     ;;;;;;;;;; "PLAY" SUB-PROCEDURES ;;;;;;;;;;
-     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+     ;*******************************;
+     ;*******************************;
+     ;**** "PLAY" SUB-PROCEDURES ****;
+     ;*******************************;
+     ;*******************************;
      
-          ;;;;;;;;;;;;;;;;;;;;;;;
-          ;;; "AGE" PROCEDURE ;;;
-          ;;;;;;;;;;;;;;;;;;;;;;;
+          ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+          ;;;;; "CREATE-NEW-TILES-AND-HOLES" PROCEDURE ;;;;;
+          ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+          
+          ;Used to determine whether new tiles and holes should be created in the 
+          ;simulation environment.
+          ;
+          ;@author  Martyn Lloyd-Kelly <martynlloydkelly@gmail.com>
+          to create-new-tiles-and-holes
+            set debug-indent-level (debug-indent-level + 1)
+            output-debug-message ("EXECUTING THE 'create-new-tiles-and-holes' PROCEDURE...") ("")
+            set debug-indent-level (debug-indent-level + 1)
+            output-debug-message ("CHECKING GAME CONTEXT (TRAINING OR NON-TRAINING)...") ("")
+            
+            no-display
+            
+            ifelse(training?)[
+              output-debug-message ("GAME IS BEING PLAYED IN A TRAINING CONTEXT: THE 'current-training-time' VARIABLE SHOULD BE USED TO DETERMINE IF HOLES/TILES SHOULD BE CREATED.") ("")
+              output-debug-message (word "REMAINDER OF DIVIDING '" current-training-time "' BY '" tile-born-every "' IS: '" remainder current-training-time tile-born-every "'.") ("")
+              
+              if(remainder current-training-time tile-born-every = 0)[
+                output-debug-message ("A NEW TILE SHOULD BE GIVEN THE CHANCE TO BE CREATED NOW.") ("")
+                create-a ("tiles")
+              ]
+              
+              output-debug-message (word "REMAINDER OF DIVIDING '" current-training-time "' BY '" hole-born-every "' IS: '" remainder current-training-time hole-born-every "'.") ("")
+              
+              if(remainder current-training-time hole-born-every = 0)[
+                output-debug-message ("A NEW HOLE SHOULD BE GIVEN THE CHANCE TO BE CREATED NOW.") ("")
+                create-a ("holes")
+              ]
+            ]
+            [
+              output-debug-message ("GAME IS BEING PLAYED IN A NON-TRAINING CONTEXT: THE 'current-game-time' VARIABLE SHOULD BE USED TO DETERMINE IF HOLES/TILES SHOULD BE CREATED.") ("")
+              output-debug-message (word "REMAINDER OF DIVIDING '" current-game-time "' BY '" tile-born-every "' IS: '" remainder current-game-time tile-born-every "'.") ("")
+              
+              if(remainder current-game-time tile-born-every = 0)[
+                output-debug-message ("A NEW TILE SHOULD BE GIVEN THE CHANCE TO BE CREATED NOW.") ("")
+                create-a ("tiles")
+              ]
+              
+              output-debug-message (word "REMAINDER OF DIVIDING '" current-game-time "' BY '" hole-born-every "' IS: '" remainder current-game-time hole-born-every "'.") ("")
+              
+              if(remainder current-game-time hole-born-every = 0)[
+                output-debug-message ("A NEW HOLE SHOULD BE GIVEN THE CHANCE TO BE CREATED NOW.") ("")
+                create-a ("holes")
+              ]
+            ]
+            
+            display
+            set debug-indent-level (debug-indent-level - 2)
+          end
+          
+          ;*****************************************************;
+          ;*****************************************************;
+          ;**** "CREATE-NEW-TILES-AND-HOLES" SUB-PROCEDURES ****;
+          ;*****************************************************;
+          ;*****************************************************;
+          
+               ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+               ;;;;; "CREATE-A" PROCEDURE ;;;;;
+               ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+          
+               ;Probabilistically creates a new turtle of the specified breed 
+               ;in the environment according to breed-specific instructions.
+               ;
+               ;         Name              Data Type     Description
+               ;         ----              ---------     -----------
+               ;@params  breed-name        String        The breed of turtle that should be created.
+               ;
+               ;TODO: add a check to see if the string passed as 'breed-name' is
+               ;      an actual breed ('is-turtle-set?' or 'is-agentset?' could 
+               ;      be used).  Remember that Netlogo stores breed names in upper-
+               ;      case so 'breed-name' must be upper-case.
+               ;
+               ;@author  Martyn Lloyd-Kelly <martynlloydkelly@gmail.com>
+               to create-a [breed-name]
+                 set debug-indent-level (debug-indent-level + 1)
+                 output-debug-message ("EXECUTING THE 'create-a' PROCEDURE...") ("")
+                 set debug-indent-level (debug-indent-level + 1)
+                 output-debug-message ("CHECKING TO SEE IF A NEW HOLE SHOULD BE CREATED...") ("")
+                 
+                 ifelse(breed-name = "tiles")[
+                     if(random-float 1.0 < tile-birth-prob) [
+                       output-debug-message ("A NEW TILE WILL BE CREATED AND PLACED RANDOMLY IN THE ENVIRONMENT...") ("")
+                       
+                       create-tiles 1 [
+                         set heading 0
+                         set time-to-live tile-lifespan
+                         set color yellow
+                         place-randomly
+                       ]
+                     ]
+                   ]
+                 [
+                   ifelse(breed-name = "holes")[
+                     if(random-float 1.0 < hole-birth-prob) [
+                       output-debug-message ("A NEW HOLE WILL BE CREATED AND PLACED RANDOMLY IN THE ENVIRONMENT...") ("")
+                       
+                       create-holes 1 [
+                         set heading 0
+                         set time-to-live hole-lifespan
+                         set color blue
+                         place-randomly
+                       ]
+                     ]
+                   ]
+                   [
+                     error (word "The breed specified (" breed-name ") does not exist.")
+                   ]
+                 ]
+                 
+                 set debug-indent-level (debug-indent-level - 2)
+               end
+               
+               ;***********************************;
+               ;***********************************;
+               ;**** "CREATE-A" SUB-PROCEDURES ****;
+               ;***********************************;
+               ;***********************************;
+               
+                    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+                    ;;;;; "PLACE-RANDOMLY" PROCEDURE ;;;;;
+                    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+          
+                    ;Places the calling turtle on a random patch in the environment. If the patch 
+                    ;that the calling turtle is placed on already contains a turtle that is visible, 
+                    ;the calling turtle is placed on another random patch. This process repeats until 
+                    ;the calling turtle is placed on a patch that only contains the calling turtle (and
+                    ;a hidden turtle, potentially). 
+                    to place-randomly
+                      set debug-indent-level (debug-indent-level + 1)
+                      output-debug-message ("EXECUTING THE 'place-randomly' PROCEDURE...") ("")
+                      set debug-indent-level (debug-indent-level + 1)
+            
+                      setxy random-pxcor random-pycor
+                      output-debug-message (word "I've set my xcor to: '" xcor "' and ycor to '" ycor "'.  Checking to see if this patch is free..." ) (who)
+            
+                      while[ ( count (turtles-here with [hidden? = false]) ) > 1][
+                        output-debug-message (word "The patch with xcor: '" xcor "' and ycor '" ycor "'.  Already has a visible turtle on it, selecting new values for my 'xcor' and 'ycor' variables..." ) (who)
+                        setxy random-pxcor random-pycor
+                      ]
+                      output-debug-message(word "Patch with xcor '" xcor "' and ycor '" ycor "' does not contain any visible turtles so I'm staying here.") (who)
+            
+                      set debug-indent-level (debug-indent-level - 2)
+                    end
+          
+               ;;;;;;;;;;;;;;;;;;;;;;;;;;;
+               ;;;;; "AGE" PROCEDURE ;;;;;
+               ;;;;;;;;;;;;;;;;;;;;;;;;;;;
           
           ;Decreases the calling turtle's "time-to-live" variable by 0.1.
           ;If the calling turtles "time-to-live" variable is less than
@@ -779,112 +963,9 @@ breed [ holes ]
             ]
           end
           
-          ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-          ;;; "CREATE-A-HOLE" PROCEDURE ;;;
-          ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
           
-          ;Probabilistically creates a new hole in the environment.
-          ;
-          ;@author  Martyn Lloyd-Kelly <martynlloydkelly@gmail.com>
-          to create-a-hole
-            set debug-indent-level (debug-indent-level + 1)
-            output-debug-message ("EXECUTING THE 'create-a-hole' PROCEDURE...") ("")
-            set debug-indent-level (debug-indent-level + 1)
-            output-debug-message ("CHECKING TO SEE IF A NEW HOLE SHOULD BE CREATED...") ("")
-            
-            if (random-float 1.0 < hole-birth-prob) [
-              output-debug-message ("A NEW HOLE WILL BE CREATED AND PLACED RANDOMLY IN THE ENVIRONMENT...") ("")
-              
-              create-holes 1 [
-                set heading 0
-                set time-to-live hole-lifespan
-                set color blue
-                place-randomly
-              ]
-            ]
-            
-            set debug-indent-level (debug-indent-level - 2)
-          end
           
-          ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-          ;;; "CREATE-A-TILE" PROCEDURE ;;;
-          ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
           
-          ;Probabilistically creates a new tile in the environment.
-          ;
-          ;@author  Martyn Lloyd-Kelly <martynlloydkelly@gmail.com>
-          to create-a-tile
-            set debug-indent-level (debug-indent-level + 1)
-            output-debug-message ("EXECUTING THE 'create-a-tile' PROCEDURE...") ("")
-            set debug-indent-level (debug-indent-level + 1)
-            output-debug-message ("CHECKING TO SEE IF A NEW TILE SHOULD BE CREATED...") ("")
-            
-            if (random-float 1.0 < tile-birth-prob) [
-              output-debug-message ("A NEW TILE WILL BE CREATED AND PLACED RANDOMLY IN THE ENVIRONMENT...") ("")
-              
-              create-tiles 1 [
-                set heading 0
-                set time-to-live tile-lifespan
-                set color yellow
-                place-randomly
-              ]
-            ]
-            
-            set debug-indent-level (debug-indent-level - 2)
-          end
-          
-          ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-          ;;; "CREATE-NEW-TILES-AND-HOLES" PROCEDURE ;;;
-          ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-          
-          ;Used to determine whether new tiles and holes should be created in the 
-          ;simulation environment.
-          ;
-          ;@author  Martyn Lloyd-Kelly <martynlloydkelly@gmail.com>
-          to create-new-tiles-and-holes
-            set debug-indent-level (debug-indent-level + 1)
-            output-debug-message ("EXECUTING THE 'create-new-tiles-and-holes' PROCEDURE...") ("")
-            set debug-indent-level (debug-indent-level + 1)
-            output-debug-message ("CHECKING GAME CONTEXT (TRAINING OR NON-TRAINING)...") ("")
-            
-            no-display
-            
-            ifelse(training?)[
-              output-debug-message ("GAME IS BEING PLAYED IN A TRAINING CONTEXT: THE 'current-training-time' VARIABLE SHOULD BE USED TO DETERMINE IF HOLES/TILES SHOULD BE CREATED.") ("")
-              output-debug-message (word "REMAINDER OF DIVIDING '" current-training-time "' BY '" tile-born-every "' IS: '" remainder current-training-time tile-born-every "'.") ("")
-              
-              if(remainder current-training-time tile-born-every = 0)[
-                output-debug-message ("A NEW TILE SHOULD BE GIVEN THE CHANCE TO BE CREATED NOW.") ("")
-                create-a-tile
-              ]
-              
-              output-debug-message (word "REMAINDER OF DIVIDING '" current-training-time "' BY '" hole-born-every "' IS: '" remainder current-training-time hole-born-every "'.") ("")
-              
-              if(remainder current-training-time hole-born-every = 0)[
-                output-debug-message ("A NEW HOLE SHOULD BE GIVEN THE CHANCE TO BE CREATED NOW.") ("")
-                create-a-hole
-              ]
-            ]
-            [
-              output-debug-message ("GAME IS BEING PLAYED IN A NON-TRAINING CONTEXT: THE 'current-game-time' VARIABLE SHOULD BE USED TO DETERMINE IF HOLES/TILES SHOULD BE CREATED.") ("")
-              output-debug-message (word "REMAINDER OF DIVIDING '" current-game-time "' BY '" tile-born-every "' IS: '" remainder current-game-time tile-born-every "'.") ("")
-              
-              if(remainder current-game-time tile-born-every = 0)[
-                output-debug-message ("A NEW TILE SHOULD BE GIVEN THE CHANCE TO BE CREATED NOW.") ("")
-                create-a-tile
-              ]
-              
-              output-debug-message (word "REMAINDER OF DIVIDING '" current-game-time "' BY '" hole-born-every "' IS: '" remainder current-game-time hole-born-every "'.") ("")
-              
-              if(remainder current-game-time hole-born-every = 0)[
-                output-debug-message ("A NEW HOLE SHOULD BE GIVEN THE CHANCE TO BE CREATED NOW.") ("")
-                create-a-hole
-              ]
-            ]
-            
-            display
-            set debug-indent-level (debug-indent-level - 2)
-          end
           
           ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
           ;;; "DELIBERATE" PROCEDURE ;;;
@@ -1739,7 +1820,7 @@ breed [ holes ]
                 output-debug-message (word "'" action "' is equal to: '" push-tile-token "' so I'll execute the 'push-tile' procedure if my'closest-tile' variable is not empty (" closest-tile ")...") (who)
                 ifelse(closest-tile != "")[
                   output-debug-message ("My 'closest-tile' variable is not empty so I'll push this tile...") (who)
-                  push-tile (heading-to-move-along)
+                  push-tile
                 ]
                 [
                   output-debug-message ("My 'closest-tile' variable is empty so I won't do anything...") (who)
@@ -1788,33 +1869,7 @@ breed [ holes ]
             set debug-indent-level (debug-indent-level - 2)
           end
           
-          ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-          ;;; "PLACE-RANDOMLY" PROCEDURE ;;;
-          ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
           
-          ;Places the calling turtle on a random patch in the environment. If the patch 
-          ;that the calling turtle is placed on already contains a turtle that is visible, 
-          ;the calling turtle is placed on another random patch. This process repeats until 
-          ;the calling turtle is placed on a patch that only contains the calling turtle (and
-          ;a hidden turtle, potentially). 
-          to place-randomly
-            
-            set debug-indent-level (debug-indent-level + 1)
-            output-debug-message ("EXECUTING THE 'place-randomly' PROCEDURE...") ("")
-            set debug-indent-level (debug-indent-level + 1)
-            
-            setxy random-pxcor random-pycor
-            output-debug-message (word "I've set my xcor to: '" xcor "' and ycor to '" ycor "'.  Checking to see if this patch is free..." ) (who)
-            
-            while[ ( count (turtles-here with [hidden? = false]) ) > 1][
-              output-debug-message (word "The patch with xcor: '" xcor "' and ycor '" ycor "'.  Already has a visible turtle on it, selecting new values for my 'xcor' and 'ycor' variables..." ) (who)
-              setxy random-pxcor random-pycor
-            ]
-            
-            output-debug-message(word "Patch with xcor '" xcor "' and ycor '" ycor "' does not contain any visible turtles so I'm staying here.") (who)
-            
-            set debug-indent-level (debug-indent-level - 2)
-          end
           
           ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
           ;;; "PLAYER-TURTLES-FINISHED?" PROCEDURE ;;;
@@ -1859,18 +1914,10 @@ breed [ holes ]
           ;
           ;If there is a turtle in front of the tile to be pushed then the tile does not move and
           ;when the calling turtle checks the patch that is 1 patch away in its current heading,
-          ;it will see that the tile occupies this patch and will not move.  Instead, the calling
-          ;turtle will turn +/-90 degrees and move forward 1 patch to try and move around the tile
-          ;so it can push it from another direction.  This is not guaranteed to work though since
-          ;the calling turtle may move back to its previous patch in the next cycle.
+          ;it will see that the tile occupies this patch and will not move.
           ;
-          ;         Name              Data Type     Description
-          ;         ----              ---------     -----------
-          ;@param   learn-action      Boolean       Boolean true indicates that the calling turtle should learn
-          ;                                         and associate the action performed when pushing the tile.
-          ;                                         Boolean false indicates that the calling turtle should not
-          ;                                         do this i.e. the calling turtle just pushes the tile.
-          to push-tile [heading-to-tile]
+          ;         
+          to push-tile 
             set debug-indent-level (debug-indent-level + 1)
             output-debug-message ("EXECUTING THE 'push-tile' PROCEDURE...") ("")
             set debug-indent-level (debug-indent-level + 1)
@@ -1883,7 +1930,7 @@ breed [ holes ]
             ask closest-tile[
               output-debug-message ("I am the tile to be pushed.") (who)
               output-debug-message (word "Setting my 'heading' variable value to that of the pusher (" [heading] of myself ")...") (who)
-              set heading (heading-to-tile)
+              set heading [heading] of myself ;The tile's heading used to be set to 'heading-to-tile' which was a parameter passed.
               output-debug-message (word "My 'heading' variable value is now set to: " heading ".") (who)
               output-debug-message (word "Checking to see if there are any holes immediately ahead of me with this heading (" any? holes-on patch-ahead 1 ")...") (who)
               
@@ -2430,7 +2477,7 @@ BUTTON
 76
 NIL
 play
-NIL
+T
 1
 T
 OBSERVER
@@ -2659,24 +2706,68 @@ false
 PENS
 
 @#$#@#$#@
-# Tileworld  
+# CHREST Tileworld  
 ## CREDITS
 
-Jose M Vidal  
+**Programmer:** Martyn Lloyd-Kelly  <martynlloydkelly@gmail.com>
 
-## WHAT IS IT? 
-This is the classic tileworld problem. There are empty holes and tiles.  
-The agents must push the tiles so that they cover the empty holes. Agents  
-can push each other or more than one tile at once. The solution implemented  
-here is the obvious one. AFAIK, there is no consensus on what is the  
-best algorithm for solving this problem. The Tileworld was first introduced in
+## MODEL DESCRIPTION
+The "Tileworld" testbed was first formally described in:
+
+Martha Pollack and Marc Ringuette. _"Introducing the Tileworld: experimentally evaluating agent architectures."_  Thomas Dietterich and William Swartout ed. In Proceedings of the Eighth National Conference on Artificial Intelligence,  p. 183--189, AAAI Press. 1990.
+
+This model is built upon the "Tileworld" Netlogo model originally developed by Jose M. Vidal.  The model itself and details thereof can be found at the following website:
+http://jmvidal.cse.sc.edu/netlogomas/tileworld/index.html
+
+The player turtles in this model are endowed with instances of the Java implementation of the CHREST architecture developed principally by Prof. Fernand Gobet and Dr. Peter Lane. See the following website for more details regarding the CHREST architecture: 
+http://www.chrest.info/
+
+Players score a point for pushing tiles into holes which appear at random and are transient.  The probability of new tiles/holes being created and how long they exist for can be altered by the user to make the model environment more or less dynamic.  The length of a game is constrained by a user-specified length of time.
+
+Players are not capable of pushing more than one tile at a time, if a tile is blocked then the player must realign themselves and push the tile from a different direction.  Each patch may only hold either a player, a tile or a hole.  Other players and holes can not be pushed.
+
+Based upon current visual information, player turtles are capable of making decisions about what to do based upon current visual information or, if they are CHREST turtles, can make a decision about what to do by associating visual patterns with action patterns.  In the model, decision-making takes time, the length of time taken depends upon how complicated the decision-making procedure is.  Associating visual and action patterns however, takes significantly less time and therefore, should allow the player to perform more actions in less time resulting in higher scores.
+
+Of course, the quality of actions is also paramount in securing better scores so CHREST turtles are also capable of reinforcing associations between visual and action patterns if they have led to the successful filling of a hole with a tile.
+
+Players can either go through a period of training before playing a real game or simply play a real game.  Again, this decision is left to the user.
+
+## MODEL REQUIREMENTS
+This model requires that you have the following Netlogo extensions installed into the "extenstions" directory of your Netlogo distribution:
+
+  * CHREST - found at https://github.com/mlk5060/chrest-netlogo-extension
+  * String - found at https://github.com/NetLogo/String-Extension/
+
+## AIM OF THE MODEL
+The aim of this model is to investigate the interplay between _talent_ and _practice_ using the CHREST architecture as a model of cognition in an environment whose dynanism is not just a result of the actions of players.
+
+"Talent" is embodied by the following parameters that can be set for players:
+
+  * The size of a turtle's the sight-radius: larger sight-radii equates to greater talent since increasing the amount of the Tileworld that can be seen equates to greater complexity and more opportunities to score (more tiles and holes can be seen in one percept).  See: Gerardo I. Simari and Simon Parsons. _"On Approximating the Best Decision for an Autonomous Agent"_ Sixth Workshop on Game Theoretic and Decision Theoretic Agents (GTDT 2004) at the Third Conference on Autonomous Agents and Multi-agent Systems (AAMAS 2004), pp. 91-100.
+
+"Expertise" is embodied by the size and quality of a CHREST turtle's LTM.  The size of this should increase if CHREST turtles are presented with new information more frequently and are allowed to learn for longer periods of time.
+
+## CHREST TURTLE BEHAVIOUR
+The behaviour of CHREST turtles in the model is driven by the generation and recognition of _visual_ and _action_ patterns; symbolic representations of the current environment and the actions performed within it.  Before and after the performance of every action, the CHREST turtle will generate a visual pattern composed of a representation of what objects it can see and where the object is located using x/y coordinates relative from the CHREST turtle's current location to the object.  For example, the visual pattern: [A, 3, 1] indicates that the player can see another player, A, 3 patches to its east and 1 patch north of itself.  
+
+Action patterns are generated by reasoning with the current visual pattern about what to do next.  The action pattern is then loaded for execution and performed when the length of time specified by the CHREST turtle's _action-performance-time_ has elapsed.  Action patterns look similiar to visual patterns but they instead describe what action should be/was performed given a visual pattern.  For example, the action pattern: [PT, 0, 1] indicates that the player should push a tile, PT, 1 patch (1) along heading 0 (north).
+
+Since these patterns can be stored in the CHREST turtle's long-term memory (hereafter referred to as "LTM"), CHREST turtles are capable of associating the visual pattern that generated the action pattern and the action pattern generated together.  When a CHREST turtle successfully pushes a tile into a hole, this triggers a _reinforcement_ of all the visual-action pattern links present in the CHREST turtle's short-term memory (hereafter referred to as "STM").  This reinforcement takes the form of adding 1 to the weight of the link between the visual and action patterns present in STM (if the links exist). 
+
+This enables the CHREST turtle's dual-process theory of behaviour: when a CHRESt turtle generates a visual pattern, it will then try to recognise this visual pattern i.e. see if it already exists in LTM.  If it does, the CHREST turtle will then check to see if it has an action pattern associated with this visual pattern in its LTM.  If it does then three situations may be true:
+
+  1. The visual pattern is associated with only one visual pattern.  In this case, the action is performed. 
+  2. The visual pattern is associated with multiple action patterns and these associations have heterogenous weights.  In this case, the action pattern whose association is weighted most is selected.  
+  3. The visual pattern is associated with multiple action patterns and these associations have homogenous weights. In this case, one action pattern is selected at random with a 1 in _n_ probability (_n_ = number of action patterns whose associations weigh the most). 
+
+It may be true that the visual pattern is not recognised or that the visual pattern is not associated with any action patterns in LTM.  In this case, a heuristic is employed, based upon the content of the current visual pattern:
+
+  1. If the CHREST turtle can see one or more tiles and holes, it will attempt to push the tile closest to the hole that is closest to itself into this hole.
+  2. If the CHREST turtle can see one or more tiles but no holes, it will attempt to push the tile closest to it along the heading it approaches it at.
+  3. If the CHREST turtle can see no tiles or holes, it will select a heading at random to move in.
+
+A CHREST turtle will attempt to associate the visual patterns generated in the cases above with the action patterns generated in response to them with the exception of the action patterns generated in the third case.  This is because the environment is dynamic i.e. tiles and holes appear at random and therefore, favouring one random heading over another does not impart any benefit upon the potential score of a player.
  
- * Martha Pollack and Marc Ringuette. [Introducing the Tileworld: experimentally evaluating agent architectures](http://citeseer.nj.nec.com/pollack90introducing.html) 
-Thomas Dietterich and William Swartout ed.In _Proceedings of the Eighth National Conference on Artificial Intelligence,_  p. 183--189, AAAI Press. 1990.
-
-## CHANGES
-
-20100623
 @#$#@#$#@
 default
 false
