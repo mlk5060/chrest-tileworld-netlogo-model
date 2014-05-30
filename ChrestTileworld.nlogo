@@ -1012,39 +1012,39 @@ breed [ holes ]
             if(breed = chrest-turtles)[
               output-debug-message ("I am a chrest-turtle so I can continue to deliberate.") (who)
               
-              output-debug-message ("Setting the local 'actions-associated-with-visual-pattern' variable to an empty list...") (who)
-              let actions-associated-with-visual-pattern []
-              output-debug-message (word "The local 'actions-associated-with-visual-pattern' variable is set to: " actions-associated-with-visual-pattern "...") (who)
-              
-              output-debug-message (word "Checking to see if my 'current-visual-pattern' variable: '" current-visual-pattern "' is empty...") (who)
-              if(not empty? current-visual-pattern)[
-                output-debug-message (word "'" current-visual-pattern "' isn't empty so I'll check to see if I have any action-patterns associated with it in LTM...") (who)
-                output-debug-message ("If I do, I'll add these action-patterns to the local 'actions-associated-with-visual-pattern' variable...") (who)
-                set actions-associated-with-visual-pattern (chrest:recognise-pattern-and-return-patterns-of-specified-modality ("visual") ("item_square") (current-visual-pattern) ("action"))
-              ]
-              output-debug-message (word "The 'actions-associated-with-visual-pattern' variable is now set to: '" actions-associated-with-visual-pattern "'.") (who)
-              
-              output-debug-message (word "Checking to see if the 'actions-associated-with-visual-pattern' variable value is empty...") (who)
-              ifelse(not empty? actions-associated-with-visual-pattern)[
-                output-debug-message (word "The 'actions-associated-with-visual-pattern' variable value is not empty.  Checking to see how many items there are in this list...") (who)
-                output-debug-message (word "I have " length actions-associated-with-visual-pattern " action-patterns associated with '" current-visual-pattern ".") (who)
-                
-                if( (length actions-associated-with-visual-pattern) > 1 )[
-                  output-debug-message (word "I have more than one action associated with '" current-visual-pattern "' so I'll pick one of the actions to perform at random...") (who)
-                  let action-to-perform ( item (random length actions-associated-with-visual-pattern) actions-associated-with-visual-pattern )
-                  output-debug-message (word "The action I will perform is: '" action-to-perform "', loading this action for execution...") (who)
-                  load-action (action-to-perform)
-                ]
-                
-                if( ( length actions-associated-with-visual-pattern ) = 1 )[
-                  output-debug-message (word "I only have one action associated with '" current-visual-pattern "' so I'll perform that action...") (who)
-                  let action-to-perform item 0 actions-associated-with-visual-pattern
-                  output-debug-message (word "The action I will perform is: '" action-to-perform "', loading this action for execution...") (who)
-                  load-action (action-to-perform)
-                ]
-              ]
-              [
-                output-debug-message (word "I have no actions associated with '" current-visual-pattern "' so I'll figure out what to using a heuristic.  First, I need to check if I can see any tiles...") (who)
+;              output-debug-message ("Setting the local 'actions-associated-with-visual-pattern' variable to an empty list...") (who)
+;              let actions-associated-with-visual-pattern []
+;              output-debug-message (word "The local 'actions-associated-with-visual-pattern' variable is set to: " actions-associated-with-visual-pattern "...") (who)
+;              
+;              output-debug-message (word "Checking to see if my 'current-visual-pattern' variable: '" current-visual-pattern "' is empty...") (who)
+;              if(not empty? current-visual-pattern)[
+;                output-debug-message (word "'" current-visual-pattern "' isn't empty so I'll check to see if I have any action-patterns associated with it in LTM...") (who)
+;                output-debug-message ("If I do, I'll add these action-patterns to the local 'actions-associated-with-visual-pattern' variable...") (who)
+;                set actions-associated-with-visual-pattern (chrest:recognise-pattern-and-return-patterns-of-specified-modality ("visual") ("item_square") (current-visual-pattern) ("action"))
+;              ]
+;              output-debug-message (word "The 'actions-associated-with-visual-pattern' variable is now set to: '" actions-associated-with-visual-pattern "'.") (who)
+;              
+;              output-debug-message (word "Checking to see if the 'actions-associated-with-visual-pattern' variable value is empty...") (who)
+;              ifelse(not empty? actions-associated-with-visual-pattern)[
+;                output-debug-message (word "The 'actions-associated-with-visual-pattern' variable value is not empty.  Checking to see how many items there are in this list...") (who)
+;                output-debug-message (word "I have " length actions-associated-with-visual-pattern " action-patterns associated with '" current-visual-pattern ".") (who)
+;                
+;                if( (length actions-associated-with-visual-pattern) > 1 )[
+;                  output-debug-message (word "I have more than one action associated with '" current-visual-pattern "' so I'll pick one of the actions to perform at random...") (who)
+;                  let action-to-perform ( item (random length actions-associated-with-visual-pattern) actions-associated-with-visual-pattern )
+;                  output-debug-message (word "The action I will perform is: '" action-to-perform "', loading this action for execution...") (who)
+;                  load-action (action-to-perform)
+;                ]
+;                
+;                if( ( length actions-associated-with-visual-pattern ) = 1 )[
+;                  output-debug-message (word "I only have one action associated with '" current-visual-pattern "' so I'll perform that action...") (who)
+;                  let action-to-perform item 0 actions-associated-with-visual-pattern
+;                  output-debug-message (word "The action I will perform is: '" action-to-perform "', loading this action for execution...") (who)
+;                  load-action (action-to-perform)
+;                ]
+;              ]
+;              [
+;                output-debug-message (word "I have no actions associated with '" current-visual-pattern "' so I'll figure out what to using a heuristic.  First, I need to check if I can see any tiles...") (who)
                 let number-of-tiles (check-for-substring-in-string-and-report-occurrences ("T") (current-visual-pattern) )
                 output-debug-message (word "I can see " number-of-tiles " tiles" ) (who)
                 
@@ -1067,7 +1067,7 @@ breed [ holes ]
                   output-debug-message ("I can't see any tiles, I'll just select a random heading to move 1 patch forward...") (who)
                   generate-random-move-action
                 ]
-              ]
+;              ]
             ]
             set debug-indent-level (debug-indent-level - 2)
           end
@@ -2470,7 +2470,7 @@ BUTTON
 76
 NIL
 play
-NIL
+T
 1
 T
 OBSERVER
@@ -2660,7 +2660,7 @@ SWITCH
 111
 debug?
 debug?
-0
+1
 1
 -1000
 
