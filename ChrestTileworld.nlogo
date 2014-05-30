@@ -54,28 +54,30 @@ breed [ holes ]
      ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
      
      globals [
-       current-game-time       ;Stores the length of time (in seconds) that the non-training game has run for.
-       current-training-time   ;Stores the length of time (in seconds) that the training game has run for.
-       debug-indent-level      ;Stores the current indent level (3 spaces per indent) for debug messages.
-       hole-born-every         ;Stores the length of time (in seconds) that must pass before a hole may possibly be created.
-       hole-birth-prob         ;Stores the probability that a hole will be created on each tick in the game.
-       hole-lifespan           ;Stores the length of time (in seconds) that a hole lives for after creation. 
-       hole-token              ;Stores the string used to indicate that a hole can be seen in visual-patterns.
-       move-purposefully-token ;Stores the string used to indicate that the calling turtle moved purposefully in action-patterns.
-       move-randomly-token     ;Stores the string used to indicate that the calling turtle moved randomly in action-patterns.
-       movement-headings       ;Stores headings that agents can move.
-       move-around-tile-token  ;Stores the string used to indicate that the calling turtle moved around a tile in action-patterns.
-       move-to-tile-token      ;Stores the string used to indicate that the calling turtle moved to a tile in action-patterns.
-       push-tile-token         ;Stores the string used to indicate that the calling turtle pushed a tile in action-patterns.
-       remain-stationary-token ;Stores the string used to indicate that the calling turtle is remaining stationary.
-       surrounded-token        ;Stores the string used to indicate that the calling turtle is surrounded.
-       tile-born-every         ;Stores the length of time (in seconds) that must pass before a tile may possibly be created.
-       tile-birth-prob         ;Stores the probability that a hole will be created on each tick in the game.
-       tile-lifespan           ;Stores the length of time (in seconds) that a tile lives for after creation.
-       tile-token              ;Stores the string used to indicate that a tile can be seen in visual-patterns.
-       time-increment          ;Stores a value by which "current-training-time" and "current-game-time" should be incremented by when environment is updated.
-       training?               ;Stores boolean true or false: true if the game is a training game, false if not (true by default).
-       turtle-token            ;Stores the string used to indicate that a turtle can be seen in visual-patterns.
+       current-game-time           ;Stores the length of time (in seconds) that the non-training game has run for.
+       current-training-time       ;Stores the length of time (in seconds) that the training game has run for.
+       debug-indent-level          ;Stores the current indent level (3 spaces per indent) for debug messages.
+       hole-born-every             ;Stores the length of time (in seconds) that must pass before a hole may possibly be created.
+       hole-birth-prob             ;Stores the probability that a hole will be created on each tick in the game.
+       hole-lifespan               ;Stores the length of time (in seconds) that a hole lives for after creation. 
+       hole-token                  ;Stores the string used to indicate that a hole can be seen in visual-patterns.
+       move-purposefully-token     ;Stores the string used to indicate that the calling turtle moved purposefully in action-patterns.
+       move-randomly-token         ;Stores the string used to indicate that the calling turtle moved randomly in action-patterns.
+       movement-headings           ;Stores headings that agents can move.
+       move-around-tile-token      ;Stores the string used to indicate that the calling turtle moved around a tile in action-patterns.
+       move-to-tile-token          ;Stores the string used to indicate that the calling turtle moved to a tile in action-patterns.
+       push-tile-token             ;Stores the string used to indicate that the calling turtle pushed a tile in action-patterns.
+       remain-stationary-token     ;Stores the string used to indicate that the calling turtle is remaining stationary.
+       current-repeat-number       ;Stores the current repeat number.
+       current-scenario-number     ;Stores the current scenario number.
+       surrounded-token            ;Stores the string used to indicate that the calling turtle is surrounded.
+       tile-born-every             ;Stores the length of time (in seconds) that must pass before a tile may possibly be created.
+       tile-birth-prob             ;Stores the probability that a hole will be created on each tick in the game.
+       tile-lifespan               ;Stores the length of time (in seconds) that a tile lives for after creation.
+       tile-token                  ;Stores the string used to indicate that a tile can be seen in visual-patterns.
+       time-increment              ;Stores a value by which "current-training-time" and "current-game-time" should be incremented by when environment is updated.
+       training?                   ;Stores boolean true or false: true if the game is a training game, false if not (true by default).
+       turtle-token                ;Stores the string used to indicate that a turtle can be seen in visual-patterns.
      ]
 
      ;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -125,11 +127,207 @@ breed [ holes ]
        time-to-live    ;Stores the time (in seconds) that a hole has left before it dies.
      ]
 
-;************************************************;
-;************************************************;
-;********* SIMULATION SET-UP PROCEDURES *********;
-;************************************************;
-;************************************************;
+;*****************************************;
+;*****************************************;
+;********* SIMULATION PROCEDURES *********;
+;*****************************************;
+;*****************************************;
+
+     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+     ;;;;; "PLAY" PROCEDURE ;;;;;
+     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+     ;Enables Tileworld games to be played.  The game progresses in the following stages:
+     ;  1) Create new tiles and holes.
+     ;  2) CHREST turtles act:
+     ;    2.1) CHREST turtles determine if they are hidden or not:
+     ;      2.1.1) If not hidden, they determine if they are to perform an action in the future
+     ;         or now:
+     ;        2.1.1.1) If they are scheduled to perform an action in the future, they will not
+     ;                 do anything.
+     ;        2.1.1.2) If they are scheduled to perform an action now they will generate a visual
+     ;                 a visual pattern and check to see if this matches the visual pattern generated
+     ;                 when they decided on the action they are to perform now:
+     ;          2.1.1.2.1) If the current visual pattern matches the new visual pattern generated, the
+     ;                     CHREST turtle will perform their action and then deliberate about what to do
+     ;                     next.
+     ;          2.1.1.2.2) If the current visual pattern does not match the new visual pattern generated,
+     ;                     the CHREST turtle will not perform their action but will deliberate about what
+     ;                     to do next.
+     ;        2.1.1.3) If they are not scheduled to perform an action in the future or now, they 
+     ;                 will generate a visual pattern and deliberate about what to do next.
+     ;      2.1.2) If hidden they do not do anything.
+     ;    2.2) CHREST turtles update plots
+     ;  3) Update environment.
+     ;  4) Check end game condition.
+     ;
+     ;@author  Martyn Lloyd-Kelly <martynlloydkelly@gmail.com>
+     to play
+       set debug-indent-level 0
+       
+       ;;;;;;;;;;;;;;;;;;;;;
+       ;;; INITIAL SETUP ;;;
+       ;;;;;;;;;;;;;;;;;;;;;
+       
+       output-debug-message (word "CHECKING TO SEE IF THE GLOBAL 'current-scenario-number' AND 'current-repeat-number' VARIABLES ARE SET TO 0 (" current-scenario-number ", " current-repeat-number ")..." ) ("")
+       if((current-scenario-number = 0) and (current-repeat-number = 0))[
+         output-debug-message ("current-scenario-number and current-repeat-number are 0") ("")
+         __clear-all-and-reset-ticks
+         set current-scenario-number 1
+         set current-repeat-number 1
+         setup
+       ]
+       
+       ;;;;;;;;;;;;;;;;;;;;;;;;;;
+       ;;; UPDATE ENVIRONMENT ;;;
+       ;;;;;;;;;;;;;;;;;;;;;;;;;;
+       
+       output-debug-message ("UPDATING THE ENVIRONMENT...") ("")
+       update-environment
+       
+       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+       ;;; CHECK END GAME CONDITION ;;;
+       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+       
+       output-debug-message (word "CHECKING TO SEE IF THERE ARE ANY NON-TILE/HOLE TURTLES STILL PLAYING (VISIBLE) AND IF THE GLOBAL 'training?' VARIABLE (" training? ") IS SET TO TRUE...") ("")
+       ifelse(player-turtles-finished? and training?)[
+         output-debug-message (word "THERE ARE NO PLAYERS STILL VISIBLE AND THE GLOBAL 'training?' VARIABLE IS SET TO TRUE, SETTING 'training?' TO FALSE") ("")
+         set training? false
+         ask turtles [
+           set hidden? false
+         ]
+       ]
+       [
+         output-debug-message ("TURTLES MUST STILL BE PLAYING OR THE GLOBAL 'training?' VARIABLE IS SET TO FALSE...") ("")
+         output-debug-message ("CHECKING TO SEE IF ALL PLAYERS HAVE FINISHED PLAYING AND THAT 'training?' IS SET TO FALSE...") ("")
+         ifelse(player-turtles-finished? and not training?)[
+           
+           output-debug-message ("ALL PLAYERS HAVE FINISHED PLAYING AND THE GAME IS NOT BEING PLAYED IN A TRAINING CONTEXT...")("")
+           output-debug-message ("EXPORTING VIEW, OUTPUT AND WORLD DATA...")("")
+           export-interface (word "//home//martyn//netlogo-5.0.5//models/My Models//CHRESTTileworld//Results//Scenario" current-scenario-number "//Repeat" current-repeat-number "//Repeat" current-repeat-number ".png" )
+           export-output (word "//home//martyn//netlogo-5.0.5//models/My Models//CHRESTTileworld//Results//Scenario" current-scenario-number "//Repeat" current-repeat-number "//Repeat" current-repeat-number ".txt" )
+           export-world (word "//home//martyn//netlogo-5.0.5//models/My Models//CHRESTTileworld//Results//Scenario" current-scenario-number "//Repeat" current-repeat-number "//Repeat" current-repeat-number ".csv" )
+           
+           output-debug-message (word "INCREMENTING THE GLOBAL 'current-repeat-number' (" current-repeat-number ") BY 1...") ("")
+           set current-repeat-number (current-repeat-number + 1)
+           
+           output-debug-message ("SINCE THIS CYCLE HAS FINISHED ALL TURTLES SHOULD DIE, THE GLOBAL 'current-training-time' AND 'current-game-time' PLOTS SHOULD BE SET TO 0 AND ALL PLOTS SHOULD BE CLEARED...") ("")
+           clear-turtles
+           clear-output
+           set current-training-time 0
+           set current-game-time 0
+           clear-all-plots
+           
+           output-debug-message (word "CHECKING TO SEE IF GLOBAL 'current-repeat-number' VARIABLE VALUE (" current-repeat-number ") IS GREATER THAN THE GLOBAL 'total-number-of-repeats' (" total-number-of-repeats ") VARIABLE VALUE...") ("")
+           if(current-repeat-number > total-number-of-repeats)[
+             set current-scenario-number (current-scenario-number + 1)
+             set current-repeat-number 1
+           ]
+           
+           if(current-scenario-number > total-number-of-scenarios)[
+             stop
+           ]
+         
+           setup
+         ]
+         [
+           output-debug-message ("") ("") ;Blank to seperate time increments for readability.
+         
+           ifelse(training?)[
+             output-debug-message (word "========== TIME: " current-training-time " ==========") ("") 
+           ]
+           [
+             output-debug-message (word "========== TIME: " current-game-time " ==========" ) ("") 
+           ]
+           set debug-indent-level (debug-indent-level + 1)
+         
+           ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+           ;;; CREATE NEW TILES AND HOLES ;;;
+           ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+         
+           output-debug-message ("CHECKING TO SEE IF NEW TILES/HOLES SHOULD BE CREATED...") ("")
+           create-new-tiles-and-holes
+         
+           ;;;;;;;;;;;;;;;;;;;;;;;;;;
+           ;;; CHREST TURTLES ACT ;;;
+           ;;;;;;;;;;;;;;;;;;;;;;;;;;
+         
+           output-debug-message ("UPDATING 'chrest-turtles'...") ("")
+           set debug-indent-level (debug-indent-level + 1)
+           ask chrest-turtles [
+             output-debug-message ("Checking the value of my 'hidden?' variable.  If 'false' I should do something in this round, if 'true' I should do nothing...") (who)
+             output-debug-message (word "My 'hidden?' variable is set to: '" hidden? "'.") (who)
+             
+             if(not hidden?)[
+               output-debug-message (word "Since 'hidden?' is 'false' I should do something...") (who)
+               
+               output-debug-message ("Checking to see if I am scheduled to perform an action in the future...") (who)
+               ifelse(scheduled-to-perform-action-in-future?)[
+                 output-debug-message (word "I am scheduled to perfom an action in the future so I'll just update my plots.") (who)
+               ]
+               [
+                 output-debug-message ("Checking to see if I am scheduled to perform an action now...") (who)
+                 ifelse(scheduled-to-perform-action-now?)[
+                   output-debug-message (word "I'm scheduled to perform an action now.  I'll check to see if my environment has changed since I decided to perform '" next-action-to-perform "'...") (who)
+                   generate-current-visual-pattern
+                   
+                   output-debug-message (word "Checking to see if the value of my 'current-visual-pattern' variable (" current-visual-pattern ") matches the value of my 'visual-pattern-used-to-generate-action' variable (" visual-pattern-used-to-generate-action ")...") (who)
+                   if(current-visual-pattern = visual-pattern-used-to-generate-action)[
+                     output-debug-message (word "The values of my 'current-visual-pattern' and 'visual-pattern-used-to-generate-action' variables are equal so I'll perform '" next-action-to-perform "'...") (who)
+                     perform-action (next-action-to-perform)
+                     output-debug-message ("Now I need to update my 'current-visual-pattern' variable so I can decide on what to do next...") (who)
+                     generate-current-visual-pattern
+                   ]
+                   
+                   output-debug-message ("Now I need to decide upon what to do next...") (who)
+                   deliberate
+                 ]
+                 [
+                   output-debug-message (word "I am not scheduled to perform an action in the future or now so I'll just deliberate about what to do next...") (who)
+                   output-debug-message ("I need to update my 'current-visual-pattern' variable so I can decide on what to do next...") (who)
+                   generate-current-visual-pattern
+                   output-debug-message ("My 'current-visual-pattern' variable has been updated so I'll decide upon what to do next...") (who)
+                   deliberate
+                 ]
+               ]
+               
+               output-debug-message ("Updating my plots...") (who)
+               update-plot "Scores" score
+               update-plot "Num Visual-Action Links" (chrest:get-ltm-modality-num-action-links "visual")
+               update-plot "Visual LTM Size" (chrest:get-ltm-modality-size "visual")
+               update-plot "Visual LTM Avg. Depth" (chrest:get-ltm-modality-avg-depth "visual")
+               update-plot "Action LTM Size" (chrest:get-ltm-modality-size "action")
+               update-plot "Action LTM Avg. Depth" (chrest:get-ltm-modality-avg-depth "action")
+               update-plot "Visual STM Size" (chrest:get-stm-modality-size "visual")
+               update-plot "Action STM Size" (chrest:get-stm-modality-size "action")
+             ]
+           ]
+           
+           ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+           ;;; WRITE VALUES OF INTEREST TO OUTPUT ;;;
+           ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+           
+           if( ((report-current-time mod 3600) = 0) and (report-current-time != 0)  )[
+             let num-visual-action-links-for-each-turtle []
+             let visual-ltm-size-for-each-turtle []
+             let visual-ltm-avg-depth-for-each-turtle []
+             
+             ask chrest-turtles[
+               set num-visual-action-links-for-each-turtle (lput (chrest:get-ltm-modality-num-action-links "visual") (num-visual-action-links-for-each-turtle))
+               set visual-ltm-size-for-each-turtle (lput (chrest:get-ltm-modality-size "visual") (visual-ltm-size-for-each-turtle))
+               set visual-ltm-avg-depth-for-each-turtle (lput (chrest:get-ltm-modality-avg-depth "visual") (visual-ltm-avg-depth-for-each-turtle))
+             ]
+             
+             output-print (word "Average number of visual-action links @ " report-current-time " = " (precision ( (reduce + num-visual-action-links-for-each-turtle) / (length num-visual-action-links-for-each-turtle) ) (2) ) )
+             output-print (word "Average number of nodes in visual LTM @ " report-current-time " = " (precision ( (reduce + visual-ltm-size-for-each-turtle) / (length visual-ltm-size-for-each-turtle) ) (2) ) )
+             output-print (word "Average depth of visual LTM @ " report-current-time " = " (precision ( (reduce + visual-ltm-avg-depth-for-each-turtle) / (length visual-ltm-avg-depth-for-each-turtle) ) (2) ) ) 
+           ]
+           
+           update-time
+           set debug-indent-level (debug-indent-level - 1)
+         ]
+       ]
+     end
 
      ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
      ;;;;; "SETUP" PROCEDURE ;;;;;
@@ -147,16 +345,6 @@ breed [ holes ]
      to setup
        set debug-indent-level 0
        output-debug-message ("EXECUTING THE 'setup' PROCEDURE...") ("")
-       
-       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-       ;;; CLEAR ALL MODEL VARIABLES ;;;
-       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-  
-       ;For this model to work with NetLogo's new plotting features,
-       ;"__clear-all-and-reset-ticks" should be replaced with "clear-all" 
-       ;at the beginning of your setup procedure and "reset-ticks" at the 
-       ;end of the procedure.
-       __clear-all-and-reset-ticks
        
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
        ;;; SET GLOBAL AND TURTLE-SPECIFIC VARIABLES USING HARD-CODED VALUES ;;;
@@ -203,7 +391,7 @@ breed [ holes ]
        ;;; SET GLOBAL AND TURTLE-SPECIFIC VARIABLES USING USER-SPECIFIED VALUES ;;;
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
        
-       setup-environment-using-user-selected-file
+       setup-independent-variables
        
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
        ;;; CHECK FOR VALID USER-SPECIFIED GLOBAL VARIABLE VALUES ;;;
@@ -298,19 +486,28 @@ breed [ holes ]
             ]
           end
      
-          ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-          ;;;;; "SETUP-ENVIRONMENT-USING-USER-SELECTED-FILE" PROCEDURE ;;;;;
-          ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+          ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+          ;;;;; "SETUP-INDEPENDENT-VARIABLES" PROCEDURE ;;;;;
+          ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-          ;Sets various global and turtle variables using an external .txt file selected
-          ;by the user.
+          ;Sets various global and turtle independent variables using an external .txt 
+          ;file.  If the 'auto-setup?' interface switch is set to 'off' then the user 
+          ;will be presented with a file browser window so they can select the set-up 
+          ;file to be used.  If the 'auto-setup?' interface switch is set to 'on' then
+          ;the file to be used will follow the steps outlined in this procedure.
           ;
           ;TODO: This could be extracted into its own extension for use by the Netlogo community.
           ;
           ;@author  Martyn Lloyd-Kelly <martynlloydkelly@gmail.com>
-          to setup-environment-using-user-selected-file
+          to setup-independent-variables
             file-close ;This must be done just in case the previous file errored out (Netlogo does not reset file pointers automatically).
-            file-open user-file
+            
+            ifelse(auto-setup?)[
+              file-open (word "//home//martyn//netlogo-5.0.5//models/My Models//CHRESTTileworld//Results//Scenario" current-scenario-number "//Scenario" current-scenario-number "Settings.txt" )
+            ]
+            [
+              file-open user-file
+            ]
             
             let variable-name ""
             
@@ -475,140 +672,6 @@ breed [ holes ]
             set-plot-pen-interval time-increment
             set-plot-pen-color color
           end
-
-;*********************************************;
-;*********************************************;
-;********* RUN SIMULATION PROCEDURES *********;
-;*********************************************;
-;*********************************************;
-
-     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-     ;;;;; "PLAY" PROCEDURE ;;;;;
-     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-     ;Enables Tileworld games to be played.  The game progresses in the following stages:
-     ;  1) Create new tiles and holes.
-     ;  2) CHREST turtles act:
-     ;    2.1) CHREST turtles determine if they are hidden or not:
-     ;      2.1.1) If not hidden, they determine if they are to perform an action in the future
-     ;         or now:
-     ;        2.1.1.1) If they are scheduled to perform an action in the future, they will not
-     ;                 do anything.
-     ;        2.1.1.2) If they are scheduled to perform an action now they will generate a visual
-     ;                 a visual pattern and check to see if this matches the visual pattern generated
-     ;                 when they decided on the action they are to perform now:
-     ;          2.1.1.2.1) If the current visual pattern matches the new visual pattern generated, the
-     ;                     CHREST turtle will perform their action and then deliberate about what to do
-     ;                     next.
-     ;          2.1.1.2.2) If the current visual pattern does not match the new visual pattern generated,
-     ;                     the CHREST turtle will not perform their action but will deliberate about what
-     ;                     to do next.
-     ;        2.1.1.3) If they are not scheduled to perform an action in the future or now, they 
-     ;                 will generate a visual pattern and deliberate about what to do next.
-     ;      2.1.2) If hidden they do not do anything.
-     ;    2.2) CHREST turtles update plots
-     ;  3) Update environment.
-     ;  4) Check end game condition.
-     ;
-     ;@author  Martyn Lloyd-Kelly <martynlloydkelly@gmail.com>
-     to play
-       
-       set debug-indent-level 0
-       
-       output-debug-message ("") ("") ;Blank to seperate time increments for readability.
-       ifelse(training?)[
-         output-debug-message (word "========== TIME: " current-training-time " ==========") ("") 
-       ]
-       [
-         output-debug-message (word "========== TIME: " current-game-time " ==========" ) ("") 
-       ]
-       set debug-indent-level (debug-indent-level + 1)
-       
-       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-       ;;; CREATE NEW TILES AND HOLES ;;;
-       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-       
-       output-debug-message ("CHECKING TO SEE IF NEW TILES/HOLES SHOULD BE CREATED...") ("")
-       create-new-tiles-and-holes
-       
-       ;;;;;;;;;;;;;;;;;;;;;;;;;;
-       ;;; CHREST TURTLES ACT ;;;
-       ;;;;;;;;;;;;;;;;;;;;;;;;;;
-       
-       output-debug-message ("UPDATING 'chrest-turtles'...") ("")
-       set debug-indent-level (debug-indent-level + 1)
-       ask chrest-turtles [
-         output-debug-message ("Checking the value of my 'hidden?' variable.  If 'false' I should do something in this round, if 'true' I should do nothing...") (who)
-         output-debug-message (word "My 'hidden?' variable is set to: '" hidden? "'.") (who)
-         
-         if(not hidden?)[
-           output-debug-message (word "Since 'hidden?' is 'false' I should do something...") (who)
-           
-           output-debug-message ("Checking to see if I am scheduled to perform an action in the future...") (who)
-           ifelse(scheduled-to-perform-action-in-future?)[
-             output-debug-message (word "I am scheduled to perfom an action in the future so I'll just update my plots.") (who)
-           ]
-           [
-             output-debug-message ("Checking to see if I am scheduled to perform an action now...") (who)
-             ifelse(scheduled-to-perform-action-now?)[
-               output-debug-message (word "I'm scheduled to perform an action now.  I'll check to see if my environment has changed since I decided to perform '" next-action-to-perform "'...") (who)
-               generate-current-visual-pattern
-               
-               output-debug-message (word "Checking to see if the value of my 'current-visual-pattern' variable (" current-visual-pattern ") matches the value of my 'visual-pattern-used-to-generate-action' variable (" visual-pattern-used-to-generate-action ")...") (who)
-               if(current-visual-pattern = visual-pattern-used-to-generate-action)[
-                 output-debug-message (word "The values of my 'current-visual-pattern' and 'visual-pattern-used-to-generate-action' variables are equal so I'll perform '" next-action-to-perform "'...") (who)
-                 perform-action (next-action-to-perform)
-                 output-debug-message ("Now I need to update my 'current-visual-pattern' variable so I can decide on what to do next...") (who)
-                 generate-current-visual-pattern
-               ]
-               
-               output-debug-message ("Now I need to decide upon what to do next...") (who)
-               deliberate
-             ]
-             [
-               output-debug-message (word "I am not scheduled to perform an action in the future or now so I'll just deliberate about what to do next...") (who)
-               output-debug-message ("I need to update my 'current-visual-pattern' variable so I can decide on what to do next...") (who)
-               generate-current-visual-pattern
-               output-debug-message ("My 'current-visual-pattern' variable has been updated so I'll decide upon what to do next...") (who)
-               deliberate
-             ]
-           ]
-           
-           output-debug-message ("Updating my plots...") (who)
-           update-plot "Scores" score
-           update-plot "Num Visual-Action Links" (chrest:get-ltm-modality-num-action-links "visual")
-           update-plot "Visual LTM Size" (chrest:get-ltm-modality-size "visual")
-           update-plot "Visual LTM Avg. Depth" (chrest:get-ltm-modality-avg-depth "visual")
-           update-plot "Action LTM Size" (chrest:get-ltm-modality-size "action")
-           update-plot "Action LTM Avg. Depth" (chrest:get-ltm-modality-avg-depth "action")
-           update-plot "Visual STM Size" (chrest:get-stm-modality-size "visual")
-           update-plot "Action STM Size" (chrest:get-stm-modality-size "action")
-         ]
-       ]
-       set debug-indent-level (debug-indent-level - 1)
-       
-       ;;;;;;;;;;;;;;;;;;;;;;;;;;
-       ;;; UPDATE ENVIRONMENT ;;;
-       ;;;;;;;;;;;;;;;;;;;;;;;;;;
-       
-       output-debug-message ("UPDATING THE ENVIRONMENT...") ("")
-       update-environment
-       
-       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-       ;;; CHECK END GAME CONDITION ;;;
-       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-       
-       output-debug-message ("CHECKING TO SEE IF THERE ARE ANY NON-TILE/HOLE TURTLES STILL PLAYING (VISIBLE)...") ("")
-       if(player-turtles-finished?)[
-         stop
-       ]
-     end
-     
-     ;*******************************;
-     ;*******************************;
-     ;**** "PLAY" SUB-PROCEDURES ****;
-     ;*******************************;
-     ;*******************************;
      
           ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
           ;;;;; "CREATE-NEW-TILES-AND-HOLES" PROCEDURE ;;;;;
@@ -744,16 +807,19 @@ breed [ holes ]
                       set debug-indent-level (debug-indent-level + 1)
                       output-debug-message ("EXECUTING THE 'place-randomly' PROCEDURE...") ("")
                       set debug-indent-level (debug-indent-level + 1)
-            
-                      setxy random-pxcor random-pycor
-                      output-debug-message (word "I've set my xcor to: '" xcor "' and ycor to '" ycor "'.  Checking to see if this patch is free..." ) (who)
-            
-                      while[ ( count (turtles-here with [hidden? = false]) ) > 1][
-                        output-debug-message (word "The patch with xcor: '" xcor "' and ycor '" ycor "'.  Already has a visible turtle on it, selecting new values for my 'xcor' and 'ycor' variables..." ) (who)
+                      
+                      output-debug-message ("CHECKING TO SEE IF THERE ARE ANY FREE PATCHES...") ("")
+                      if(any? turtles-on patches)[
+                        output-debug-message ("FREE PATCHES AVAILABLE...")("")
                         setxy random-pxcor random-pycor
-                      ]
-                      output-debug-message(word "Patch with xcor '" xcor "' and ycor '" ycor "' does not contain any visible turtles so I'm staying here.") (who)
+                        output-debug-message (word "I've set my xcor to: '" xcor "' and ycor to '" ycor "'.  Checking to see if this patch is free..." ) (who)
             
+                        while[ ( count (turtles-here with [hidden? = false]) ) > 1][
+                          output-debug-message (word "The patch with xcor: '" xcor "' and ycor '" ycor "'.  Already has a visible turtle on it, selecting new values for my 'xcor' and 'ycor' variables..." ) (who)
+                          setxy random-pxcor random-pycor
+                        ]
+                        output-debug-message(word "Patch with xcor '" xcor "' and ycor '" ycor "' does not contain any visible turtles so I'm staying here.") (who)
+                      ]
                       set debug-indent-level (debug-indent-level - 2)
                     end
           
@@ -2291,30 +2357,17 @@ breed [ holes ]
          ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
          
          ;Updates the current simulation environment by:
-         ; 1) Incrementing the current time in either a training or non-training context by 
-         ;    the value specified in the global 'time-incremenet' variable
-         ; 2) Decreasing the lifespan of tiles and holes by the value specified in the global 
+         ; 1) Decreasing the lifespan of tiles and holes by the value specified in the global 
          ;    'time-incremenet' variable
-         ; 3) Hiding all non "tiles" and "holes" turtle breeds if their 'training-time' or
-         ;    'game-time' variable values are less than or equal to the 'current-training-time'
+         ; 2) Hiding all non "tiles" and "holes" turtle breeds if their 'training-time' or
+         ;    'game-time' variable values are greater than the 'current-training-time'
          ;    or 'current-game-time" variable values.
-         ; 4) Ending the game if no non "tiles" and "holes" turtle breeds are visble.
+         ;
+         ;@author Martyn Lloyd-Kelly <martynlloydkelly@gmail.com>
          to update-environment
            set debug-indent-level (debug-indent-level + 1)
            output-debug-message ("EXECUTING 'update-environment' PROCEDURE...") ("")
            set debug-indent-level (debug-indent-level + 1)
-           output-debug-message(word "CHECKING TO SEE IF GAME IS BEING PLAYED IN TRAINING CONTEXT I.E IS THE GLOBAL 'training?' VARIABLE (" training? ") SET TO TRUE?") ("")
-           
-           ifelse(training?)[
-             output-debug-message (word "GAME IS BEING PLAYED IN TRAINING CONTEXT.  INCREMENTING GLOBAL 'current-training-time' VARIABLE (" current-training-time ") BY GLOBAL 'time-increment' VARIABLE (" time-increment ")...") ("")
-             set current-training-time ( precision (current-training-time + time-increment) (1) )
-             output-debug-message (word "GLOBAL 'current-training-time' VARIABLE NOW SET TO: " current-training-time ".") ("")
-           ]
-           [
-             output-debug-message (word "GAME IS BEING PLAYED IN NON-TRAINING CONTEXT.  INCREMENTING GLOBAL 'current-game-time' VARIABLE (" current-game-time ") BY GLOBAL 'time-increment' VARIABLE (" time-increment ")...") ("")
-             set current-game-time ( precision (current-game-time + time-increment) (1) )
-             output-debug-message (word "GLOBAL 'current-game-time' VARIABLE NOW SET TO: " current-game-time ".") ("")
-           ]
            
            output-debug-message ("ASKING ALL TILES AND HOLES TO AGE...") ("")
            ask tiles [age]
@@ -2326,16 +2379,16 @@ breed [ holes ]
              output-debug-message (word "Checking to see if I am playing the game in a training context i.e is the global 'training?' variable (" training? ") set to true?") (who)
              ifelse(training?)[
                output-debug-message (word "I am playing the game in a training context so I need to check and see if my 'training-time' variable (" training-time ") is less than or equal to the global 'current-training-time' variable (" current-training-time ").") (who)
-               if(training-time <= current-training-time)[
-                 output-debug-message ("My 'training-time' variable is equal to the global 'current-training-time' value so I'll set my 'hidden?' variable to true...") (who)
+               if(current-training-time > training-time)[
+                 output-debug-message ("My 'training-time' variable is less than or equal to the global 'current-training-time' value so I'll set my 'hidden?' variable to true...") (who)
                  set hidden? true
                ]
                
              ]
              [
                output-debug-message (word "I am playing the game in a non-training context so I need to check and see if my 'play-time' variable (" play-time ") is less than or equal to the global 'current-game-time' variable (" current-game-time ").") (who)
-               if(play-time <= current-game-time)[
-                 output-debug-message ("My 'play-time' variable is equal to the global 'current-game-time' value so I'll set my 'hidden?' variable to true...") (who)
+               if(current-game-time > play-time)[
+                 output-debug-message ("My 'play-time' variable is less than or equal to the global 'current-game-time' value so I'll set my 'hidden?' variable to true...") (who)
                  set hidden? true
                ]
              ]
@@ -2367,6 +2420,34 @@ breed [ holes ]
            set-current-plot-pen (word "Turtle " who)
            plot value
            
+           set debug-indent-level (debug-indent-level - 2)
+         end
+         
+         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+         ;;;;; "UPDATE-TIME" PROCEDURE ;;;;;
+         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+         
+         ;Determines whether the game is being played in a training or non-training
+         ;context and updates the time according to the time-increment specified in
+         ;the external settings file.
+         ; 
+         ;@author Martyn Lloyd-Kelly <martynlloydkelly@gmail.com>
+         to update-time
+           set debug-indent-level (debug-indent-level + 1)
+           output-debug-message ("EXECUTING 'update-environment' PROCEDURE...") ("")
+           set debug-indent-level (debug-indent-level + 1)
+           output-debug-message(word "CHECKING TO SEE IF GAME IS BEING PLAYED IN TRAINING CONTEXT I.E IS THE GLOBAL 'training?' VARIABLE (" training? ") SET TO TRUE?") ("")
+           
+           ifelse(training?)[
+             output-debug-message (word "GAME IS BEING PLAYED IN TRAINING CONTEXT.  INCREMENTING GLOBAL 'current-training-time' VARIABLE (" current-training-time ") BY GLOBAL 'time-increment' VARIABLE (" time-increment ")...") ("")
+             set current-training-time ( precision (current-training-time + time-increment) (1) )
+             output-debug-message (word "GLOBAL 'current-training-time' VARIABLE NOW SET TO: " current-training-time ".") ("")
+           ]
+           [
+             output-debug-message (word "GAME IS BEING PLAYED IN NON-TRAINING CONTEXT.  INCREMENTING GLOBAL 'current-game-time' VARIABLE (" current-game-time ") BY GLOBAL 'time-increment' VARIABLE (" time-increment ")...") ("")
+             set current-game-time ( precision (current-game-time + time-increment) (1) )
+             output-debug-message (word "GLOBAL 'current-game-time' VARIABLE NOW SET TO: " current-game-time ".") ("")
+           ]
            set debug-indent-level (debug-indent-level - 2)
          end
          
@@ -2403,9 +2484,9 @@ breed [ holes ]
   
 @#$#@#$#@
 GRAPHICS-WINDOW
-147
+349
 10
-577
+779
 461
 17
 17
@@ -2429,27 +2510,10 @@ GRAPHICS-WINDOW
 ticks
 30.0
 
-BUTTON
-12
-10
-93
-43
-NIL
-setup
-NIL
-1
-T
-OBSERVER
-NIL
-NIL
-NIL
-NIL
-1
-
 PLOT
-579
+780
 10
-805
+1006
 174
 Scores
 Time
@@ -2465,10 +2529,10 @@ PENS
 
 BUTTON
 12
-43
-93
-76
-NIL
+250
+85
+283
+Play
 play
 T
 1
@@ -2481,9 +2545,9 @@ NIL
 1
 
 PLOT
-579
+780
 324
-739
+940
 471
 Visual LTM Size
 Time
@@ -2498,9 +2562,9 @@ false
 PENS
 
 PLOT
-899
+1100
 324
-1059
+1260
 471
 Visual LTM Avg. Depth
 Time
@@ -2515,10 +2579,10 @@ false
 PENS
 
 MONITOR
-12
-114
-143
-159
+218
+100
+349
+145
 Training Time (s)
 current-training-time
 1
@@ -2526,9 +2590,9 @@ current-training-time
 11
 
 PLOT
-739
+940
 324
-899
+1100
 471
 Action LTM Size
 Time
@@ -2543,9 +2607,9 @@ false
 PENS
 
 PLOT
-1059
+1260
 324
-1219
+1420
 471
 Action LTM Avg. Depth
 Time
@@ -2560,10 +2624,10 @@ false
 PENS
 
 MONITOR
-12
-159
-143
-204
+218
+145
+349
+190
 Non-training Time (s)
 current-game-time
 1
@@ -2571,10 +2635,10 @@ current-game-time
 11
 
 MONITOR
-13
-294
-143
-339
+219
+280
+349
+325
 Tile Birth Prob.
 tile-birth-prob
 1
@@ -2582,10 +2646,10 @@ tile-birth-prob
 11
 
 MONITOR
-13
-339
-143
-384
+219
+325
+349
+370
 Hole Birth Prob
 hole-birth-prob
 17
@@ -2593,10 +2657,10 @@ hole-birth-prob
 11
 
 MONITOR
-13
-384
-143
-429
+219
+370
+349
+415
 Tile Lifespan (s)
 tile-lifespan
 1
@@ -2604,10 +2668,10 @@ tile-lifespan
 11
 
 MONITOR
-13
-429
-143
-474
+219
+415
+349
+460
 Hole Lifespan (s)
 hole-lifespan
 1
@@ -2615,9 +2679,9 @@ hole-lifespan
 11
 
 PLOT
-804
+1005
 10
-1030
+1231
 174
 Num Visual-Action Links
 Time
@@ -2632,10 +2696,10 @@ false
 PENS
 
 MONITOR
-12
-204
-143
-249
+218
+190
+349
+235
 Tile Born Every (s)
 tile-born-every
 1
@@ -2643,10 +2707,10 @@ tile-born-every
 11
 
 MONITOR
-13
-249
-143
-294
+219
+235
+349
+280
 Hole Born Every (s)
 hole-born-every
 1
@@ -2655,9 +2719,9 @@ hole-born-every
 
 SWITCH
 12
-78
-122
-111
+10
+138
+43
 debug?
 debug?
 1
@@ -2665,9 +2729,9 @@ debug?
 -1000
 
 PLOT
-579
+780
 174
-739
+940
 324
 Visual STM Size
 Time
@@ -2682,9 +2746,9 @@ false
 PENS
 
 PLOT
-739
+940
 174
-899
+1100
 324
 Action STM Size
 Time
@@ -2697,6 +2761,85 @@ true
 false
 "" ""
 PENS
+
+SWITCH
+12
+42
+138
+75
+auto-setup?
+auto-setup?
+0
+1
+-1000
+
+MONITOR
+218
+10
+349
+55
+Scenario Number
+current-scenario-number
+17
+1
+11
+
+MONITOR
+218
+55
+349
+100
+Repeat Number
+current-repeat-number
+17
+1
+11
+
+INPUTBOX
+12
+88
+152
+148
+total-number-of-scenarios
+27
+1
+0
+Number
+
+INPUTBOX
+12
+148
+152
+208
+total-number-of-repeats
+10
+1
+0
+Number
+
+BUTTON
+12
+214
+85
+247
+Reset
+clear-all
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
+
+OUTPUT
+12
+289
+213
+460
+12
 
 @#$#@#$#@
 # CHREST Tileworld  
