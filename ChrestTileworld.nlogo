@@ -1250,8 +1250,7 @@ breed [ holes ]
                   output-debug-message (word "The patch ahead with heading " heading " is either free or has a tile that can be pushed on it.  Checking to see if I need to push a tile or not...") (who)
                 
                   ifelse(any-tiles-on-patch-ahead?)[
-                    output-debug-message ("Since there is a tile on the patch immediately along my current heading, I'll set this to be my closest-tile so that it is pushed when the 'push-tile' action I'm to generate is performed..." ) (who)
-                    set closest-tile (tiles-on patch-at-heading-and-distance (heading) (1))
+                    output-debug-message ("Since there is a tile on the patch immediately along my current heading, I'll push this tile out of the way..." ) (who)
                     output-debug-message ("Generating the action pattern...") (who)
                     set action-pattern (chrest:create-item-square-pattern push-tile-token heading 1)
                   ]
@@ -1820,7 +1819,7 @@ breed [ holes ]
                 output-debug-message (word "'" action "' is equal to: '" push-tile-token "' so I'll execute the 'push-tile' procedure if my'closest-tile' variable is not empty (" closest-tile ")...") (who)
                 ifelse(closest-tile != "")[
                   output-debug-message ("My 'closest-tile' variable is not empty so I'll push this tile...") (who)
-                  push-tile
+                  push-tile (heading-to-move-along)
                 ]
                 [
                   output-debug-message ("My 'closest-tile' variable is empty so I won't do anything...") (who)
@@ -1916,54 +1915,48 @@ breed [ holes ]
           ;when the calling turtle checks the patch that is 1 patch away in its current heading,
           ;it will see that the tile occupies this patch and will not move.
           ;
-          ;         
-          to push-tile 
+          ;         Name              Data Type     Description
+          ;         ----              ---------     -----------
+          ;@params  push-heading      Number        The heading that the pusher should set its heading
+          ;                                         to in order to push the tile in question.
+          to push-tile [push-heading]
             set debug-indent-level (debug-indent-level + 1)
             output-debug-message ("EXECUTING THE 'push-tile' PROCEDURE...") ("")
             set debug-indent-level (debug-indent-level + 1)
             
-            ;The value of 'closest-tile' will still be equal to the closest tile that was 
-            ;decided upon when the "push-tile" or "push-closest-tile-to-closest-hole" action
-            ;was generated.
-            output-debug-message( word "My closest tile's 'who' variable value is:" [who] of closest-tile ". Attempting to push this tile 1 patch forward...") (who)
+            output-debug-message( word "Setting my heading to the value contained in the local 'push-heading' variable: " push-heading "...") (who)
+            set heading (push-heading)
+            output-debug-message (word "My 'heading' variable is now set to:" heading ".  Checking to see if there is a tile immediately ahead that I can push...") (who)
             
-            ask closest-tile[
-              output-debug-message ("I am the tile to be pushed.") (who)
-              output-debug-message (word "Setting my 'heading' variable value to that of the pusher (" [heading] of myself ")...") (who)
-              set heading [heading] of myself ;The tile's heading used to be set to 'heading-to-tile' which was a parameter passed.
-              output-debug-message (word "My 'heading' variable value is now set to: " heading ".") (who)
-              output-debug-message (word "Checking to see if there are any holes immediately ahead of me with this heading (" any? holes-on patch-ahead 1 ")...") (who)
+            if(any? tiles-on patch-at-heading-and-distance (heading) (1))[
+              output-debug-message (word "There is a tile immediately ahead along heading " heading ".  Pushing this tile...") (who)
               
-              ifelse( any? holes-on patch-ahead 1 )[
-                output-debug-message (word "There is a hole 1 patch ahead with my current heading (" heading ") so I'll move onto that patch, the hole will die, turtle " [who] of myself "'s 'score' will increase by 1 and I will die.") (who)
-                forward 1
-                ask holes-here[ die ]
-                ask myself [ set score score + 1 ]
-                die
-              ]
-              [
-                output-debug-message (word "There are no holes on the patch immediately ahead of me with heading " heading " so I need to check and see if the way is clear so I can move forward...") (who)
-                
-                if( way-clear? )[
-                  output-debug-message (word "There is nothing immediately in front of me so I should move forward by 1 patch") (who)
+              ask tiles-on patch-at-heading-and-distance (heading) (1)[
+                output-debug-message ("I am the tile to be pushed.") (who)
+                output-debug-message (word "Setting my 'heading' variable value to that of the pusher (" [heading] of myself ")...") (who)
+                set heading [heading] of myself ;The tile's heading used to be set to 'heading-to-tile' which was a parameter passed.
+                output-debug-message (word "My 'heading' variable value is now set to: " heading ".") (who)
+                output-debug-message (word "Checking to see if there are any holes immediately ahead of me with this heading (" any? holes-on patch-ahead 1 ")...") (who)
+              
+                ifelse( any? holes-on patch-ahead 1 )[
+                  output-debug-message (word "There is a hole 1 patch ahead with my current heading (" heading ") so I'll move onto that patch, the hole will die, turtle " [who] of myself "'s 'score' will increase by 1 and I will die.") (who)
+                  forward 1
+                  ask holes-here[ die ]
+                  ask myself [ set score score + 1 ]
+                  die
+                ]
+                [
+                  ;No need to check if the way is clear since the pusher will have already
+                  ;done this.  If the patch ahead of the tile along its current heading 
+                  ;is not free, this procedure would not have been run.
+                  output-debug-message (word "There are no holes on the patch immediately ahead of me with heading " heading " so I'll move forward by 1 patch...") (who)
                   forward 1
                 ]
               ]
             ]
-            
-            ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-            ;; It may be possible now to negate the way-clear check since the turtle ;;
-            ;; checks to see if the tile can be pushed otherwise it generates a ;;;;;;;
-            ;; 'move-around-tile" action. ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-            ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-              
-;            output-debug-message ("Checking to see if I've been able to push my closest tile by seeing if the way ahead is clear...") (who)
-;            ifelse(way-clear?)[
-;              output-debug-message (word "OK, there is nothing in front of me along my current heading (" heading ") and I wanted to push my tile so it must have been pushed...") (who)
-;              output-debug-message (word "I should also move forward by 1 patch...") (who)
-;              forward 1
-;            ]
 
+            ;The way ahead will now be free since, if the tile was blocked, the pusher
+            ;would not have executed this procedure.
             output-debug-message (word "I should also move forward by 1 patch...") (who)
             forward 1
             
@@ -2477,7 +2470,7 @@ BUTTON
 76
 NIL
 play
-T
+NIL
 1
 T
 OBSERVER
@@ -2667,7 +2660,7 @@ SWITCH
 111
 debug?
 debug?
-1
+0
 1
 -1000
 
