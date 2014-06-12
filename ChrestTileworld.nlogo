@@ -11,9 +11,8 @@
 ;TODO: Have turtles decide between using learnt action patterns or to deliberate about next action.
 ;      Currently, if a visual-pattern has:
 ;      - No associated action-pattern, the turtle it will deliberate about what to do.
-;      - One associated action-pattern, the turtle will perform the action.
-;      - More than one associated action-pattern: the turtle will pick one at random and perform it.
-;TODO: Implement non-training game cycle.
+;      - One or more associated action-patterns: the turtle will perform one of these actions or deliberate 
+;        about what to do to prevent rigid behaviour.
 ;TODO: Determine how long it should take to reinforce a link between two patterns.
 ;TODO: Implement decision-making times for heuristics and add this to the time it takes to perform an action when
 ;      the action is loaded.
@@ -21,8 +20,12 @@
 ;TODO: Should turtles generate visual patterns if they are scheduled to perform an action in the future?  Check with
 ;      Peter and Fernand.
 ;TODO: Extract action-pattern creation into independent procedures so code is DRY.
-;TODO: Closest tile still throws an error since a dead tile is not removed from a turtle's closest-tile variable
-;      despite the "fix" implemented.
+;TODO: Should contents of 'closest-tile', 'current-visual-pattern', 'next-action-to-perform' and 
+;      'visual-pattern-used-to-generate-action' variables be stored in a STM modality rather than a turtle variable?
+;TODO: Implement hash table to keep track of action patterns that have been performed in response to visual patterns.
+;      The size of this table should be limited to 30 and should be cleared whenever a hole is filled or whenever a
+;      hole disappears.  Should operate on FIFO principle.
+
 
 ;******************************************;
 ;******************************************;
@@ -30,7 +33,7 @@
 ;******************************************;
 ;******************************************;
 
-extensions [ chrest string ]
+extensions [ chrest pathdir string ]
 
 ;**************************************;
 ;**************************************;
@@ -55,21 +58,28 @@ breed [ holes ]
      
      globals [
        current-game-time           ;Stores the length of time (in seconds) that the non-training game has run for.
+       current-repeat-number       ;Stores the current repeat number.
+       current-scenario-number     ;Stores the current scenario number.
        current-training-time       ;Stores the length of time (in seconds) that the training game has run for.
        debug-indent-level          ;Stores the current indent level (3 spaces per indent) for debug messages.
+       directory-separator         ;Stores the directory separator for the operating system the model is being run on.
        hole-born-every             ;Stores the length of time (in seconds) that must pass before a hole may possibly be created.
        hole-birth-prob             ;Stores the probability that a hole will be created on each tick in the game.
        hole-lifespan               ;Stores the length of time (in seconds) that a hole lives for after creation. 
        hole-token                  ;Stores the string used to indicate that a hole can be seen in visual-patterns.
        move-purposefully-token     ;Stores the string used to indicate that the calling turtle moved purposefully in action-patterns.
        move-randomly-token         ;Stores the string used to indicate that the calling turtle moved randomly in action-patterns.
-       movement-headings           ;Stores headings that agents can move.
+       movement-headings           ;Stores headings that agents can move along.
        move-around-tile-token      ;Stores the string used to indicate that the calling turtle moved around a tile in action-patterns.
        move-to-tile-token          ;Stores the string used to indicate that the calling turtle moved to a tile in action-patterns.
+       output-interval             ;Stores the interval of time that must pass before data is output to the model's output area.
        push-tile-token             ;Stores the string used to indicate that the calling turtle pushed a tile in action-patterns.
        remain-stationary-token     ;Stores the string used to indicate that the calling turtle is remaining stationary.
-       current-repeat-number       ;Stores the current repeat number.
-       current-scenario-number     ;Stores the current scenario number.
+       results-directory           ;Stores the directory that results are to be output to.
+       save-interface?             ;Stores a boolean value that indicates whether the user wishes to save an image of the interface when running the model.
+       save-output-data?           ;Stores a boolean value that indicates whether the user wishes to save output data when running the model.
+       save-training-data?         ;Stores a boolean value that indicates whether or not data should be saved when training completes.
+       save-world-data?            ;Stores a boolean value that indicates whether the user wishes to save world data when running the model.
        surrounded-token            ;Stores the string used to indicate that the calling turtle is surrounded.
        tile-born-every             ;Stores the length of time (in seconds) that must pass before a tile may possibly be created.
        tile-birth-prob             ;Stores the probability that a hole will be created on each tick in the game.
@@ -92,8 +102,6 @@ breed [ holes ]
        chrest-instance                              ;Stores an instance of the CHREST architecture.
        closest-tile                                 ;Stores an agentset consisting of the closest tile to the calling turtle when the 'next-to-tile' procedure is called.
        current-visual-pattern                       ;Stores the current visual pattern that has been generated.
-       destination-x                                ;Stores the x-coordinate the turtle is heading towards.
-       destination-y                                ;Stores the y-coordinate the turtle is heading towards.
        discrimination-time                          ;Stores the length of time (in seconds) that the CHREST turtle takes to discriminate a new node in LTM.
        familiarisation-time                         ;Stores the length of time (in seconds) that the CHREST turtle takes to familiarise a node in LTM.
        next-action-to-perform                       ;Stores the action-pattern that the turtle is to perform next.
@@ -171,11 +179,56 @@ breed [ holes ]
        
        output-debug-message (word "CHECKING TO SEE IF THE GLOBAL 'current-scenario-number' AND 'current-repeat-number' VARIABLES ARE SET TO 0 (" current-scenario-number ", " current-repeat-number ")..." ) ("")
        if((current-scenario-number = 0) and (current-repeat-number = 0))[
-         output-debug-message ("current-scenario-number and current-repeat-number are 0") ("")
+         output-debug-message ("THE 'current-scenario-number' AND 'current-repeat-number' ARE SET TO 0.  SETTING THEM BOTH TO 1...") ("")
          __clear-all-and-reset-ticks
          set current-scenario-number 1
          set current-repeat-number 1
+         set directory-separator pathdir:get-separator
+         
+         output-debug-message ("ASKING THE USER TO SPECIFY WHERE RESULTS SHOULD BE SAVED TO...") ("")
+         set results-directory user-directory
+         
+         if(user-yes-or-no? "Would you like to save the interface at the end of each repeat?")[
+           set save-interface? true
+         ]
+         
+         if(user-yes-or-no? "Would you like to save all model data at the end of each repeat?")[
+           set save-world-data? true
+         ]
+         
+         if(user-yes-or-no? "Would you like to save model output data at the end of each repeat?")[
+           set save-output-data? true
+         ]
+         
+         if(user-yes-or-no? "Would you like to save the data specified during training?")[
+           set save-training-data? true
+         ]
+         output-debug-message (word "USER'S RESPONSE TO WHETHER THE INTERFACE SHOULD BE SAVED AFTER EACH REPEAT IS: " save-interface? ) ("")
+         output-debug-message (word "USER'S RESPONSE TO WHETHER MODEL DATA SHOULD BE SAVED AFTER EACH REPEAT IS: " save-world-data? ) ("")
+         output-debug-message (word "USER'S RESPONSE TO WHETHER THE MODEL'S OUTPUT DATA SHOULD BE SAVED AFTER EACH REPEAT IS: " save-output-data? ) ("")
+         output-debug-message (word "USER'S RESPONSE TO WHETHER INTERFACE/MODEL DATA/MODEL OUTPUT DATA SHOULD BE SAVED AFTER TRAINING IS COMPLETE IS: " save-training-data? ) ("")
+         
          setup
+         
+         if(save-output-data?)[
+           output-debug-message ("SINCE THE MODEL'S OUTPUT DATA SHOULD BE SAVED THE USER NEEDS TO SPECIFY WHEN THE OUTPUT SHOULD BE UPDATED...") ("")
+           set output-interval (read-from-string (user-input ("How often should model output be generated?")))
+           output-debug-message ("CHECKING TO SEE IF THE MAXIMUM TRAINING/PLAY TIME OF ANY CHREST TURTLE IS GREATER THAN 0 AND IF SO WHETHER THE INTERVAL SPECIFIED FOR OUTPUTTING MODEL DATA IS GREATER THAN EITHER OF THESE TIMES...") ("")
+           while[
+             ( ( (max [training-time] of chrest-turtles) > 0) or ( (max [play-time] of chrest-turtles) > 0 ) ) and
+             (output-interval > max [training-time] of chrest-turtles) or (output-interval > max [play-time] of chrest-turtles)
+           ][
+             user-message (word "The interval specified (" output-interval ") is greater than the maximum value specified for 'training-time' (" max [training-time] of chrest-turtles ") or 'play-time' (" max [play-time] of chrest-turtles ").")
+             set output-interval (read-from-string (user-input ("Model output should be generated every ____ seconds?")))
+           ]
+         ]
+       ]
+       
+       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+       ;;; CHECK FOR SCENARIO/REPEAT DIRECTORY ;;;
+       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+       if(not file-exists? (word results-directory directory-separator "Scenario" current-scenario-number directory-separator "Repeat" current-repeat-number ) )[
+         error (word "File " results-directory directory-separator "Scenario" current-scenario-number directory-separator "Repeat" current-repeat-number " does not exist.")
        ]
        
        ;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -191,27 +244,63 @@ breed [ holes ]
        
        output-debug-message (word "CHECKING TO SEE IF THERE ARE ANY NON-TILE/HOLE TURTLES STILL PLAYING (VISIBLE) AND IF THE GLOBAL 'training?' VARIABLE (" training? ") IS SET TO TRUE...") ("")
        ifelse(player-turtles-finished? and training?)[
-         output-debug-message (word "THERE ARE NO PLAYERS STILL VISIBLE AND THE GLOBAL 'training?' VARIABLE IS SET TO TRUE, SETTING 'training?' TO FALSE") ("")
+         output-debug-message (word "THERE ARE NO PLAYERS STILL VISIBLE AND THE GLOBAL 'training?' VARIABLE IS SET TO TRUE.  TRAINING IS THEREFORE COMPLETE...") ("")
+         
+         output-debug-message ("CHECKING TO SEE IF I SHOULD SAVE ANY DATA ACCUMULATED DURING TRAINING...") ("")
+         if(save-training-data?)[
+           if(save-interface?)[
+             output-debug-message (word "EXPORTING INTERFACE TO: " results-directory directory-separator "Scenario" current-scenario-number directory-separator "Repeat" current-repeat-number directory-separator "Repeat" current-repeat-number "-TRAINING.png" "...")("")
+             export-interface (word results-directory directory-separator "Scenario" current-scenario-number directory-separator "Repeat" current-repeat-number directory-separator "Repeat" current-repeat-number "-TRAINING.png" )
+           ]
+           
+           if(save-output-data?)[
+             output-debug-message (word "EXPORTING MODEL OUTPUT TO: " results-directory directory-separator "Scenario" current-scenario-number directory-separator "Repeat" current-repeat-number directory-separator "Repeat" current-repeat-number "-TRAINING.txt" "...")("")
+             export-output (word results-directory directory-separator "Scenario" current-scenario-number directory-separator "Repeat" current-repeat-number directory-separator "Repeat" current-repeat-number "-TRAINING.txt" )
+           ]
+           
+           if(save-world-data?)[
+             output-debug-message (word "EXPORTING WORLD DATA TO: " results-directory directory-separator "Scenario" current-scenario-number directory-separator "Repeat" current-repeat-number directory-separator "Repeat" current-repeat-number "-TRAINING.csv" "...")("")
+             export-world (word results-directory directory-separator "Scenario" current-scenario-number directory-separator "Repeat" current-repeat-number directory-separator "Repeat" current-repeat-number "-TRAINING.csv" )
+           ]
+         ]
+         
+         output-debug-message ("SETTING THE GLOBAL 'training?' VARIABLE TO FALSE, ASKING ALL TURTLES TO BECOME VISIBLE AGAIN, CLEARING ALL PLOTS AND ALL MODEL OUTPUT...") ("")
          set training? false
          ask turtles [
            set hidden? false
          ]
+         clear-all-plots
+         clear-output
+         
+         output-debug-message ("RESETTING CHREST TURTLES BUT MAINTAINING THEIR CHREST INSTANCES...") ("")
+         setup-chrest-turtles (false)
        ]
        [
          output-debug-message ("TURTLES MUST STILL BE PLAYING OR THE GLOBAL 'training?' VARIABLE IS SET TO FALSE...") ("")
          output-debug-message ("CHECKING TO SEE IF ALL PLAYERS HAVE FINISHED PLAYING AND THAT 'training?' IS SET TO FALSE...") ("")
          ifelse(player-turtles-finished? and not training?)[
-           
            output-debug-message ("ALL PLAYERS HAVE FINISHED PLAYING AND THE GAME IS NOT BEING PLAYED IN A TRAINING CONTEXT...")("")
-           output-debug-message ("EXPORTING VIEW, OUTPUT AND WORLD DATA...")("")
-           export-interface (word "//home//martyn//netlogo-5.0.5//models/My Models//CHRESTTileworld//Results//Scenario" current-scenario-number "//Repeat" current-repeat-number "//Repeat" current-repeat-number ".png" )
-           export-output (word "//home//martyn//netlogo-5.0.5//models/My Models//CHRESTTileworld//Results//Scenario" current-scenario-number "//Repeat" current-repeat-number "//Repeat" current-repeat-number ".txt" )
-           export-world (word "//home//martyn//netlogo-5.0.5//models/My Models//CHRESTTileworld//Results//Scenario" current-scenario-number "//Repeat" current-repeat-number "//Repeat" current-repeat-number ".csv" )
+           
+           output-debug-message ("CHECKING TO SEE IF ANY DATA ACCUMULATED DURING THE GAME SHOULD BE SAVED...") ("")
+           if(save-interface?)[
+             output-debug-message (word "EXPORTING INTERFACE TO: " results-directory directory-separator "Scenario" current-scenario-number directory-separator "Repeat" current-repeat-number directory-separator "Repeat" current-repeat-number ".png" "...")("")
+             export-interface (word results-directory directory-separator "Scenario" current-scenario-number directory-separator "Repeat" current-repeat-number directory-separator "Repeat" current-repeat-number ".png" )
+           ]
+           
+           if(save-output-data?)[
+             output-debug-message (word "EXPORTING MODEL OUTPUT TO: " results-directory directory-separator "Scenario" current-scenario-number directory-separator "Repeat" current-repeat-number directory-separator "Repeat" current-repeat-number ".txt" "...")("")
+             export-output (word results-directory directory-separator "Scenario" current-scenario-number directory-separator "Repeat" current-repeat-number directory-separator "Repeat" current-repeat-number ".txt" )
+           ]
+           
+           if(save-world-data?)[
+             output-debug-message (word "EXPORTING WORLD DATA TO: " results-directory directory-separator "Scenario" current-scenario-number directory-separator "Repeat" current-repeat-number directory-separator "Repeat" current-repeat-number ".csv" "...")("")
+             export-world (word results-directory directory-separator "Scenario" current-scenario-number directory-separator "Repeat" current-repeat-number directory-separator "Repeat" current-repeat-number ".csv" )
+           ]
            
            output-debug-message (word "INCREMENTING THE GLOBAL 'current-repeat-number' (" current-repeat-number ") BY 1...") ("")
            set current-repeat-number (current-repeat-number + 1)
            
-           output-debug-message ("SINCE THIS CYCLE HAS FINISHED ALL TURTLES SHOULD DIE, THE GLOBAL 'current-training-time' AND 'current-game-time' PLOTS SHOULD BE SET TO 0 AND ALL PLOTS SHOULD BE CLEARED...") ("")
+           output-debug-message ("SINCE THIS GAME HAS FINISHED ALL TURTLES SHOULD DIE, THE GLOBAL 'current-training-time' AND 'current-game-time' PLOTS SHOULD BE SET TO 0 AND ALL PLOTS SHOULD BE CLEARED...") ("")
            clear-turtles
            clear-output
            set current-training-time 0
@@ -307,20 +396,11 @@ breed [ holes ]
            ;;; WRITE VALUES OF INTEREST TO OUTPUT ;;;
            ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
            
-           if( ((report-current-time mod 3600) = 0) and (report-current-time != 0)  )[
-             let num-visual-action-links-for-each-turtle []
-             let visual-ltm-size-for-each-turtle []
-             let visual-ltm-avg-depth-for-each-turtle []
-             
-             ask chrest-turtles[
-               set num-visual-action-links-for-each-turtle (lput (chrest:get-ltm-modality-num-action-links "visual") (num-visual-action-links-for-each-turtle))
-               set visual-ltm-size-for-each-turtle (lput (chrest:get-ltm-modality-size "visual") (visual-ltm-size-for-each-turtle))
-               set visual-ltm-avg-depth-for-each-turtle (lput (chrest:get-ltm-modality-avg-depth "visual") (visual-ltm-avg-depth-for-each-turtle))
-             ]
-             
-             output-print (word "Average number of visual-action links @ " report-current-time " = " (precision ( (reduce + num-visual-action-links-for-each-turtle) / (length num-visual-action-links-for-each-turtle) ) (2) ) )
-             output-print (word "Average number of nodes in visual LTM @ " report-current-time " = " (precision ( (reduce + visual-ltm-size-for-each-turtle) / (length visual-ltm-size-for-each-turtle) ) (2) ) )
-             output-print (word "Average depth of visual LTM @ " report-current-time " = " (precision ( (reduce + visual-ltm-avg-depth-for-each-turtle) / (length visual-ltm-avg-depth-for-each-turtle) ) (2) ) ) 
+           if( ((report-current-time mod output-interval) = 0) and (report-current-time != 0)  )[
+             output-print (word "Avg # of visual-action links @ " report-current-time "s = " (precision ( mean [chrest:get-ltm-modality-num-action-links "visual"] of chrest-turtles ) (2) ) )
+             output-print (word "Avg # visual LTM nodes @ " report-current-time "s = " (precision ( mean [chrest:get-ltm-modality-size "visual"] of chrest-turtles ) (2) ) )
+             output-print (word "Avg depth visual LTM @ " report-current-time "s = " (precision ( mean [chrest:get-ltm-modality-avg-depth "visual"] of chrest-turtles ) (2) ) )
+             output-print (word "Avg score @ " report-current-time "s = " (precision ( mean [score] of chrest-turtles ) (2) ) )
            ]
            
            update-time
@@ -345,11 +425,13 @@ breed [ holes ]
      to setup
        set debug-indent-level 0
        output-debug-message ("EXECUTING THE 'setup' PROCEDURE...") ("")
+       set debug-indent-level (debug-indent-level + 1)
        
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
        ;;; SET GLOBAL AND TURTLE-SPECIFIC VARIABLES USING HARD-CODED VALUES ;;;
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
        
+       output-debug-message ("SETTING MODEL-DEFINED GLOBAL VARIABLES...") ("")
        ;Set some non-specific global variables.
        set-default-shape chrest-turtles "turtle"
        set-default-shape tiles "box"
@@ -373,7 +455,6 @@ breed [ holes ]
        set tile-token "T"
        set turtle-token "A"
        
-       set debug-indent-level (debug-indent-level + 1)
        output-debug-message (word "THE 'current-training-time' GLOBAL VARIABLE IS SET TO: '" current-training-time "'.") ("")
        output-debug-message (word "THE 'current-game-time' GLOBAL VARIABLE IS SET TO: '" current-game-time "'.") ("")
        output-debug-message (word "THE 'movement-headings' GLOBAL VARIABLE IS SET TO: '" movement-headings "'.") ("")
@@ -391,12 +472,14 @@ breed [ holes ]
        ;;; SET GLOBAL AND TURTLE-SPECIFIC VARIABLES USING USER-SPECIFIED VALUES ;;;
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
        
+       output-debug-message ("SETTING INDEPENDENT VARIABLES...") ("")
        setup-independent-variables
        
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
        ;;; CHECK FOR VALID USER-SPECIFIED GLOBAL VARIABLE VALUES ;;;
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
        
+       output-debug-message ("CHECKING VALIDITY OF INDEPENDENT GLOBAL VARIABLE VALUES...") ("")
        if(hole-birth-prob > 1)[
          error ("The global 'hole-birth-prob' variable is greater than 1 ().  Please rectify this so that it is <= 1.")
        ]
@@ -405,51 +488,12 @@ breed [ holes ]
          error ("The global 'tile-birth-prob' variable is greater than 1 ().  Please rectify this so that it is <= 1.")
        ]
        
-       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-       ;;; SET HARD-CODED TURTLE-SPECIFIC VARIABLE VALUES ;;;
-       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+       ;;; SET-UP CHREST-TURTLES ;;;
+       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
        
-       ask chrest-turtles [
-         if(sight-radius < 2)[
-           error (word "Turtle " who "'s sight radius is < 2 (" sight-radius ").  This value must be >= 2 since player turtles must be able to see 1 patch past a tile they are adjacent to.")
-         ]
-         
-         set closest-tile ""
-         set current-visual-pattern ""
-         set heading 0
-         set next-action-to-perform ""
-         set score 0
-         set time-to-perform-next-action -1 ;Set to -1 initially since if it is set to 0 the turtle will think it has some action to perform in the initial round.
-         set visual-pattern-used-to-generate-action []
-         set sight-radius-colour (select-sight-radius-colour)
-         
-         chrest:instantiate-chrest-in-turtle
-         chrest:set-add-link-time (convert-seconds-to-milliseconds (add-link-time))
-         chrest:set-discrimination-time (convert-seconds-to-milliseconds (discrimination-time))
-         chrest:set-familiarisation-time (convert-seconds-to-milliseconds (familiarisation-time))
-         
-         place-randomly
-         
-         setup-plot-pen "Scores"
-         setup-plot-pen "Num Visual-Action Links" 
-         setup-plot-pen "Visual LTM Size"
-         setup-plot-pen "Visual LTM Avg. Depth"
-         setup-plot-pen "Action LTM Size"
-         setup-plot-pen "Action LTM Avg. Depth"
-         setup-plot-pen "Visual STM Size"
-         setup-plot-pen "Action STM Size"
-         
-         output-debug-message (word "My 'closest-tile' variable is set to: '" closest-tile "'.") (who)
-         output-debug-message (word "My 'current-visual-pattern' variable is set to: '" current-visual-pattern "'.") (who)
-         output-debug-message (word "My 'heading' variable is set to: '" heading "'.") (who)
-         output-debug-message (word "My 'next-action-to-perform' variable is set to: '" next-action-to-perform "'.") (who)
-         output-debug-message (word "My 'score' variable is set to: '" score "'.") (who)
-         output-debug-message (word "My 'time-to-perform-next-action' variable is set to: '" time-to-perform-next-action "'.") (who)
-         output-debug-message (word "My 'visual-pattern-used-to-generate-action' variable is set to: '" visual-pattern-used-to-generate-action "'.") (who)
-         output-debug-message (word "My '_addLinkTime' CHREST variable is set to: '" convert-milliseconds-to-seconds (chrest:get-add-link-time) "' seconds.") (who)
-         output-debug-message (word "My '_discriminationTime' CHREST variable is set to: '" convert-milliseconds-to-seconds (chrest:get-discrimination-time) "' seconds.") (who)
-         output-debug-message (word "My '_familiarisationTime' CHREST variable is set to: '" convert-milliseconds-to-seconds (chrest:get-familiarisation-time) "' seconds.") (who)
-       ]
+       output-debug-message ("SETTING UP CHREST-TURTLES...") ("")
+       setup-chrest-turtles (true)
        
        set debug-indent-level (debug-indent-level - 1)
      end
@@ -485,29 +529,80 @@ breed [ holes ]
               error (word "Turtle " who "'s 'breed' variable (" breed ") is not equal to 'chrest-turtles'.")
             ]
           end
+          
+          ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+          ;;;;; "SETUP-CHREST-TURTLES ;;;;;
+          ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+          
+          ;Sets up or resets CHREST turtle variables depending upon the context
+          ;in which this procedure is called.
+          ;
+          ;         Name              Data Type     Description
+          ;         ----              ---------     -----------
+          ;@params  setup-chrest?     Boolean       If set to true the procedure will endow all chrest-turtles
+          ;                                         with an instance of the CHREST architecture and set various
+          ;                                         parameters concerned with a CHREST instance's operation.
+          ;                                         If set to false, the procedure will not do the above.
+          to setup-chrest-turtles [setup-chrest?]
+            ask chrest-turtles [
+              if(sight-radius < 2)[
+                error (word "Turtle " who "'s sight radius is < 2 (" sight-radius ").  This value must be >= 2 since player turtles must be able to see 1 patch past a tile they are adjacent to.")
+              ]
+              
+              set closest-tile ""
+              set current-visual-pattern ""
+              set heading 0
+              set next-action-to-perform ""
+              set score 0
+              set time-to-perform-next-action -1 ;Set to -1 initially since if it is set to 0 the turtle will think it has some action to perform in the initial round.
+              set visual-pattern-used-to-generate-action []
+              set sight-radius-colour (select-sight-radius-colour)
+              
+              if(setup-chrest?)[
+                chrest:instantiate-chrest-in-turtle
+                chrest:set-add-link-time (convert-seconds-to-milliseconds (add-link-time))
+                chrest:set-discrimination-time (convert-seconds-to-milliseconds (discrimination-time))
+                chrest:set-familiarisation-time (convert-seconds-to-milliseconds (familiarisation-time))
+              ]
+              
+              place-randomly
+              
+              setup-plot-pen "Scores"
+              setup-plot-pen "Num Visual-Action Links" 
+              setup-plot-pen "Visual LTM Size"
+              setup-plot-pen "Visual LTM Avg. Depth"
+              setup-plot-pen "Action LTM Size"
+              setup-plot-pen "Action LTM Avg. Depth"
+              setup-plot-pen "Visual STM Size"
+              setup-plot-pen "Action STM Size"
+              
+              output-debug-message (word "My 'closest-tile' variable is set to: '" closest-tile "'.") (who)
+              output-debug-message (word "My 'current-visual-pattern' variable is set to: '" current-visual-pattern "'.") (who)
+              output-debug-message (word "My 'heading' variable is set to: '" heading "'.") (who)
+              output-debug-message (word "My 'next-action-to-perform' variable is set to: '" next-action-to-perform "'.") (who)
+              output-debug-message (word "My 'score' variable is set to: '" score "'.") (who)
+              output-debug-message (word "My 'time-to-perform-next-action' variable is set to: '" time-to-perform-next-action "'.") (who)
+              output-debug-message (word "My 'visual-pattern-used-to-generate-action' variable is set to: '" visual-pattern-used-to-generate-action "'.") (who)
+              output-debug-message (word "My '_addLinkTime' CHREST variable is set to: '" convert-milliseconds-to-seconds (chrest:get-add-link-time) "' seconds.") (who)
+              output-debug-message (word "My '_discriminationTime' CHREST variable is set to: '" convert-milliseconds-to-seconds (chrest:get-discrimination-time) "' seconds.") (who)
+              output-debug-message (word "My '_familiarisationTime' CHREST variable is set to: '" convert-milliseconds-to-seconds (chrest:get-familiarisation-time) "' seconds.") (who)
+            ]
+          end
      
           ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
           ;;;;; "SETUP-INDEPENDENT-VARIABLES" PROCEDURE ;;;;;
           ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
           ;Sets various global and turtle independent variables using an external .txt 
-          ;file.  If the 'auto-setup?' interface switch is set to 'off' then the user 
-          ;will be presented with a file browser window so they can select the set-up 
-          ;file to be used.  If the 'auto-setup?' interface switch is set to 'on' then
-          ;the file to be used will follow the steps outlined in this procedure.
+          ;file. The file to be used is determined by the current value of the 
+          ;"current-scenario-number" variable.
           ;
           ;TODO: This could be extracted into its own extension for use by the Netlogo community.
           ;
           ;@author  Martyn Lloyd-Kelly <martynlloydkelly@gmail.com>
           to setup-independent-variables
             file-close ;This must be done just in case the previous file errored out (Netlogo does not reset file pointers automatically).
-            
-            ifelse(auto-setup?)[
-              file-open (word "//home//martyn//netlogo-5.0.5//models/My Models//CHRESTTileworld//Results//Scenario" current-scenario-number "//Scenario" current-scenario-number "Settings.txt" )
-            ]
-            [
-              file-open user-file
-            ]
+            file-open (word results-directory directory-separator "Scenario" current-scenario-number directory-separator "Scenario" current-scenario-number "Settings.txt" )
             
             let variable-name ""
             
@@ -2484,9 +2579,9 @@ breed [ holes ]
   
 @#$#@#$#@
 GRAPHICS-WINDOW
-349
+364
 10
-779
+794
 461
 17
 17
@@ -2511,9 +2606,9 @@ ticks
 30.0
 
 PLOT
-780
+795
 10
-1006
+1021
 174
 Scores
 Time
@@ -2528,10 +2623,10 @@ false
 PENS
 
 BUTTON
-12
-250
-85
-283
+7
+209
+80
+242
 Play
 play
 T
@@ -2545,10 +2640,10 @@ NIL
 1
 
 PLOT
-780
+955
+174
+1115
 324
-940
-471
 Visual LTM Size
 Time
 # Nodes
@@ -2562,10 +2657,10 @@ false
 PENS
 
 PLOT
-1100
+1115
+174
+1275
 324
-1260
-471
 Visual LTM Avg. Depth
 Time
 Avg. Depth
@@ -2579,9 +2674,9 @@ false
 PENS
 
 MONITOR
-218
+237
 100
-349
+364
 145
 Training Time (s)
 current-training-time
@@ -2590,10 +2685,10 @@ current-training-time
 11
 
 PLOT
-940
+955
 324
-1100
-471
+1115
+474
 Action LTM Size
 Time
 #Nodes
@@ -2607,10 +2702,10 @@ false
 PENS
 
 PLOT
-1260
+1115
 324
-1420
-471
+1275
+474
 Action LTM Avg. Depth
 Time
 Avg. Depth
@@ -2624,9 +2719,9 @@ false
 PENS
 
 MONITOR
-218
+237
 145
-349
+364
 190
 Non-training Time (s)
 current-game-time
@@ -2635,9 +2730,9 @@ current-game-time
 11
 
 MONITOR
-219
+237
 280
-349
+364
 325
 Tile Birth Prob.
 tile-birth-prob
@@ -2646,9 +2741,9 @@ tile-birth-prob
 11
 
 MONITOR
-219
+237
 325
-349
+364
 370
 Hole Birth Prob
 hole-birth-prob
@@ -2657,9 +2752,9 @@ hole-birth-prob
 11
 
 MONITOR
-219
+237
 370
-349
+364
 415
 Tile Lifespan (s)
 tile-lifespan
@@ -2668,9 +2763,9 @@ tile-lifespan
 11
 
 MONITOR
-219
+237
 415
-349
+364
 460
 Hole Lifespan (s)
 hole-lifespan
@@ -2679,9 +2774,9 @@ hole-lifespan
 11
 
 PLOT
-1005
+1020
 10
-1231
+1246
 174
 Num Visual-Action Links
 Time
@@ -2696,9 +2791,9 @@ false
 PENS
 
 MONITOR
-218
+237
 190
-349
+364
 235
 Tile Born Every (s)
 tile-born-every
@@ -2707,9 +2802,9 @@ tile-born-every
 11
 
 MONITOR
-219
+237
 235
-349
+364
 280
 Hole Born Every (s)
 hole-born-every
@@ -2718,10 +2813,10 @@ hole-born-every
 11
 
 SWITCH
-12
-10
-138
-43
+7
+135
+133
+168
 debug?
 debug?
 1
@@ -2729,9 +2824,9 @@ debug?
 -1000
 
 PLOT
-780
+795
 174
-940
+955
 324
 Visual STM Size
 Time
@@ -2746,10 +2841,10 @@ false
 PENS
 
 PLOT
-940
-174
-1100
+795
 324
+955
+474
 Action STM Size
 Time
 # Nodes
@@ -2762,21 +2857,10 @@ false
 "" ""
 PENS
 
-SWITCH
-12
-42
-138
-75
-auto-setup?
-auto-setup?
-0
-1
--1000
-
 MONITOR
-218
+237
 10
-349
+364
 55
 Scenario Number
 current-scenario-number
@@ -2785,9 +2869,9 @@ current-scenario-number
 11
 
 MONITOR
-218
+237
 55
-349
+364
 100
 Repeat Number
 current-repeat-number
@@ -2796,10 +2880,10 @@ current-repeat-number
 11
 
 INPUTBOX
-12
-88
-152
-148
+7
+10
+147
+70
 total-number-of-scenarios
 27
 1
@@ -2807,10 +2891,10 @@ total-number-of-scenarios
 Number
 
 INPUTBOX
-12
-148
-152
-208
+7
+70
+147
+130
 total-number-of-repeats
 10
 1
@@ -2818,10 +2902,10 @@ total-number-of-repeats
 Number
 
 BUTTON
-12
-214
-85
-247
+7
+173
+80
+206
 Reset
 clear-all
 NIL
@@ -2835,9 +2919,9 @@ NIL
 1
 
 OUTPUT
-12
-289
-213
+7
+248
+236
 460
 12
 
@@ -2845,37 +2929,33 @@ OUTPUT
 # CHREST Tileworld  
 ## CREDITS
 
-**Programmer:** Martyn Lloyd-Kelly  <martynlloydkelly@gmail.com>
+**Chief Architect:** Martyn Lloyd-Kelly  <martynlloydkelly@gmail.com>
 
 ## MODEL DESCRIPTION
+
 The "Tileworld" testbed was first formally described in:
 
 Martha Pollack and Marc Ringuette. _"Introducing the Tileworld: experimentally evaluating agent architectures."_  Thomas Dietterich and William Swartout ed. In Proceedings of the Eighth National Conference on Artificial Intelligence,  p. 183--189, AAAI Press. 1990.
 
-This model is built upon the "Tileworld" Netlogo model originally developed by Jose M. Vidal.  The model itself and details thereof can be found at the following website:
+This Netlogo model is based upon Jose M. Vidal's "Tileworld" Netlogo model.  Vidal's model and details thereof can be found at the following website:
 http://jmvidal.cse.sc.edu/netlogomas/tileworld/index.html
 
-The player turtles in this model are endowed with instances of the Java implementation of the CHREST architecture developed principally by Prof. Fernand Gobet and Dr. Peter Lane. See the following website for more details regarding the CHREST architecture: 
+In this model, some player turtles are endowed with instances of the Java implementation of the CHREST architecture developed principally by Prof. Fernand Gobet and Dr. Peter Lane. See the following website for more details regarding the CHREST architecture: 
 http://www.chrest.info/
 
-Players score a point for pushing tiles into holes which appear at random and are transient.  The probability of new tiles/holes being created and how long they exist for can be altered by the user to make the model environment more or less dynamic.  The length of a game is constrained by a user-specified length of time.
+Players score points by pushing tiles into holes; these artefacts are transient and appear at random.  The probability of new tiles/holes being created, how often they may be created and how long they exist for can be altered by the user to increase/decrease intrinsic environment dynamism.
 
-Players are not capable of pushing more than one tile at a time, if a tile is blocked then the player must realign themselves and push the tile from a different direction.  Each patch may only hold either a player, a tile or a hole.  Other players and holes can not be pushed.
+Players are not capable of pushing more than one tile at a time, if a tile is blocked then the player must reposition themselves and push the tile from a different direction.  Each patch may only hold one player, tile or hole.  Players are not able to push other players or holes.
 
-Based upon current visual information, player turtles are capable of making decisions about what to do based upon current visual information or, if they are CHREST turtles, can make a decision about what to do by associating visual patterns with action patterns.  In the model, decision-making takes time, the length of time taken depends upon how complicated the decision-making procedure is.  Associating visual and action patterns however, takes significantly less time and therefore, should allow the player to perform more actions in less time resulting in higher scores.
 
-Of course, the quality of actions is also paramount in securing better scores so CHREST turtles are also capable of reinforcing associations between visual and action patterns if they have led to the successful filling of a hole with a tile.
+In the model decision-making takes time, the length of which taken depends upon how complicated a player's decision-making procedure is.  The more time a player spends deliberating about its next move, the less time it has to perform actions.  This impacts upon the player's performance since taking too long to perform an action means that the player has less time to score points by pushing tiles into holes.
 
-Players can either go through a period of training before playing a real game or simply play a real game.  Again, this decision is left to the user.
 
-## MODEL REQUIREMENTS
-This model requires that you have the following Netlogo extensions installed into the "extenstions" directory of your Netlogo distribution:
-
-  * CHREST - found at https://github.com/mlk5060/chrest-netlogo-extension
-  * String - found at https://github.com/NetLogo/String-Extension/
+Tileworld games are composed of two stages: training and non-training.  The length of time that players spend in each stage is defined by the user.
 
 ## AIM OF THE MODEL
-The aim of this model is to investigate the interplay between _talent_ and _practice_ using the CHREST architecture as a model of cognition in an environment whose dynanism is not just a result of the actions of players.
+
+The aim of this model is to investigate the interplay between _talent_ and _practice_ using the CHREST architecture as a theory of cognition in an environment whose dynanism is not just a result of the actions of players.
 
 "Talent" is embodied by the following parameters that can be set for players:
 
@@ -2883,27 +2963,139 @@ The aim of this model is to investigate the interplay between _talent_ and _prac
 
 "Expertise" is embodied by the size and quality of a CHREST turtle's LTM.  The size of this should increase if CHREST turtles are presented with new information more frequently and are allowed to learn for longer periods of time.
 
-## CHREST TURTLE BEHAVIOUR
-The behaviour of CHREST turtles in the model is driven by the generation and recognition of _visual_ and _action_ patterns; symbolic representations of the current environment and the actions performed within it.  Before and after the performance of every action, the CHREST turtle will generate a visual pattern composed of a representation of what objects it can see and where the object is located using x/y coordinates relative from the CHREST turtle's current location to the object.  For example, the visual pattern: [A, 3, 1] indicates that the player can see another player, A, 3 patches to its east and 1 patch north of itself.  
+## MODEL SET-UP
+The model runs a user-specified number of scenarios for a user-specified number of repeats: the number of scenarios and repeats can be set in the relevant boxes in the model's interface tab.  The values in these boxes must be reflected by a directory structure created somewhere on your system.  The topology and nomenclature of directories and files within this directory structure is vital to ensure correct operation of the model since these directories and the files they contain will be used to set-up the simulations and record results from them. 
 
-Action patterns are generated by reasoning with the current visual pattern about what to do next.  The action pattern is then loaded for execution and performed when the length of time specified by the CHREST turtle's _action-performance-time_ has elapsed.  Action patterns look similiar to visual patterns but they instead describe what action should be/was performed given a visual pattern.  For example, the action pattern: [PT, 0, 1] indicates that the player should push a tile, PT, 1 patch (1) along heading 0 (north).
+Scenarios are intended to represent different configurations of initial values for the simulation's independent variables (a complete list of independent variables can be found in section "INDEPENDENT VARIABLES" below).  These initial values are user-specified and should be placed in a plain text file with the name "ScenarioXSettings.txt" within each top-level scenario folder within the directory structure mentioned above.
 
-Since these patterns can be stored in the CHREST turtle's long-term memory (hereafter referred to as "LTM"), CHREST turtles are capable of associating the visual pattern that generated the action pattern and the action pattern generated together.  When a CHREST turtle successfully pushes a tile into a hole, this triggers a _reinforcement_ of all the visual-action pattern links present in the CHREST turtle's short-term memory (hereafter referred to as "STM").  This reinforcement takes the form of adding 1 to the weight of the link between the visual and action patterns present in STM (if the links exist). 
+The basic topology and nomenclature of the directory structure referred to in the previous paragraphs is illustrated below for clarification:
 
-This enables the CHREST turtle's dual-process theory of behaviour: when a CHRESt turtle generates a visual pattern, it will then try to recognise this visual pattern i.e. see if it already exists in LTM.  If it does, the CHREST turtle will then check to see if it has an action pattern associated with this visual pattern in its LTM.  If it does then three situations may be true:
+Containing directory
+|
+|____Scenario1
+|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|____Scenario1Settings.txt
+|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|____Repeat1
+|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|____Repeat2
+|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|____&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:
+|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|____Repeat_n_
+|
+|____Scenario2
+|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|____Scenario2Settings.txt
+|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|____Repeat1
+|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|____Repeat2
+|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|____&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:
+|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|____Repeat_n_
+|
+|____:
+|
+|____Scenario _n_
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|____Scenario _n_ Settings.txt
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|____Repeat1
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|____Repeat2
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|____&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|____Repeat_n_
 
-  1. The visual pattern is associated with only one visual pattern.  In this case, the action is performed. 
-  2. The visual pattern is associated with multiple action patterns and these associations have heterogenous weights.  In this case, the action pattern whose association is weighted most is selected.  
-  3. The visual pattern is associated with multiple action patterns and these associations have homogenous weights. In this case, one action pattern is selected at random with a 1 in _n_ probability (_n_ = number of action patterns whose associations weigh the most). 
+  * Scenario numbering must run from 1 to _n_ where _n_ is equal to the number specified in the "total-number-of-scenarios" box in the model's interface tab.
+  * Repeat numbering must run from 1 to _n_ where _n_ is equal to the number specified in the "total-number-of-repeats" box in the model's interface tab.
+  * The number of repeats is equal for all scenarios so every "Scenario" directory must contain the same number of "Repeat" directories (from 1 to _n_).
 
-It may be true that the visual pattern is not recognised or that the visual pattern is not associated with any action patterns in LTM.  In this case, a heuristic is employed, based upon the content of the current visual pattern:
+When you first press the "Play" button on the model's interface tab, a number of dialog options will appear asking you if you wish to record various pieces of information.  You will also be asked to specify where the "Containing directory" in the directory structure illustration above.
 
-  1. If the CHREST turtle can see one or more tiles and holes, it will attempt to push the tile closest to the hole that is closest to itself into this hole.
-  2. If the CHREST turtle can see one or more tiles but no holes, it will attempt to push the tile closest to it along the heading it approaches it at.
-  3. If the CHREST turtle can see no tiles or holes, it will select a heading at random to move in.
+## SETTINGS FILE
 
-A CHREST turtle will attempt to associate the visual patterns generated in the cases above with the action patterns generated in response to them with the exception of the action patterns generated in the third case.  This is because the environment is dynamic i.e. tiles and holes appear at random and therefore, favouring one random heading over another does not impart any benefit upon the potential score of a player.
+When creating a scenario settings file, a particular syntax should be used:
+  
+  * To specify a Netlogo command that should be interpreted as-is: enclose the command in double quotes.  For example, the following line in a settings file would tell the model to create 4 turtles of breed "chrest-turtles":
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"create chrest-turtles 4"
+
+  * To specify a global variable value: give the name of the global variable on one line and the value it should be set to on the next line.  **Do not enclose with double quotes.**  For example, the following line in a settings file would tell the model to set the value for the "time_increment" global variable to 0.1:
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;time_increment
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;0.1
+
+  * To specify a turtle variable value for a single turtle: give the name of the turtle variable on one line and on the next line specify the turtle ID followed by a colon followed by the value that this turtle should have for the variable in question.  **Do not enclose with double quotes.**  For example, the following line in a settings file would tell the model to set the value for the "sight-radius" turtle variable to 2 for the turtle whose "who" variable is equal to 0:
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;sight-radius
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;0:2
+
+  * To specify a turtle variable value for a range of turtles: give the name of the turtle variable on one line and on the next line specify the turtle IDs that are to have this variable set to the value specified by giving the first turtle ID of the range followed by a hyphen followed by the last turtle ID of the range.  This range specification should then be enclosed with standard parenthesis and followed by a colon followed by the value that this turtle should have for the variable in question.  **Do not enclose with double quotes.**  For example, the following line in a settings file would tell the model to set the value for the "sight-radius" turtle variable to 2 for turtles whose "who" variables are equal to 0, 1, 2 and 3:
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;sight-radius
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(0-3):2
+
+
+### INDEPENDENT VARIABLES
+
+Only the following variables should be modified using the scenario settings file, modifying other variables may cause erroneous model operation.  Note: any text in bold are variables or primitives that can be used, any text in italics represents a value that can be substituted for a value of your choice.
+
+#### GLOBAL VARIABLES
+
+  * **hole-birth-prob:** determines how likely it is that a hole will be born/created in the model environment when the length of time stipulated by the **hole-born-every** variable has passed.
+
+  * **hole-born-every:** determines how often a hole will have a chance of being born.
+
+  * **hole-lifespan:** determines how long holes are present in the model environment before they are removed.
+
+  * **tile-birth-prob:** determines how likely it is that a tile will be born/created in the model environment when the length of time stipulated by the **tile-born-every** variable has passed.
+
+  * **tile-born-every:** determines how often a tile will have a chance of being born.
+
+  * **tile-lifespan:** determines how long tiles are present in the model environment before they are removed.
+
+  * **time-increment:** determines the value that training or play time is incremented by after every iteration of the "play" procedure.
+
+#### TURTLE VARIABLES
+
+  * **action-performance-time:** determines how long it takes for a player turtle to perform an action once one has been decided upon and loaded for execution.
+
+  * **action-selection-heuristic-time:** determines the base unit of time taken for a player turtle to deliberate about what action to perform next rather than using pattern-recognition to achieve the same goal.  This is used as the base unit in 
+
+  * **action-selection-pattern-recognition-time:** determines how long it takes for a CHREST turtle to select an action to perform based upon pattern recognition rather than deliberation.
+
+  * **add-link-time:** determines how long it takes for a CHREST turtle to add a link between two chunks in long-term memory.
+
+  * **discrimination-time:** determines how long it takes for a CHREST turtle to discriminate a chunk in long-term memory.
+
+  * **familiarisation-time:** determines how long it takes for a CHREST turtle to familiarise a chunk in long-term memory.
+
+  * **play-time:** determines how long a player turtle can play a non-training game for.
+
+  * **probability-of-deliberation:** determines the probability that a CHREST turtle will resort to heuristic deliberation to decide upon what action to perform given a particular visual pattern, _vp_, rather than selecting an action associated with _vp_.  Ensures that CHREST turtle behaviour does not become rigid.
+
+  * **sight-radius:** determines how many patches to the north, east, south and west a player turtle can see. 
+
+  * **training-time:** determines how long a player turtle can train for.
  
+## CHREST TURTLE BEHAVIOUR
+
+The behaviour of CHREST turtles in the model is driven by the generation and recognition of _visual_ and _action_ patterns; symbolic representations of the current environment and the actions performed within it.  Before and after the performance of every action, the CHREST turtle will generate a visual pattern that symbolically represents what objects it can see and where these objects are located relative to the CHREST turtle's current location.  For example, the visual pattern: [A, 3, 1] indicates that the CHREST turtle can see another player, _A_, 3 patches to its east and 1 patch north of itself.  
+
+Action patterns are generated using the current visual pattern.  Action patterns look similiar to visual patterns but they instead describe what action should be performed.  For example, the action pattern: [PT, 0, 1] indicates that the CHREST turtle should push a tile, _PT_, 1 patch (1) along heading 0 (north).
+
+Since these patterns can be stored in the LTM of a turtle endowed with a CHREST architecture, CHREST turtles are capable of associating visual and action patterns together.  A CHREST turtle will attempt to associate any visual and action pattern except when it can not see a tile or hole and decides to move randomly.  This is because the environment is dynamic i.e. tiles and holes appear at random and therefore, favouring one random heading over another does not impart any benefit upon the potential score of a player.
+
+A Netlogo table data structure containing the visual patterns created and action patterns performed in response to each visual pattern created since the CHREST turtle last saw a hole is maintained for each CHREST turtle.  This enables CHREST turtles to positively or negatively _reinforce_ visual-action patterns.
+
+  * Positive reinforcement occurs when a turtle endowed with a CHREST architecture successfully pushes a tile into a hole.  In this case, all current entries in the Netlogo table data structure are scanned and the relevant visual-action links have 1 added to their weight in LTM if the respective visual and action pattern are linked.
+
+  * Negative reinforcement occurs when a turtle endowed with a CHREST architecture fails to push a tile into a hole either because the tile being pushed disappears or the hole that the tile is being pushed towards disappears.  In this case, all current entries in the Netlogo table data structure are scanned and the relevant visual-action links have 1 subtracted from their weight in LTM if the respective visual and action pattern are linked and if the weight is current greater than 0.
+
+### DUAL-PROCESS THEORY OF BEHAVIOUR
+
+The prescence of a deliberation process and a pattern-recognition process for action selection produces a dual-process theory of behaviour for turtles endowed with CHREST architectures.
+
+When a CHREST turtle generates a visual pattern, it will then try to recognise this visual pattern i.e. see if it already exists in LTM.  If it does, the CHREST turtle will then check to see if it has an action pattern associated with this visual pattern in its LTM.  If it does then three situations may be true:
+
+  1. **The visual pattern is not associated with any visual patterns.**  In this case, the turtle selects an action to perform using its heuristic deliberation process:
+    1. If the turtle can see one or more tiles and holes, it will attempt to push the tile closest to the hole that is closest to the turtle into this hole.
+    2. If the turtle can see one or more tiles but no holes, it will attempt to push the tile closest to it along the heading it approaches it at.
+    3. If the CHREST turtle can see no tiles or holes, it will select a heading at random to move in. 
+
+  2. **The visual pattern is associated with one or more action patterns.** In this case, the turtle has an _x_ in _n_ chance of performing an action pattern associated with the current visual pattern and a _v_ in _n_ chance of using heuristic deliberation to produce an action pattern.
+    * _x_ is equal to the weight of the link between the current visual and action pattern.
+    * _n_ is equal to the cumulative weight of all links that this visual pattern has to action patterns plus _v_.
+    * _v_ is equal to the value of the **probability-of-deliberation** variable for the turtle in question.  This ensures that the CHREST turtle will always have a chance of performing a previously unperformed action given a particular visual pattern preventing its behaviour from becoming rigid. 
 @#$#@#$#@
 default
 false
