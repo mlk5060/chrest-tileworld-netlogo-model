@@ -188,21 +188,34 @@ breed [ holes ]
          output-debug-message ("ASKING THE USER TO SPECIFY WHERE RESULTS SHOULD BE SAVED TO...") ("")
          set results-directory user-directory
          
-         if(user-yes-or-no? "Would you like to save the interface at the end of each repeat?")[
+         ifelse(user-yes-or-no? "Would you like to save the interface at the end of each repeat?")[
            set save-interface? true
          ]
+         [
+           set save-interface? false
+         ]
          
-         if(user-yes-or-no? "Would you like to save all model data at the end of each repeat?")[
+         ifelse(user-yes-or-no? "Would you like to save all model data at the end of each repeat?")[
            set save-world-data? true
          ]
+         [
+            set save-world-data? false
+         ]
          
-         if(user-yes-or-no? "Would you like to save model output data at the end of each repeat?")[
+         ifelse(user-yes-or-no? "Would you like to save model output data at the end of each repeat?")[
            set save-output-data? true
          ]
+         [
+           set save-output-data? false
+         ]
          
-         if(user-yes-or-no? "Would you like to save the data specified during training?")[
+         ifelse(user-yes-or-no? "Would you like to save the data specified during training?")[
            set save-training-data? true
          ]
+         [
+           set save-training-data? false
+         ]
+         
          output-debug-message (word "USER'S RESPONSE TO WHETHER THE INTERFACE SHOULD BE SAVED AFTER EACH REPEAT IS: " save-interface? ) ("")
          output-debug-message (word "USER'S RESPONSE TO WHETHER MODEL DATA SHOULD BE SAVED AFTER EACH REPEAT IS: " save-world-data? ) ("")
          output-debug-message (word "USER'S RESPONSE TO WHETHER THE MODEL'S OUTPUT DATA SHOULD BE SAVED AFTER EACH REPEAT IS: " save-output-data? ) ("")
