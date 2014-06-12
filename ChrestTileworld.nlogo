@@ -104,6 +104,7 @@ breed [ holes ]
        current-visual-pattern                       ;Stores the current visual pattern that has been generated.
        discrimination-time                          ;Stores the length of time (in seconds) that the CHREST turtle takes to discriminate a new node in LTM.
        familiarisation-time                         ;Stores the length of time (in seconds) that the CHREST turtle takes to familiarise a node in LTM.
+       max-length-of-visual-action-pairs-list       ;Stores the maximum length that the CHREST turtle's "visual-action-pairs" list can be.
        next-action-to-perform                       ;Stores the action-pattern that the turtle is to perform next.
        play-time                                    ;Stores the length of time (in seconds) that the CHREST turtle can play a non-training game for.
        score                                        ;Stores the score of the agent (the number of holes that have been filled by the turtle).
@@ -111,6 +112,7 @@ breed [ holes ]
        sight-radius-colour                          ;Stores the colour that the patches a CHREST turtle can see will be set to (used for debugging). 
        time-to-perform-next-action                  ;Stores the time that the action-pattern stored in the "next-action-to-perform" turtle variable should be performed.
        training-time                                ;Stores the length of time (in seconds) that the turtle can train for.
+       visual-action-pairs                          ;Stores visual patterns generated and action patterns performed in response to that visual pattern in a list data structure.
        visual-pattern-used-to-generate-action       ;Stores the visual-pattern that was used to generate the action-pattern stored in the "next-action-to-perform" turtle variable.
      ]
      
@@ -140,6 +142,50 @@ breed [ holes ]
 ;********* SIMULATION PROCEDURES *********;
 ;*****************************************;
 ;*****************************************;
+     
+     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+     ;;;;; "ADD-ENTRY-TO-VISUAL-ACTION-PAIRS" PROCEDURE ;;;;;
+     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+     
+     ;Adds an entry to the calling turtle's "visual-action-pairs" list. A dedicated procedure 
+     ;is required for this since the list has a maximum length (defined by the user in a 
+     ;scenario set-up file) and consequently, if the length of the "visual-action-pairs" list
+     ;contains this maximum number of items, the last item must be removed and the new item
+     ;added to the front of the list.
+     ;
+     ;Also, this list contains nested lists consisting of visual-action pattern pairs so this
+     ;procedure ensures that new items are formatted correctly.
+     ;
+     ;If the length of the "visual-action-pairs" list is less than the maximum length then the
+     ;new item is added to the front of the list.
+     ;
+     ;         Name              Data Type     Description
+     ;         ----              ---------     -----------
+     ;@params  visual-pattern    String        The visual pattern to be paired.
+     ;@params  action-pattern    String        The action pattern to be paired.
+     ;
+     ;@author  Martyn Lloyd-Kelly <martynlloydkelly@gmail.com>  
+     to add-entry-to-visual-action-pairs [visual-pattern action-pattern]
+       set debug-indent-level (debug-indent-level + 1)
+       output-debug-message ("EXECUTING THE 'add-entry-to-visual-action-pairs' PROCEDURE...") ("")
+       set debug-indent-level (debug-indent-level + 1)
+       
+       output-debug-message (word "Before modification the the 'visual-action-pairs' list is set to: " visual-action-pairs ) (who)
+       output-debug-message (word "Checking to see if the length of the 'visual-action-pairs' list (" length visual-action-pairs ") is greater than the value specified for the 'max-length-of-visual-action-pairs-list' variable (" max-length-of-visual-action-pairs-list ")...") (who)
+       if( (length visual-action-pairs) >= max-length-of-visual-action-pairs-list )[
+         
+         output-debug-message ("The length of the 'visual-action-pairs' list is greater than the value specified for the 'max-length-of-visual-action-pairs-list' variable...") (who)
+         output-debug-message ("Removing the last item (oldest item) from the 'visual-action-pairs' list...") (who)
+         set visual-action-pairs (but-last visual-action-pairs)
+         output-debug-message (word "After removing the last item the 'visual-action-pairs' list is set to: " visual-action-pairs ) (who)
+       ]
+       
+       output-debug-message (word "Adding " (list visual-pattern action-pattern) " to the front of the 'visual-action-pairs' list...") (who)
+       set visual-action-pairs (fput (list visual-pattern action-pattern) (visual-action-pairs))
+       output-debug-message (word "Final state of the 'visual-action-pairs' list: " visual-action-pairs) (who)
+       
+       set debug-indent-level (debug-indent-level - 2)
+     end
 
      ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
      ;;;;; "PLAY" PROCEDURE ;;;;;
@@ -188,21 +234,34 @@ breed [ holes ]
          output-debug-message ("ASKING THE USER TO SPECIFY WHERE RESULTS SHOULD BE SAVED TO...") ("")
          set results-directory user-directory
          
-         if(user-yes-or-no? "Would you like to save the interface at the end of each repeat?")[
+         ifelse(user-yes-or-no? "Would you like to save the interface at the end of each repeat?")[
            set save-interface? true
          ]
+         [
+           set save-interface? false
+         ]
          
-         if(user-yes-or-no? "Would you like to save all model data at the end of each repeat?")[
+         ifelse(user-yes-or-no? "Would you like to save all model data at the end of each repeat?")[
+           set save-world-data? true
+         ]
+         [
            set save-world-data? true
          ]
          
-         if(user-yes-or-no? "Would you like to save model output data at the end of each repeat?")[
+         ifelse(user-yes-or-no? "Would you like to save model output data at the end of each repeat?")[
            set save-output-data? true
          ]
+         [
+           set save-output-data? false
+         ]
          
-         if(user-yes-or-no? "Would you like to save the data specified during training?")[
+         ifelse(user-yes-or-no? "Would you like to save the data specified during training?")[
            set save-training-data? true
          ]
+         [
+           set save-training-data? false
+         ]
+         
          output-debug-message (word "USER'S RESPONSE TO WHETHER THE INTERFACE SHOULD BE SAVED AFTER EACH REPEAT IS: " save-interface? ) ("")
          output-debug-message (word "USER'S RESPONSE TO WHETHER MODEL DATA SHOULD BE SAVED AFTER EACH REPEAT IS: " save-world-data? ) ("")
          output-debug-message (word "USER'S RESPONSE TO WHETHER THE MODEL'S OUTPUT DATA SHOULD BE SAVED AFTER EACH REPEAT IS: " save-output-data? ) ("")
@@ -1896,6 +1955,7 @@ breed [ holes ]
                 let action-pattern (chrest:create-item-square-pattern (action-token) (heading) (patches-to-move))
                 output-debug-message (word "Action pattern generated: " action-pattern ".  Attempting to associate this with: '" current-visual-pattern "'...") (who)
                 chrest:associate-patterns "visual" "item_square" current-visual-pattern "action" "item_square" action-pattern convert-seconds-to-milliseconds(report-current-time)
+                add-entry-to-visual-action-pairs (current-visual-pattern) (action-pattern) 
               ]
             ]
             
@@ -1994,6 +2054,7 @@ breed [ holes ]
                   if(breed = chrest-turtles)[
                     output-debug-message (word "I am a CHREST turtle so I'll associate the value of my 'current-visual-pattern' variable (" current-visual-pattern ") with the value of the local 'action-to-perform' variable (" action-to-perform ")...") (who)
                     chrest:associate-patterns "visual" "item_square" current-visual-pattern "action" "item_square" action-to-perform convert-seconds-to-milliseconds(report-current-time)
+                    add-entry-to-visual-action-pairs (current-visual-pattern) (action-to-perform)
                   ]
                   
                   output-debug-message ("Since I'm surrounded I'll stop trying to perform an action...") (who)
@@ -2007,6 +2068,7 @@ breed [ holes ]
                     if(breed = chrest-turtles)[
                       output-debug-message (word "I am a CHREST turtle so I'll associate the value of my 'current-visual-pattern' variable (" current-visual-pattern ") with the value of the local 'action-to-perform' variable (" action-to-perform ")...") (who)
                       chrest:associate-patterns "visual" "item_square" current-visual-pattern "action" "item_square" action-to-perform convert-seconds-to-milliseconds(report-current-time)
+                      add-entry-to-visual-action-pairs (current-visual-pattern) (action-to-perform)
                     ]
                     
                     output-debug-message ("Since I'm remaining stationary I won't do anything now...") (who)
@@ -2125,6 +2187,7 @@ breed [ holes ]
               let action-pattern (chrest:create-item-square-pattern (push-tile-token) (heading) (1))
               output-debug-message (word "Action pattern generated: " action-pattern ".  Attempting to associate this with: '" current-visual-pattern "'...") (who)
               chrest:associate-patterns "visual" "item_square" current-visual-pattern "action" "item_square" action-pattern convert-seconds-to-milliseconds(report-current-time)
+              add-entry-to-visual-action-pairs (current-visual-pattern) (action-pattern)
             ]
             
             set debug-indent-level (debug-indent-level - 2)
@@ -2988,8 +3051,8 @@ Containing directory
 |
 |____:
 |
-|____Scenario _n_
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|____Scenario _n_ Settings.txt
+|____Scenario_n_
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|____ScenarioNSettings.txt
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|____Repeat1
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|____Repeat2
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|____&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:
@@ -2998,6 +3061,7 @@ Containing directory
   * Scenario numbering must run from 1 to _n_ where _n_ is equal to the number specified in the "total-number-of-scenarios" box in the model's interface tab.
   * Repeat numbering must run from 1 to _n_ where _n_ is equal to the number specified in the "total-number-of-repeats" box in the model's interface tab.
   * The number of repeats is equal for all scenarios so every "Scenario" directory must contain the same number of "Repeat" directories (from 1 to _n_).
+  * Filenames are case and space sensitive
 
 When you first press the "Play" button on the model's interface tab, a number of dialog options will appear asking you if you wish to record various pieces of information.  You will also be asked to specify where the "Containing directory" in the directory structure illustration above.
 
@@ -3045,7 +3109,7 @@ Only the following variables should be modified using the scenario settings file
 
   * **time-increment:** determines the value that training or play time is incremented by after every iteration of the "play" procedure.
 
-#### TURTLE VARIABLES
+#### CHREST TURTLE BREED VARIABLES
 
   * **action-performance-time:** determines how long it takes for a player turtle to perform an action once one has been decided upon and loaded for execution.
 
@@ -3058,6 +3122,9 @@ Only the following variables should be modified using the scenario settings file
   * **discrimination-time:** determines how long it takes for a CHREST turtle to discriminate a chunk in long-term memory.
 
   * **familiarisation-time:** determines how long it takes for a CHREST turtle to familiarise a chunk in long-term memory.
+
+  * **max-length-of-visual-action-pairs-list:** determines the maximum length of a CHREST
+turtle's "visual-action-pairs" list.
 
   * **play-time:** determines how long a player turtle can play a non-training game for.
 
@@ -3073,7 +3140,7 @@ The behaviour of CHREST turtles in the model is driven by the generation and rec
 
 Action patterns are generated using the current visual pattern.  Action patterns look similiar to visual patterns but they instead describe what action should be performed.  For example, the action pattern: [PT, 0, 1] indicates that the CHREST turtle should push a tile, _PT_, 1 patch (1) along heading 0 (north).
 
-Since these patterns can be stored in the LTM of a turtle endowed with a CHREST architecture, CHREST turtles are capable of associating visual and action patterns together.  A CHREST turtle will attempt to associate any visual and action pattern except when it can not see a tile or hole and decides to move randomly.  This is because the environment is dynamic i.e. tiles and holes appear at random and therefore, favouring one random heading over another does not impart any benefit upon the potential score of a player.
+Since these patterns can be stored in the LTM of a turtle endowed with a CHREST architecture, CHREST turtles are capable of associating visual and action patterns together.  A CHREST turtle will attempt to associate any visual and action pattern except when it can not see a tile or hole and decides to move randomly.  This is because the environment is dynamic i.e. tiles and holes appear at random and therefore, favouring one random heading over another does not impart any benefit upon the potential score of a player.  After a CHREST turtle attempts to associate a visual pattern with an action pattern, the visual and action pattern in question are added to the CHREST turtle's "visual-action-pairs" list.  This list enables the CHREST turtle to accurately reinforce or weaken a link between a visual pattern and action pattern since there is no way to indicate precisely what action pattern in action STM is linked to what visual pattern in visual STM.  The "visual-action-pairs" list has a maximum capacity that is set by the user in the settings file for a scenario.
 
 A Netlogo table data structure containing the visual patterns created and action patterns performed in response to each visual pattern created since the CHREST turtle last saw a hole is maintained for each CHREST turtle.  This enables CHREST turtles to positively or negatively _reinforce_ visual-action patterns.
 
