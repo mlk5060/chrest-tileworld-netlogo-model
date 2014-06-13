@@ -25,6 +25,7 @@
 ;TODO: Implement hash table to keep track of action patterns that have been performed in response to visual patterns.
 ;      The size of this table should be limited to 30 and should be cleared whenever a hole is filled or whenever a
 ;      hole disappears.  Should operate on FIFO principle.
+;TODO: Perform a check after running the setup procedure to see if all required turtle breed variables are set.
 
 
 ;******************************************;
@@ -104,6 +105,7 @@ breed [ holes ]
        current-visual-pattern                       ;Stores the current visual pattern that has been generated.
        discrimination-time                          ;Stores the length of time (in seconds) that the CHREST turtle takes to discriminate a new node in LTM.
        familiarisation-time                         ;Stores the length of time (in seconds) that the CHREST turtle takes to familiarise a node in LTM.
+       max-length-of-visual-action-pairs-list       ;Stores the maximum length that the CHREST turtle's "visual-action-pairs" list can be.
        next-action-to-perform                       ;Stores the action-pattern that the turtle is to perform next.
        play-time                                    ;Stores the length of time (in seconds) that the CHREST turtle can play a non-training game for.
        score                                        ;Stores the score of the agent (the number of holes that have been filled by the turtle).
@@ -111,6 +113,7 @@ breed [ holes ]
        sight-radius-colour                          ;Stores the colour that the patches a CHREST turtle can see will be set to (used for debugging). 
        time-to-perform-next-action                  ;Stores the time that the action-pattern stored in the "next-action-to-perform" turtle variable should be performed.
        training-time                                ;Stores the length of time (in seconds) that the turtle can train for.
+       visual-action-pairs                          ;Stores visual patterns generated and action patterns performed in response to that visual pattern in a list data structure.
        visual-pattern-used-to-generate-action       ;Stores the visual-pattern that was used to generate the action-pattern stored in the "next-action-to-perform" turtle variable.
      ]
      
@@ -140,6 +143,50 @@ breed [ holes ]
 ;********* SIMULATION PROCEDURES *********;
 ;*****************************************;
 ;*****************************************;
+     
+     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+     ;;;;; "ADD-ENTRY-TO-VISUAL-ACTION-PAIRS" PROCEDURE ;;;;;
+     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+     
+     ;Adds an entry to the calling turtle's "visual-action-pairs" list. A dedicated procedure 
+     ;is required for this since the list has a maximum length (defined by the user in a 
+     ;scenario set-up file) and consequently, if the length of the "visual-action-pairs" list
+     ;contains this maximum number of items, the last item must be removed and the new item
+     ;added to the front of the list.
+     ;
+     ;Also, this list contains nested lists consisting of visual-action pattern pairs so this
+     ;procedure ensures that new items are formatted correctly.
+     ;
+     ;If the length of the "visual-action-pairs" list is less than the maximum length then the
+     ;new item is added to the front of the list.
+     ;
+     ;         Name              Data Type     Description
+     ;         ----              ---------     -----------
+     ;@params  visual-pattern    String        The visual pattern to be paired.
+     ;@params  action-pattern    String        The action pattern to be paired.
+     ;
+     ;@author  Martyn Lloyd-Kelly <martynlloydkelly@gmail.com>  
+     to add-entry-to-visual-action-pairs [visual-pattern action-pattern]
+       set debug-indent-level (debug-indent-level + 1)
+       output-debug-message ("EXECUTING THE 'add-entry-to-visual-action-pairs' PROCEDURE...") ("")
+       set debug-indent-level (debug-indent-level + 1)
+       
+       output-debug-message (word "Before modification the the 'visual-action-pairs' list is set to: " visual-action-pairs ) (who)
+       output-debug-message (word "Checking to see if the length of the 'visual-action-pairs' list (" length visual-action-pairs ") is greater than or equal to the value specified for the 'max-length-of-visual-action-pairs-list' variable (" max-length-of-visual-action-pairs-list ")...") (who)
+       if( (length visual-action-pairs) >= max-length-of-visual-action-pairs-list )[
+         
+         output-debug-message ("The length of the 'visual-action-pairs' list is greater than or equal to the value specified for the 'max-length-of-visual-action-pairs-list' variable...") (who)
+         output-debug-message ("Removing the last item (oldest item) from the 'visual-action-pairs' list...") (who)
+         set visual-action-pairs (but-last visual-action-pairs)
+         output-debug-message (word "After removing the last item the 'visual-action-pairs' list is set to: " visual-action-pairs ) (who)
+       ]
+       
+       output-debug-message (word "Adding " (list visual-pattern action-pattern) " to the front of the 'visual-action-pairs' list...") (who)
+       set visual-action-pairs (fput (list visual-pattern action-pattern) (visual-action-pairs))
+       output-debug-message (word "Final state of the 'visual-action-pairs' list: " visual-action-pairs) (who)
+       
+       set debug-indent-level (debug-indent-level - 2)
+     end
 
      ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
      ;;;;; "PLAY" PROCEDURE ;;;;;
@@ -570,6 +617,7 @@ breed [ holes ]
               set next-action-to-perform ""
               set score 0
               set time-to-perform-next-action -1 ;Set to -1 initially since if it is set to 0 the turtle will think it has some action to perform in the initial round.
+              set visual-action-pairs []
               set visual-pattern-used-to-generate-action []
               set sight-radius-colour (select-sight-radius-colour)
               
@@ -1911,6 +1959,7 @@ breed [ holes ]
                 let action-pattern (chrest:create-item-square-pattern (action-token) (heading) (patches-to-move))
                 output-debug-message (word "Action pattern generated: " action-pattern ".  Attempting to associate this with: '" current-visual-pattern "'...") (who)
                 chrest:associate-patterns "visual" "item_square" current-visual-pattern "action" "item_square" action-pattern convert-seconds-to-milliseconds(report-current-time)
+                add-entry-to-visual-action-pairs (current-visual-pattern) (action-pattern) 
               ]
             ]
             
@@ -2009,6 +2058,7 @@ breed [ holes ]
                   if(breed = chrest-turtles)[
                     output-debug-message (word "I am a CHREST turtle so I'll associate the value of my 'current-visual-pattern' variable (" current-visual-pattern ") with the value of the local 'action-to-perform' variable (" action-to-perform ")...") (who)
                     chrest:associate-patterns "visual" "item_square" current-visual-pattern "action" "item_square" action-to-perform convert-seconds-to-milliseconds(report-current-time)
+                    add-entry-to-visual-action-pairs (current-visual-pattern) (action-to-perform)
                   ]
                   
                   output-debug-message ("Since I'm surrounded I'll stop trying to perform an action...") (who)
@@ -2022,6 +2072,7 @@ breed [ holes ]
                     if(breed = chrest-turtles)[
                       output-debug-message (word "I am a CHREST turtle so I'll associate the value of my 'current-visual-pattern' variable (" current-visual-pattern ") with the value of the local 'action-to-perform' variable (" action-to-perform ")...") (who)
                       chrest:associate-patterns "visual" "item_square" current-visual-pattern "action" "item_square" action-to-perform convert-seconds-to-milliseconds(report-current-time)
+                      add-entry-to-visual-action-pairs (current-visual-pattern) (action-to-perform)
                     ]
                     
                     output-debug-message ("Since I'm remaining stationary I won't do anything now...") (who)
@@ -2081,20 +2132,48 @@ breed [ holes ]
           ;;; "PUSH-TILE" PROCEDURE ;;;
           ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
           
-          ;Enables the calling agent to push a tile.  The calling agent will set its heading to
-          ;face its closest-tile and the tile to be pushed is asked to do the same (enables a 
-          ;"push" to be simulated).  The tile to be pushed is also asked to determine if there 
-          ;is anything immediately in front of it in the current heading, if not, the tile moves
-          ;forward 1 patch along its current heading and the calling turtle does the same.
+          ;Enables the calling agent (the pusher) to push a tile.  Note that the tile to be 
+          ;pushed does not check to see if the patch ahead contains anything other than holes 
+          ;since the pusher will have already done this before the 'push-tile' action was
+          ;generated and loaded for execution.  Consequently, if there were anything ahead of 
+          ;the tile other than a hole, this procedure would never have been run.
+          
+          ;The pusher sets its heading to face its closest-tile and the tile to be pushed is 
+          ;asked to do the same so that it moves along the same heading.  If the pusher's breed 
+          ;indicates that it is a CHREST turtle, the pusher will attempt to associate the current 
+          ;visual pattern and the action-pattern it is currently performing together in its LTM.
+          ;Following this, the CHREST turtle will then add the current visual pattern and the
+          ;action-pattern it is currently performing to the 'visual-action-pairs' list so 
+          ;that it can be reinforced if the tile fills a hole.
           ;
-          ;If there is a turtle in front of the tile to be pushed then the tile does not move and
-          ;when the calling turtle checks the patch that is 1 patch away in its current heading,
-          ;it will see that the tile occupies this patch and will not move.
+          ;The procedure then branches in one of two ways depending on whether there is a hole 
+          ;on the patch ahead of the tile:
+          ;
+          ;  1. If there is a hole on the patch immediately ahead of the tile then:
+          ;     a. The tile moves forward by 1 patch.
+          ;     b. The hole on the patch ahead of the tile (that the tile is now on) is asked 
+          ;        to die (simulates the first part of the tile filling the hole). 
+          ;     c. The pusher's score is incremented by 1.
+          ;     d. The pusher's breed is checked, if it is a CHREST turtle then the pusher's
+          ;        'visual-action-pairs' list is iterated through and the pusher attempts to
+          ;        reinforce each visual-action pair.  Following this, the pusher then clears
+          ;        the 'visual-action-pairs' list so that redundant visual-action pairs are 
+          ;        not reinforced in future.
+          ;     e. The tile that has been pushed dies (simulating the second part of the 
+          ;        simulated hole fill).
+          ;
+          ;  2. If there isn't a hole on the patch immediately ahead of the tile then the tile
+          ;     moves forward onto the patch ahead (simulating the first part of the push).
+          ;
+          ;Following this procedural branch, the pusher also moves forward one tile thus simulating
+          ;the final part of the push.
           ;
           ;         Name              Data Type     Description
           ;         ----              ---------     -----------
           ;@params  push-heading      Number        The heading that the pusher should set its heading
           ;                                         to in order to push the tile in question.
+          ;
+          ;@author   Martyn Lloyd-Kelly  <martynlloydkelly@gmail.com>
           to push-tile [push-heading]
             set debug-indent-level (debug-indent-level + 1)
             output-debug-message ("EXECUTING THE 'push-tile' PROCEDURE...") ("")
@@ -2105,6 +2184,14 @@ breed [ holes ]
             output-debug-message (word "My 'heading' variable is now set to:" heading ".  Checking to see if there is a tile immediately ahead that I can push...") (who)
             
             if(any? tiles-on patch-at-heading-and-distance (heading) (1))[
+              
+              if(breed = chrest-turtles)[
+                let action-pattern (chrest:create-item-square-pattern (push-tile-token) (heading) (1))
+                output-debug-message (word "Action pattern generated: " action-pattern ".  Attempting to associate this with: '" current-visual-pattern "'...") (who)
+                chrest:associate-patterns "visual" "item_square" current-visual-pattern "action" "item_square" action-pattern convert-seconds-to-milliseconds(report-current-time)
+                add-entry-to-visual-action-pairs (current-visual-pattern) (action-pattern)
+              ]
+              
               output-debug-message (word "There is a tile immediately ahead along heading " heading ".  Pushing this tile...") (who)
               
               ask tiles-on patch-at-heading-and-distance (heading) (1)[
@@ -2118,13 +2205,30 @@ breed [ holes ]
                   output-debug-message (word "There is a hole 1 patch ahead with my current heading (" heading ") so I'll move onto that patch, the hole will die, turtle " [who] of myself "'s 'score' will increase by 1 and I will die.") (who)
                   forward 1
                   ask holes-here[ die ]
-                  ask myself [ set score score + 1 ]
+                  
+                  ask myself [ 
+                    set score score + 1
+                    
+                    output-debug-message ("I am the pusher and I need to check if my breed is equal to 'chrest-turtles'.  If so, I should try to reinforce the visual-action links in my 'visual-action-pairs' list...") (who)
+                    if( breed = chrest-turtles )[
+                      output-debug-message ("My breed is equal to 'chrest-turtles' so I'll cycle through each of the items in my 'visual-action-pairs' list and try to reinforce the links between the patterns...") (who)
+                      foreach(visual-action-pairs)[
+                        output-debug-message (word "Processing the following item: " ? "...") (who)
+                        output-debug-message (word "Item 0 of " ? " is: " item 0 ?) (who)
+                        output-debug-message (word "Item 1 of " ? " is: " item 1 ?) (who)
+                        output-debug-message (word "Attempting to reinforce the link between these patterns in LTM...") (who)
+                        chrest:reinforce-action-link ("visual") ("item_square") (item 0 ?) ("item_square") (item 1 ?) (1)
+                      ]
+                      
+                      output-debug-message ("Reinforcement of visual-action patterns complete.  Clearing my 'visual-action-pairs' list...") (who)
+                      set visual-action-pairs []
+                      output-debug-message (word "My 'visual-action-pairs' list is now equal to: " visual-action-pairs "...") (who)
+                    ]
+                  ]
+                  
                   die
                 ]
                 [
-                  ;No need to check if the way is clear since the pusher will have already
-                  ;done this.  If the patch ahead of the tile along its current heading 
-                  ;is not free, this procedure would not have been run.
                   output-debug-message (word "There are no holes on the patch immediately ahead of me with heading " heading " so I'll move forward by 1 patch...") (who)
                   forward 1
                 ]
@@ -2135,12 +2239,6 @@ breed [ holes ]
             ;would not have executed this procedure.
             output-debug-message (word "I should also move forward by 1 patch...") (who)
             forward 1
-            
-            if(breed = chrest-turtles)[
-              let action-pattern (chrest:create-item-square-pattern (push-tile-token) (heading) (1))
-              output-debug-message (word "Action pattern generated: " action-pattern ".  Attempting to associate this with: '" current-visual-pattern "'...") (who)
-              chrest:associate-patterns "visual" "item_square" current-visual-pattern "action" "item_square" action-pattern convert-seconds-to-milliseconds(report-current-time)
-            ]
             
             set debug-indent-level (debug-indent-level - 2)
           end
@@ -3003,8 +3101,8 @@ Containing directory
 |
 |____:
 |
-|____Scenario _n_
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|____Scenario _n_ Settings.txt
+|____Scenario_n_
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|____ScenarioNSettings.txt
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|____Repeat1
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|____Repeat2
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|____&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:
@@ -3013,6 +3111,7 @@ Containing directory
   * Scenario numbering must run from 1 to _n_ where _n_ is equal to the number specified in the "total-number-of-scenarios" box in the model's interface tab.
   * Repeat numbering must run from 1 to _n_ where _n_ is equal to the number specified in the "total-number-of-repeats" box in the model's interface tab.
   * The number of repeats is equal for all scenarios so every "Scenario" directory must contain the same number of "Repeat" directories (from 1 to _n_).
+  * Filenames are case and space sensitive
 
 When you first press the "Play" button on the model's interface tab, a number of dialog options will appear asking you if you wish to record various pieces of information.  You will also be asked to specify where the "Containing directory" in the directory structure illustration above.
 
@@ -3060,7 +3159,7 @@ Only the following variables should be modified using the scenario settings file
 
   * **time-increment:** determines the value that training or play time is incremented by after every iteration of the "play" procedure.
 
-#### TURTLE VARIABLES
+#### CHREST TURTLE BREED VARIABLES
 
   * **action-performance-time:** determines how long it takes for a player turtle to perform an action once one has been decided upon and loaded for execution.
 
@@ -3073,6 +3172,9 @@ Only the following variables should be modified using the scenario settings file
   * **discrimination-time:** determines how long it takes for a CHREST turtle to discriminate a chunk in long-term memory.
 
   * **familiarisation-time:** determines how long it takes for a CHREST turtle to familiarise a chunk in long-term memory.
+
+  * **max-length-of-visual-action-pairs-list:** determines the maximum length of a CHREST
+turtle's "visual-action-pairs" list.
 
   * **play-time:** determines how long a player turtle can play a non-training game for.
 
@@ -3088,7 +3190,7 @@ The behaviour of CHREST turtles in the model is driven by the generation and rec
 
 Action patterns are generated using the current visual pattern.  Action patterns look similiar to visual patterns but they instead describe what action should be performed.  For example, the action pattern: [PT, 0, 1] indicates that the CHREST turtle should push a tile, _PT_, 1 patch (1) along heading 0 (north).
 
-Since these patterns can be stored in the LTM of a turtle endowed with a CHREST architecture, CHREST turtles are capable of associating visual and action patterns together.  A CHREST turtle will attempt to associate any visual and action pattern except when it can not see a tile or hole and decides to move randomly.  This is because the environment is dynamic i.e. tiles and holes appear at random and therefore, favouring one random heading over another does not impart any benefit upon the potential score of a player.
+Since these patterns can be stored in the LTM of a turtle endowed with a CHREST architecture, CHREST turtles are capable of associating visual and action patterns together.  A CHREST turtle will attempt to associate any visual and action pattern except when it can not see a tile or hole and decides to move randomly.  This is because the environment is dynamic i.e. tiles and holes appear at random and therefore, favouring one random heading over another does not impart any benefit upon the potential score of a player.  After a CHREST turtle attempts to associate a visual pattern with an action pattern, the visual and action pattern in question are added to the CHREST turtle's "visual-action-pairs" list.  This list enables the CHREST turtle to accurately reinforce or weaken a link between a visual pattern and action pattern since there is no way to indicate precisely what action pattern in action STM is linked to what visual pattern in visual STM.  The "visual-action-pairs" list has a maximum capacity that is set by the user in the settings file for a scenario.
 
 A Netlogo table data structure containing the visual patterns created and action patterns performed in response to each visual pattern created since the CHREST turtle last saw a hole is maintained for each CHREST turtle.  This enables CHREST turtles to positively or negatively _reinforce_ visual-action patterns.
 
