@@ -409,11 +409,13 @@ breed [ holes ]
            ;;; WRITE VALUES OF INTEREST TO OUTPUT ;;;
            ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
            
-           if( ((report-current-time mod output-interval) = 0) and (report-current-time != 0)  )[
-             output-print (word "Avg # of visual-action links @ " report-current-time "s = " (precision ( mean [chrest:get-ltm-modality-num-action-links "visual"] of chrest-turtles ) (2) ) )
-             output-print (word "Avg # visual LTM nodes @ " report-current-time "s = " (precision ( mean [chrest:get-ltm-modality-size "visual"] of chrest-turtles ) (2) ) )
-             output-print (word "Avg depth visual LTM @ " report-current-time "s = " (precision ( mean [chrest:get-ltm-modality-avg-depth "visual"] of chrest-turtles ) (2) ) )
-             output-print (word "Avg score @ " report-current-time "s = " (precision ( mean [score] of chrest-turtles ) (2) ) )
+           if(save-output-data?)[
+             if( ((report-current-time mod output-interval) = 0) and (report-current-time != 0)  )[
+               output-print (word "Avg # of visual-action links @ " report-current-time "s = " (precision ( mean [chrest:get-ltm-modality-num-action-links "visual"] of chrest-turtles ) (2) ) )
+               output-print (word "Avg # visual LTM nodes @ " report-current-time "s = " (precision ( mean [chrest:get-ltm-modality-size "visual"] of chrest-turtles ) (2) ) )
+               output-print (word "Avg depth visual LTM @ " report-current-time "s = " (precision ( mean [chrest:get-ltm-modality-avg-depth "visual"] of chrest-turtles ) (2) ) )
+               output-print (word "Avg score @ " report-current-time "s = " (precision ( mean [score] of chrest-turtles ) (2) ) )
+             ]
            ]
            
            update-time
