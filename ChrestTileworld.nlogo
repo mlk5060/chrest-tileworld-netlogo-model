@@ -5,8 +5,6 @@
 ; =========================== 
 ; by Martyn Lloyd-Kelly
 
-;INPROG: Reinforce visual-action links in STM if a turtle successfully pushes a tile into a hole.
-
 ;TODO: Investigate 'get-stm-by-modality' primitive since the graphs being plotted are always at 5 on y-axis.
 ;TODO: Have turtles decide between using learnt action patterns or to deliberate about next action.
 ;      Currently, if a visual-pattern has:
@@ -63,6 +61,7 @@ breed [ holes ]
        current-scenario-number     ;Stores the current scenario number.
        current-training-time       ;Stores the length of time (in seconds) that the training game has run for.
        debug-indent-level          ;Stores the current indent level (3 spaces per indent) for debug messages.
+       debug-message-output-file   ;Stores the location where debug messages should be written to.
        directory-separator         ;Stores the directory separator for the operating system the model is being run on.
        hole-born-every             ;Stores the length of time (in seconds) that must pass before a hole may possibly be created.
        hole-birth-prob             ;Stores the probability that a hole will be created on each tick in the game.
@@ -77,6 +76,7 @@ breed [ holes ]
        push-tile-token             ;Stores the string used to indicate that the calling turtle pushed a tile in action-patterns.
        remain-stationary-token     ;Stores the string used to indicate that the calling turtle is remaining stationary.
        results-directory           ;Stores the directory that results are to be output to.
+       reward-value                ;Stores the value awarded to turtles when they push a tile into a hole.
        save-interface?             ;Stores a boolean value that indicates whether the user wishes to save an image of the interface when running the model.
        save-output-data?           ;Stores a boolean value that indicates whether the user wishes to save output data when running the model.
        save-training-data?         ;Stores a boolean value that indicates whether or not data should be saved when training completes.
@@ -96,18 +96,21 @@ breed [ holes ]
      ;;;;;;;;;;;;;;;;;;;;;;;;;;;
      
      chrest-turtles-own [ 
-       action-performance-time                      ;Stores the length of time (in seconds) that the turtle takes to perform an action once selected.
        action-selection-pattern-recognition-time    ;Stores the length of time (in seconds) that the CHREST turtle takes to select an action using pattern-recognition.
        action-selection-heuristic-time              ;Stores the length of time (in seconds) that the turtle takes to select an action using a heuristic (used as the base in McCabe complexity).
        add-link-time                                ;Stores the length of time (in seconds) that the CHREST turtle takes to add a link between two nodes in LTM.
        chrest-instance                              ;Stores an instance of the CHREST architecture.
        closest-tile                                 ;Stores an agentset consisting of the closest tile to the calling turtle when the 'next-to-tile' procedure is called.
        current-visual-pattern                       ;Stores the current visual pattern that has been generated.
+       discount-rate                                ;Stores the discount rate used for the "profit-sharing-with-discount-rate" reinforcement learning algorithm.
        discrimination-time                          ;Stores the length of time (in seconds) that the CHREST turtle takes to discriminate a new node in LTM.
        familiarisation-time                         ;Stores the length of time (in seconds) that the CHREST turtle takes to familiarise a node in LTM.
+       heuristic-performance-time                   ;Stores the length of time (in seconds) that the CHREST turtle takes to perform an action selected using heuristics.
        max-length-of-visual-action-pairs-list       ;Stores the maximum length that the CHREST turtle's "visual-action-pairs" list can be.
        next-action-to-perform                       ;Stores the action-pattern that the turtle is to perform next.
+       pattern-association-performance-time         ;Stores the length of time (in seconds) that the CHREST turtle takes to perform an action selected using pattern association.
        play-time                                    ;Stores the length of time (in seconds) that the CHREST turtle can play a non-training game for.
+       reinforcement-learning-theory                ;Stores the name of the reinforcement learning theory the CHREST turtle will use.
        score                                        ;Stores the score of the agent (the number of holes that have been filled by the turtle).
        sight-radius                                 ;Stores the number of patches north, east, south and west that the turtle can see.
        sight-radius-colour                          ;Stores the colour that the patches a CHREST turtle can see will be set to (used for debugging). 
@@ -118,7 +121,6 @@ breed [ holes ]
      ]
      
      non-chrest-turtles-own[
-       action-performance-time               ;Stores the length of time (in seconds) that the turtle takes to perform an action once selected.
        action-selection-heuristic time       ;Stores the length of time (in seconds) that the turtle takes to select an action using a heuristic (used as the base in McCabe complexity).
        destination-x                         ;Stores the x-coordinate the turtle is heading towards.
        destination-y                         ;Stores the y-coordinate the turtle is heading towards.
@@ -181,8 +183,8 @@ breed [ holes ]
          output-debug-message (word "After removing the last item the 'visual-action-pairs' list is set to: " visual-action-pairs ) (who)
        ]
        
-       output-debug-message (word "Adding " (list visual-pattern action-pattern) " to the front of the 'visual-action-pairs' list...") (who)
-       set visual-action-pairs (fput (list visual-pattern action-pattern) (visual-action-pairs))
+       output-debug-message (word "Adding " (list visual-pattern action-pattern report-current-time) " to the front of the 'visual-action-pairs' list...") (who)
+       set visual-action-pairs (fput (list visual-pattern action-pattern report-current-time) (visual-action-pairs))
        output-debug-message (word "Final state of the 'visual-action-pairs' list: " visual-action-pairs) (who)
        
        set debug-indent-level (debug-indent-level - 2)
@@ -224,15 +226,19 @@ breed [ holes ]
        ;;; INITIAL SETUP ;;;
        ;;;;;;;;;;;;;;;;;;;;;
        
-       output-debug-message (word "CHECKING TO SEE IF THE GLOBAL 'current-scenario-number' AND 'current-repeat-number' VARIABLES ARE SET TO 0 (" current-scenario-number ", " current-repeat-number ")..." ) ("")
        if((current-scenario-number = 0) and (current-repeat-number = 0))[
-         output-debug-message ("THE 'current-scenario-number' AND 'current-repeat-number' ARE SET TO 0.  SETTING THEM BOTH TO 1...") ("")
          __clear-all-and-reset-ticks
+         
+         if(debug?)[
+           specify-debug-message-output-file
+           output-debug-message (debug-message-output-file) ("")
+         ]
+         
          set current-scenario-number 1
          set current-repeat-number 1
          set directory-separator pathdir:get-separator
          
-         output-debug-message ("ASKING THE USER TO SPECIFY WHERE RESULTS SHOULD BE SAVED TO...") ("")
+         user-message ("Please specify where model input/output files can be found in the next dialog that appears.")
          set results-directory user-directory
          
          ifelse(user-yes-or-no? "Would you like to save the interface at the end of each repeat?")[
@@ -291,6 +297,13 @@ breed [ holes ]
          error (word "File " results-directory directory-separator "Scenario" current-scenario-number directory-separator "Repeat" current-repeat-number " does not exist.")
        ]
        
+       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+       ;;; CHECK IF DEBUG MESSAGE OUTPUT FILE SPECIFIED IF "DEBUG?" IS TRUE ;;;
+       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+       if(debug? and debug-message-output-file = 0)[
+         specify-debug-message-output-file
+       ]
+       
        ;;;;;;;;;;;;;;;;;;;;;;;;;;
        ;;; UPDATE ENVIRONMENT ;;;
        ;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -306,7 +319,7 @@ breed [ holes ]
        ifelse(player-turtles-finished? and training?)[
          output-debug-message (word "THERE ARE NO PLAYERS STILL VISIBLE AND THE GLOBAL 'training?' VARIABLE IS SET TO TRUE.  TRAINING IS THEREFORE COMPLETE...") ("")
          
-         output-debug-message ("CHECKING TO SEE IF I SHOULD SAVE ANY DATA ACCUMULATED DURING TRAINING...") ("")
+         output-debug-message ("CHECKING TO SEE IF ANY TRAINING DATA SHOULD BE SAVED...") ("")
          if(save-training-data?)[
            if(save-interface?)[
              output-debug-message (word "EXPORTING INTERFACE TO: " results-directory directory-separator "Scenario" current-scenario-number directory-separator "Repeat" current-repeat-number directory-separator "Repeat" current-repeat-number "-TRAINING.png" "...")("")
@@ -330,10 +343,9 @@ breed [ holes ]
            set hidden? false
          ]
          clear-all-plots
-         clear-output
-         
          output-debug-message ("RESETTING CHREST TURTLES BUT MAINTAINING THEIR CHREST INSTANCES...") ("")
          setup-chrest-turtles (false)
+         clear-output
        ]
        [
          output-debug-message ("TURTLES MUST STILL BE PLAYING OR THE GLOBAL 'training?' VARIABLE IS SET TO FALSE...") ("")
@@ -626,6 +638,7 @@ breed [ holes ]
                 chrest:set-add-link-time (convert-seconds-to-milliseconds (add-link-time))
                 chrest:set-discrimination-time (convert-seconds-to-milliseconds (discrimination-time))
                 chrest:set-familiarisation-time (convert-seconds-to-milliseconds (familiarisation-time))
+                chrest:set-reinforcement-learning-theory (reinforcement-learning-theory)
               ]
               
               place-randomly
@@ -649,6 +662,7 @@ breed [ holes ]
               output-debug-message (word "My '_addLinkTime' CHREST variable is set to: '" convert-milliseconds-to-seconds (chrest:get-add-link-time) "' seconds.") (who)
               output-debug-message (word "My '_discriminationTime' CHREST variable is set to: '" convert-milliseconds-to-seconds (chrest:get-discrimination-time) "' seconds.") (who)
               output-debug-message (word "My '_familiarisationTime' CHREST variable is set to: '" convert-milliseconds-to-seconds (chrest:get-familiarisation-time) "' seconds.") (who)
+              output-debug-message (word "My '_reinforcementLearningTheory' CHREST variable is set to: '" chrest:get-reinforcement-learning-theory "'.") (who)
             ]
           end
      
@@ -664,15 +678,15 @@ breed [ holes ]
           ;
           ;@author  Martyn Lloyd-Kelly <martynlloydkelly@gmail.com>
           to setup-independent-variables
-            file-close ;This must be done just in case the previous file errored out (Netlogo does not reset file pointers automatically).
-            file-open (word results-directory directory-separator "Scenario" current-scenario-number directory-separator "Scenario" current-scenario-number "Settings.txt" )
+            set debug-indent-level (debug-indent-level + 1)
+            output-debug-message ("EXECUTING THE 'setup-environment-using-user-selected-file' PROCEDURE...") ("")
+            set debug-indent-level (debug-indent-level + 1)
+            output-debug-message (word "THE FILE TO USE TO SETUP THE CURRENT SIMULATION IS: " results-directory "Scenario" current-scenario-number directory-separator "Scenario" current-scenario-number "Settings.txt") ("")
+            file-open (word results-directory "Scenario" current-scenario-number directory-separator "Scenario" current-scenario-number "Settings.txt" )
             
             let variable-name ""
             
             while[not file-at-end?][
-              set debug-indent-level (debug-indent-level + 1)
-              output-debug-message ("EXECUTING THE 'setup-environment-using-user-selected-file' PROCEDURE...") ("")
-              set debug-indent-level (debug-indent-level + 1)
               let line file-read-line
               output-debug-message (word "LINE BEING READ FROM EXTERNAL FILE IS: '" line "'") ("")
               
@@ -686,7 +700,7 @@ breed [ holes ]
                 [
                   ifelse(string:rex-match "\"(.)*\"" line)[
                     output-debug-message (word "'" line "' IS SURROUNDED WITH DOUBLE QUOTES INDICATING THAT THIS IS A NETLOGO COMMAND.  THIS COMMAND SHOULD BE RUN USING THE 'print-and-run' PROCEDURE..." ) ("")
-                    print-and-run (read-from-string line)
+                    print-and-run (read-from-string (line))
                   ]
                   [
                     output-debug-message (word "'" line "' MUST BE A VALUE.") ("")
@@ -707,7 +721,7 @@ breed [ holes ]
                       )[
                        error (word "ERROR: External model settings file line: '" line "' contains more than one pair of matching parenthesis!" )
                       ]
-                      output-debug-message ("NO MORE THAN ONE PAIR OF MATCHING PARENTHESIS EXISTS...")  ("")
+                      output-debug-message ("NO MORE THAN ONE PAIR OF MATCHING PARENTHESIS EXISTS...") ("")
                  
                       output-debug-message ("CHECKING FOR A HYPHEN IF MATCHING PARENTHESIS EXIST...") ("")
                       if(
@@ -732,8 +746,8 @@ breed [ holes ]
                    
                         let turtle-id read-from-string ( substring line ( (position "(" line) + 1 ) (position "-" line) )
                         let last-turtle-id read-from-string ( substring line ( (position "-" line) + 1 ) (position ")" line) )
-                        let value-specified read-from-string ( substring line ( (position ":" line) + 1 ) (length line) )
-                   
+                        let value-specified ( quote-string-or-read-from-string ( substring line ( (position ":" line) + 1 ) (length line) ) )
+                        
                         while[turtle-id <= last-turtle-id][
                           output-debug-message (word "TURTLE " turtle-id "'s '" variable-name "' VARIABLE WILL BE SET TO: '" value-specified "'.") ("")
                      
@@ -748,7 +762,7 @@ breed [ holes ]
                         output-debug-message (word "'" line "' DOES NOT CONTAIN A '(' SO THE '" variable-name "' VARIABLE FOR ONE TURTLE SHOULD BE SET...") ("")
                    
                         let turtle-id read-from-string ( substring line 0 (position ":" line ) )
-                        let value-specified read-from-string ( substring line ( (position ":" line) + 1 ) (length line) )
+                        let value-specified ( quote-string-or-read-from-string ( substring line ( (position ":" line) + 1 ) (length line) ) )
                         output-debug-message (word "TURTLE " turtle-id "'s '" variable-name "' VARIABLE WILL BE SET TO: '" value-specified "'.") ("")
                    
                         ask turtle turtle-id[ 
@@ -757,8 +771,9 @@ breed [ holes ]
                       ]
                     ]
                     [
-                      output-debug-message (word "'" line "' DOES NOT CONTAIN A ':' SO '" variable-name "' IS A GLOBAL VARIABLE AND WILL BE SET TO: '" read-from-string line "'.") ("")
-                      print-and-run (word "set " variable-name " " (read-from-string line) )
+                      output-debug-message (word "'" line "' DOES NOT CONTAIN A ':' SO '" variable-name "' IS A GLOBAL VARIABLE...") ("")
+                      output-debug-message (word "'" variable-name "' will therefore be set to: " quote-string-or-read-from-string (line) "...") ("")
+                      print-and-run (word "set " variable-name " " (quote-string-or-read-from-string (line) ) )
                     ] 
                   ]
                 ]
@@ -766,9 +781,9 @@ breed [ holes ]
               [
                 output-debug-message (word "'" line "' IS EMPTY SO IT WILL NOT BE PROCESSED.") ("")
               ]
-              
-              set debug-indent-level (debug-indent-level - 2)
+            file-open (word results-directory "Scenario" current-scenario-number directory-separator "Scenario" current-scenario-number "Settings.txt" )
             ]
+            set debug-indent-level (debug-indent-level - 2)
           end
           
           ;*******************************************************************************;
@@ -1187,10 +1202,6 @@ breed [ holes ]
             ]
           end
           
-          
-          
-          
-          
           ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
           ;;; "DELIBERATE" PROCEDURE ;;;
           ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1234,41 +1245,31 @@ breed [ holes ]
             ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
             
             if(breed = chrest-turtles)[
-              output-debug-message ("I am a chrest-turtle so I can continue to deliberate.") (who)
+              output-debug-message ("I am a chrest-turtle so I will deliberate accordingly...") (who)
+              output-debug-message (word "Checking to see if my 'Chrest._reinforcementLearningTheory' variable is set and if my 'current-visual-pattern' variable: '" current-visual-pattern "' is empty...") (who)
+              let actions-associated-with-visual-pattern []
+              let heuristic-deliberation (true)
               
-;              output-debug-message ("Setting the local 'actions-associated-with-visual-pattern' variable to an empty list...") (who)
-;              let actions-associated-with-visual-pattern []
-;              output-debug-message (word "The local 'actions-associated-with-visual-pattern' variable is set to: " actions-associated-with-visual-pattern "...") (who)
-;              
-;              output-debug-message (word "Checking to see if my 'current-visual-pattern' variable: '" current-visual-pattern "' is empty...") (who)
-;              if(not empty? current-visual-pattern)[
-;                output-debug-message (word "'" current-visual-pattern "' isn't empty so I'll check to see if I have any action-patterns associated with it in LTM...") (who)
-;                output-debug-message ("If I do, I'll add these action-patterns to the local 'actions-associated-with-visual-pattern' variable...") (who)
-;                set actions-associated-with-visual-pattern (chrest:recognise-pattern-and-return-patterns-of-specified-modality ("visual") ("item_square") (current-visual-pattern) ("action"))
-;              ]
-;              output-debug-message (word "The 'actions-associated-with-visual-pattern' variable is now set to: '" actions-associated-with-visual-pattern "'.") (who)
-;              
-;              output-debug-message (word "Checking to see if the 'actions-associated-with-visual-pattern' variable value is empty...") (who)
-;              ifelse(not empty? actions-associated-with-visual-pattern)[
-;                output-debug-message (word "The 'actions-associated-with-visual-pattern' variable value is not empty.  Checking to see how many items there are in this list...") (who)
-;                output-debug-message (word "I have " length actions-associated-with-visual-pattern " action-patterns associated with '" current-visual-pattern ".") (who)
-;                
-;                if( (length actions-associated-with-visual-pattern) > 1 )[
-;                  output-debug-message (word "I have more than one action associated with '" current-visual-pattern "' so I'll pick one of the actions to perform at random...") (who)
-;                  let action-to-perform ( item (random length actions-associated-with-visual-pattern) actions-associated-with-visual-pattern )
-;                  output-debug-message (word "The action I will perform is: '" action-to-perform "', loading this action for execution...") (who)
-;                  load-action (action-to-perform)
-;                ]
-;                
-;                if( ( length actions-associated-with-visual-pattern ) = 1 )[
-;                  output-debug-message (word "I only have one action associated with '" current-visual-pattern "' so I'll perform that action...") (who)
-;                  let action-to-perform item 0 actions-associated-with-visual-pattern
-;                  output-debug-message (word "The action I will perform is: '" action-to-perform "', loading this action for execution...") (who)
-;                  load-action (action-to-perform)
-;                ]
-;              ]
-;              [
-;                output-debug-message (word "I have no actions associated with '" current-visual-pattern "' so I'll figure out what to using a heuristic.  First, I need to check if I can see any tiles...") (who)
+              if( (chrest:get-reinforcement-learning-theory != "null" ) and (not empty? current-visual-pattern))[
+                output-debug-message (word "My CHREST._reinforcementLearningTheory variable is set and the '" current-visual-pattern "' isn't empty so I'll return any action-patterns associated with it in LTM...") (who)
+                set actions-associated-with-visual-pattern (chrest:recognise-pattern-and-return-patterns-of-specified-modality ("visual") ("item_square") (current-visual-pattern) ("action"))
+              ]
+              
+              output-debug-message (word "Checking to see if the 'actions-associated-with-visual-pattern' variable value is empty...") (who)
+              if(not empty? actions-associated-with-visual-pattern)[
+                output-debug-message (word "These actions (" actions-associated-with-visual-pattern ") are linked to my current visual pattern (" current-visual-pattern ")") (who)
+                output-debug-message ("Selecting an action to perform from the available actions...") (who)
+                let action-to-perform (roulette-selection (actions-associated-with-visual-pattern))
+                output-debug-message (word "The action I will perform is: '" action-to-perform "', checking to see if this is empty...") (who)
+                if(not empty? action-to-perform)[
+                  output-debug-message (word "The action I am to perform is not empty so I'll load it for execution...") (who)
+                  load-action (action-to-perform) (pattern-association-performance-time)
+                  set heuristic-deliberation (false)
+                ]
+              ]
+              
+              if(heuristic-deliberation)[
+                output-debug-message (word "Deliberating about what to using heuristics.  First, I need to check if I can see any tiles...") (who)
                 let number-of-tiles (check-for-substring-in-string-and-report-occurrences ("T") (current-visual-pattern) )
                 output-debug-message (word "I can see " number-of-tiles " tiles" ) (who)
                 
@@ -1291,7 +1292,7 @@ breed [ holes ]
                   output-debug-message ("I can't see any tiles, I'll just select a random heading to move 1 patch forward...") (who)
                   generate-random-move-action
                 ]
-;              ]
+              ]
             ]
             set debug-indent-level (debug-indent-level - 2)
           end
@@ -1494,7 +1495,7 @@ breed [ holes ]
               output-debug-message (word "Action pattern generated: '" action-pattern "'.  Checking to see if its empty, if not, I'll load it for execution...") (who)
               if(not empty? action-pattern)[
                 output-debug-message("The local 'action-pattern' variable is not empty, loading it for execution...") (who)
-                load-action (action-pattern)
+                load-action (action-pattern) (heuristic-performance-time)
               ]
             ]
             
@@ -1836,7 +1837,7 @@ breed [ holes ]
               output-debug-message (word "Checking to see if the local 'action-pattern' variable (" action-pattern ") has been instantiated, if so, it will be loaded for execution...") (who)
               if(not empty? action-pattern)[
                 output-debug-message (word "Action pattern is not empty, loading for execution...") (who)
-                load-action (action-pattern) 
+                load-action (action-pattern) (heuristic-performance-time)
               ]
             ]
           end
@@ -1867,7 +1868,7 @@ breed [ holes ]
               output-debug-message (word "Generating action pattern...") (who)
               let action-pattern (chrest:create-item-square-pattern move-randomly-token heading 1)
               output-debug-message (word "Action pattern generated: '" action-pattern "'.  Loading this action for execution...") (who)
-              load-action (action-pattern)
+              load-action (action-pattern) (heuristic-performance-time)
             ]
             
             set debug-indent-level (debug-indent-level - 2)
@@ -1881,15 +1882,19 @@ breed [ holes ]
           ; - 'next-action-to-perform' variable to the parameter passed to this procedure.
           ; - 'visual-pattern-used-to-generate-action' variable is set to the value of the 
           ;   calling turtle's 'current-visual-pattern' variable
-          ; - 'time-to-perform-next-action' variable to the current time plus the value contained
-          ;   in the calling turtle's 'action-performance-time' variable.
+          ; - 'time-to-perform-next-action' variable to the current time plus the value 
+          ;   passed in the 'performance-time' parameter to this function.
           ;
           ;         Name              Data Type     Description
           ;         ----              ---------     -----------
           ;@param   action-pattern    String        The action-pattern that is to be set to the calling
           ;                                         turtle's 'next-action-to-perform' variable.  This 
           ;                                         action may then be performed in the future.
-          to load-action [action-pattern]
+          ;@param   performance-time  Number        The length of time that must pass before the action
+          ;                                         is performed.
+          ;
+          ;@author  Martyn Lloyd-Kelly  <martynlloydkelly@gmail.com>
+          to load-action [action-pattern performance-time]
             set debug-indent-level (debug-indent-level + 1)
             output-debug-message ("EXECUTING THE 'load-action' PROCEDURE...") ("")
             set debug-indent-level (debug-indent-level + 1)
@@ -1900,12 +1905,12 @@ breed [ holes ]
             
             output-debug-message (word "Checking to see if the game is being played in a training context.  The 'training?' global variable is set to: '" training? "'.") (who)
             ifelse(training?)[
-              output-debug-message ( word "Game is being played in a training context. Setting my 'time-to-perform-next-action' variable to: 'current-training-time' (" current-training-time ") + 'action-performance-time' (" action-performance-time ") = " (precision (current-training-time + action-performance-time) (1)) "..." ) (who)
-              set time-to-perform-next-action (precision (current-training-time + action-performance-time) (1))
+              output-debug-message ( word "Game is being played in a training context. Setting my 'time-to-perform-next-action' variable to: 'current-training-time' (" current-training-time ") + 'performance-time' (" performance-time ") = " (precision (current-training-time + performance-time) (1)) "..." ) (who)
+              set time-to-perform-next-action (precision (current-training-time + performance-time) (1))
             ]
             [
-              output-debug-message ( word "Game is being played in a non-training context. Setting my 'time-to-perform-next-action' variable to: 'current-game-time' (" current-game-time ") + 'action-performance-time' (" action-performance-time ") = " (precision (current-game-time + action-performance-time) (1)) "..." ) (who)
-              set time-to-perform-next-action (precision (current-game-time + action-performance-time) (1))
+              output-debug-message ( word "Game is being played in a non-training context. Setting my 'time-to-perform-next-action' variable to: 'current-game-time' (" current-game-time ") + 'performance-time' (" performance-time ") = " (precision (current-game-time + performance-time) (1)) "..." ) (who)
+              set time-to-perform-next-action (precision (current-game-time + performance-time) (1))
             ]
             
             output-debug-message (word "I'm going to perform '" next-action-to-perform "' at time: '" time-to-perform-next-action "' and my 'visual-pattern-used-to-generate-action' variable is set to: '" visual-pattern-used-to-generate-action "'." ) (who)
@@ -1971,9 +1976,9 @@ breed [ holes ]
           ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
           
           ;Takes the message passed as the first parameter to this procedure and outputs 
-          ;it to the command center if the global 'debug?' variable is set to true.  
-          ;Users can also specify that the message to output is turtle-specific using the 
-          ;second parameter passed to this procedure.
+          ;it to the file specified by the 'debug-message-output-file' string if the global 
+          ;'debug?' variable is set to true.  Users can also specify that the message to 
+          ;output is turtle-specific using the second parameter passed to this procedure.
           ;
           ;Debug messages are indented according to the value of the global 'debug-indent-level'
           ;variable.  An indent is composed of 3 spaces.
@@ -2006,7 +2011,13 @@ breed [ holes ]
                 set x (x + 1)
               ]
               
-              print msg-to-output
+              ifelse(debug-message-output-file != 0)[
+                file-open debug-message-output-file
+                file-print msg-to-output
+              ]
+              [
+                print msg-to-output
+              ]
             ]
           end
           
@@ -2207,17 +2218,25 @@ breed [ holes ]
                   ask holes-here[ die ]
                   
                   ask myself [ 
-                    set score score + 1
+                    set score (score + reward-value)
+                    let current-time (report-current-time)
                     
                     output-debug-message ("I am the pusher and I need to check if my breed is equal to 'chrest-turtles'.  If so, I should try to reinforce the visual-action links in my 'visual-action-pairs' list...") (who)
                     if( breed = chrest-turtles )[
                       output-debug-message ("My breed is equal to 'chrest-turtles' so I'll cycle through each of the items in my 'visual-action-pairs' list and try to reinforce the links between the patterns...") (who)
+                      output-debug-message (word "Time that reward was awarded: " current-time "s.") (who)
+                      output-debug-message (word "The contents of my 'visual-action-pairs' list is: " visual-action-pairs) (who)
+                      
                       foreach(visual-action-pairs)[
-                        output-debug-message (word "Processing the following item: " ? "...") (who)
-                        output-debug-message (word "Item 0 of " ? " is: " item 0 ?) (who)
-                        output-debug-message (word "Item 1 of " ? " is: " item 1 ?) (who)
+                        output-debug-message (word "Processing the following visual-action pair: " ? "...") (who)
+                        output-debug-message (word "Visual pattern is: " (item (0) (?))) (who)
+                        output-debug-message (word "Action pattern is: " (item (1) (?))) (who)
+                        output-debug-message (word "Action pattern was performed at time " (item (2) (?)) "s") (who)
                         output-debug-message (word "Attempting to reinforce the link between these patterns in LTM...") (who)
-                        chrest:reinforce-action-link ("visual") ("item_square") (item 0 ?) ("item_square") (item 1 ?) (1)
+                         
+                        output-debug-message (word (item 0 ?) "'s action links before reinforcement: " (chrest:recognise-pattern-and-return-patterns-of-specified-modality ("visual") ("item_square") (item (0) (?)) ("action") ) ) (who)
+                        chrest:reinforce-action-link ("visual") ("item_square") (item (0) (?)) ("item_square") (item (1) (?)) (list (reward-value) (discount-rate) (current-time) (item (2) (?)))
+                        output-debug-message (word (item 0 ?) "'s action links after reinforcement: " ( chrest:recognise-pattern-and-return-patterns-of-specified-modality ("visual") ("item_square") (item 0 ?) ("action") ) ) (who)
                       ]
                       
                       output-debug-message ("Reinforcement of visual-action patterns complete.  Clearing my 'visual-action-pairs' list...") (who)
@@ -2242,7 +2261,40 @@ breed [ holes ]
             
             set debug-indent-level (debug-indent-level - 2)
           end
-         
+          
+          ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+          ;;; "QUOTE-STRING-OR-READ-FROM-STRING" PROCEDURE ;;;
+          ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+          
+          ;Checks to see if "value" contains alphabetical character. If it doesn't, 
+          ;it should be assigned as the result of the "read-from-string" primitive 
+          ;so that it is converted from a string data-type to a value data-type.  
+          ;If "value" does contain an alphabetical character then the result of 
+          ;enclosing "value" with double quotes will be reported.
+          ;
+          ;         Name              Data Type     Description
+          ;         ----              ---------     -----------
+          ;@param  value              String/Value  The value to check.
+          ;
+          ;@author Martyn Lloyd-Kelly <martynlloydkelly@gmail.com>
+          to-report quote-string-or-read-from-string [value]
+            set debug-indent-level (debug-indent-level + 1)
+            output-debug-message ("EXECUTING THE 'quote-string-or-read-from-string' PROCEDURE...") ("")
+            set debug-indent-level (debug-indent-level + 1)
+            
+            output-debug-message ( word "CHECKING TO SEE IF " value " IS AN INTEGER OR A FLOATING POINT NUMBER...") ("")
+            ifelse(string:rex-match ("[0-9]+.?[0-9]*") (value) )[
+              output-debug-message (word value " IS AN INTEGER OR FLOATING POINT NUMBER.  REPORTING THE RESULT OF APPLYING THE 'read-from-string' PRIMITIVE TO IT...") ("")
+              set debug-indent-level (debug-indent-level - 2)
+              report read-from-string (value)
+            ]
+            [
+              output-debug-message (word value " IS NOT AN INTEGER OR FLOATING POINT NUMBER.  REPORTING THE RESULT OF ENCLOSING IT WITH DOUBLE QUOTES...") ("")
+              set debug-indent-level (debug-indent-level - 2)
+              report (word "\"" value "\"")
+            ]
+          end
+          
          ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
          ;;; "REPORT-CURRENT-TIME" PROCEDURE ;;;
          ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2391,7 +2443,86 @@ breed [ holes ]
            report heading-to-rectify
          end
          
-         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+         ;;; "ROULETTE-SELCTION" PROCEDURE ;;;
+         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+         
+         ;Selects an action to perform based using the "roulette" action selection algorithm.
+         to-report roulette-selection [actions-and-weights]
+           set debug-indent-level (debug-indent-level + 1)
+           output-debug-message ("EXECUTING THE 'roulette-selection' PROCEDURE...") ("")
+           set debug-indent-level (debug-indent-level + 1)
+           output-debug-message (word "The actions and weights to work with are: " actions-and-weights) (who)
+           
+           let candidate-actions-and-weights []
+           foreach(actions-and-weights)[
+             foreach(?)[
+               let action-weight (string:rex-split (?) (","))
+               output-debug-message (word "Checking to see if " (item (1) (action-weight)) " is greater than 0.0.  If so, I'll add it to the 'candidate-actions-and-weights' list...") (who)
+               if( (read-from-string (item (1) (action-weight))) > 0.0 )[
+                 output-debug-message (word (item (1) (action-weight)) " is greater than 0.0, adding it to the 'candidate-actions-and-weights' list...") (who)
+                 set candidate-actions-and-weights (lput (action-weight) (candidate-actions-and-weights))
+               ]
+             ]
+           ]
+           
+           output-debug-message (word "Checking to see if the 'candidate-actions-and-weights' list is empty (" (empty? candidate-actions-and-weights) ").") (who)
+           ifelse(empty? candidate-actions-and-weights)[
+             output-debug-message ("The 'candidate-actions-and-weights' list is empty, reporting an empty list...") (who)
+             set debug-indent-level (debug-indent-level - 2)
+             report []
+           ]
+           [
+             output-debug-message ("The 'candidate-actions-and-weights' list is not empty, processing its items...") (who)
+             output-debug-message (word "The 'candidate-actions-and-weights' list contains: " candidate-actions-and-weights ".") (who)
+             
+             output-debug-message ("First, I'll sum together the weights of all actions in 'candidate-actions-and-weights'") (who)
+             let sum-of-weights 0
+             foreach(candidate-actions-and-weights)[
+               output-debug-message (word "Processing item " ? "...") (who)
+               set sum-of-weights (sum-of-weights + read-from-string (item (1) (?)))
+             ]
+             output-debug-message (word "The sum of all weights is: " sum-of-weights ".")  (who)
+             
+             output-debug-message ("Now, I need to build normalised ranges of values for the actions in the 'candidate-actions-and-weights' list...") (who)
+             let action-value-ranges []
+             let range-min 0
+             foreach(candidate-actions-and-weights)[
+               output-debug-message (word "The minimum range for action " (item (0) (?)) " is currently set to: " range-min "...") (who)
+               let range-max (range-min + ( (read-from-string (item (1) (?))) / sum-of-weights) )
+               output-debug-message (word "The max range for action " (item (0) (?)) " is currently set to: " range-max "...") (who) 
+               set action-value-ranges (lput (list (item (0) (?)) (range-min) (range-max) ) (action-value-ranges) )
+               set range-min (range-max)
+             ]
+             output-debug-message (word "After processing each 'candidate-actions-and-weights' item, the 'action-value-ranges' variable is equal to: " action-value-ranges "...") (who)
+             
+             output-debug-message (word "The max range value should be equal to 1.0 (" (item (2) (last action-value-ranges)) "), checking if this is the case...") (who)
+             ifelse((item (2) (last action-value-ranges)) = 1.0)[
+               output-debug-message ("The max range value is equal to 1.0.  Generating a random float, 'r', that is >= 0 and < 1.0.  This will be used to select an action...") (who)
+               let r (random-float 1.0)
+               output-debug-message (word "The variable 'r' = " r) (who)
+               
+               output-debug-message ("Checking each item in the 'action-value-ranges' variable to see if 'r' is between its min and max range.  If it is, that action will be selected...") (who)
+               foreach(action-value-ranges)[
+                 output-debug-message (word "Processing item: " ? "...") (who)
+                 output-debug-message (word "Checking if 'r' (" r ") is >= " (item (1) (?)) " and < " (item (2) (?)) "...") (who)
+                 if( ( r >= (item (1) (?)) ) and ( r < (item (2) (?)) ) )[
+                   output-debug-message (word "'r' is in the range of " ? ", reporting " (item (0) (?)) " as the action to perform..." ) (who)
+                   set debug-indent-level (debug-indent-level - 2)
+                   report (item (0) (?))
+                 ]
+                 output-debug-message (word "'r' is not in the range of " ? ".  Processing next item...") (who)
+               ]
+             ]
+             [
+               output-debug-message ("The max range value is not equal to 1.0, reporting an empty list") (who)
+               set debug-indent-level (debug-indent-level - 2)
+               report []
+             ]
+           ]
+         end
+         
+         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
          ;;; "SCHEDULED-TO-PERFORM-ACTION-IN-FUTURE?" PROCEDURE ;;;
          ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
           
@@ -2467,6 +2598,20 @@ breed [ holes ]
              report false
            ]
          end
+         
+         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+         ;;; "SPECIFY-DEBUG-MESSAGE-OUTPUT-FILE ;;;
+         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+         
+         ;Allows the user to specify where debug message should be output to since 
+         ;the quantity of these messages quickly depletes the space available in 
+         ;the Java heap.
+         ;
+         ;@author  Martyn Lloyd-Kelly  <martynlloydkelly@gmail.com>
+         to specify-debug-message-output-file
+           user-message "Since you have enabled debug mode, please specify where you would like to write debug information to on the next dialog that appears."
+           set debug-message-output-file (user-new-file)
+         end
              
          ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
          ;;; "SURROUNDED?" PROCEDURE ;;;
@@ -2526,7 +2671,7 @@ breed [ holes ]
              output-debug-message ("Generating an action pattern indicating that I am surrounded...") (who)
              let action-pattern (chrest:create-item-square-pattern (surrounded-token) (0) (0))
              output-debug-message (word "Action pattern generated: '" action-pattern "', loading this action for execution...") (who)
-             load-action (action-pattern)
+             load-action (action-pattern) (heuristic-performance-time)
              
              set debug-indent-level (debug-indent-level - 2)
              report true
@@ -2932,7 +3077,7 @@ SWITCH
 168
 debug?
 debug?
-1
+0
 1
 -1000
 
@@ -3020,7 +3165,7 @@ BUTTON
 80
 206
 Reset
-clear-all
+file-close-all\n__clear-all-and-reset-ticks
 NIL
 1
 T
