@@ -231,7 +231,6 @@ breed [ holes ]
          
          if(debug?)[
            specify-debug-message-output-file
-           output-debug-message (debug-message-output-file) ("")
          ]
          
          set current-scenario-number 1
@@ -929,17 +928,16 @@ breed [ holes ]
                  output-debug-message ("CHECKING TO SEE IF A NEW HOLE SHOULD BE CREATED...") ("")
                  
                  ifelse(breed-name = "tiles")[
-                     if(random-float 1.0 < tile-birth-prob) [
-                       output-debug-message ("A NEW TILE WILL BE CREATED AND PLACED RANDOMLY IN THE ENVIRONMENT...") ("")
-                       
-                       create-tiles 1 [
-                         set heading 0
-                         set time-to-live tile-lifespan
-                         set color yellow
-                         place-randomly
-                       ]
+                   if(random-float 1.0 < tile-birth-prob) [
+                     output-debug-message ("A NEW TILE WILL BE CREATED AND PLACED RANDOMLY IN THE ENVIRONMENT...") ("")
+                     create-tiles 1 [
+                       set heading 0
+                       set time-to-live tile-lifespan
+                       set color yellow
+                       place-randomly
                      ]
                    ]
+                 ]
                  [
                    ifelse(breed-name = "holes")[
                      if(random-float 1.0 < hole-birth-prob) [
@@ -971,27 +969,21 @@ breed [ holes ]
                     ;;;;; "PLACE-RANDOMLY" PROCEDURE ;;;;;
                     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
           
-                    ;Places the calling turtle on a random patch in the environment. If the patch 
-                    ;that the calling turtle is placed on already contains a turtle that is visible, 
-                    ;the calling turtle is placed on another random patch. This process repeats until 
-                    ;the calling turtle is placed on a patch that only contains the calling turtle (and
-                    ;a hidden turtle, potentially). 
+                    ;Places the calling turtle on a random patch in the environment that is not
+                    ;currently occupied by a visible turtle if there are any such patches available.
+                    ;
+                    ;@author  Martyn Lloyd-Kelly  <martynlloydkelly@gmail.com>
                     to place-randomly
                       set debug-indent-level (debug-indent-level + 1)
                       output-debug-message ("EXECUTING THE 'place-randomly' PROCEDURE...") ("")
                       set debug-indent-level (debug-indent-level + 1)
                       
-                      output-debug-message ("CHECKING TO SEE IF THERE ARE ANY FREE PATCHES...") ("")
-                      if(any? turtles-on patches)[
-                        output-debug-message ("FREE PATCHES AVAILABLE...")("")
-                        setxy random-pxcor random-pycor
-                        output-debug-message (word "I've set my xcor to: '" xcor "' and ycor to '" ycor "'.  Checking to see if this patch is free..." ) (who)
-            
-                        while[ ( count (turtles-here with [hidden? = false]) ) > 1][
-                          output-debug-message (word "The patch with xcor: '" xcor "' and ycor '" ycor "'.  Already has a visible turtle on it, selecting new values for my 'xcor' and 'ycor' variables..." ) (who)
-                          setxy random-pxcor random-pycor
-                        ]
-                        output-debug-message(word "Patch with xcor '" xcor "' and ycor '" ycor "' does not contain any visible turtles so I'm staying here.") (who)
+                      let number-free-patches (count (patches with [not any? turtles-here with [hidden? = false]]))
+                      output-debug-message (word "CHECKING TO SEE HOW MANY PATCHES ARE FREE (THOSE OCCUPIED BY INVISIBLE TURTLES ARE CONSIDERED FREE). IF 0, THIS PROCEDURE WILL ABORT: " number-free-patches "...") ("")
+                      if( number-free-patches > 0 )[
+                        let patch-to-be-placed-on (one-of patches with [not any? turtles-here with [hidden? = false]])
+                        move-to patch-to-be-placed-on
+                        show (word "I've moved to the patch whose xcor is: '" xcor "' and ycor is: '" ycor "' since it is currently free." )
                       ]
                       set debug-indent-level (debug-indent-level - 2)
                     end
@@ -2011,12 +2003,12 @@ breed [ holes ]
                 set x (x + 1)
               ]
               
-              ifelse(debug-message-output-file != 0)[
-                file-open debug-message-output-file
-                file-print msg-to-output
+              ifelse(debug-message-output-file = false)[
+                print msg-to-output
               ]
               [
-                print msg-to-output
+                file-open debug-message-output-file
+                file-print msg-to-output
               ]
             ]
           end
@@ -2143,41 +2135,44 @@ breed [ holes ]
           ;;; "PUSH-TILE" PROCEDURE ;;;
           ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
           
-          ;Enables the calling agent (the pusher) to push a tile.  Note that the tile to be 
-          ;pushed does not check to see if the patch ahead contains anything other than holes 
-          ;since the pusher will have already done this before the 'push-tile' action was
-          ;generated and loaded for execution.  Consequently, if there were anything ahead of 
-          ;the tile other than a hole, this procedure would never have been run.
-          
-          ;The pusher sets its heading to face its closest-tile and the tile to be pushed is 
-          ;asked to do the same so that it moves along the same heading.  If the pusher's breed 
-          ;indicates that it is a CHREST turtle, the pusher will attempt to associate the current 
-          ;visual pattern and the action-pattern it is currently performing together in its LTM.
-          ;Following this, the CHREST turtle will then add the current visual pattern and the
-          ;action-pattern it is currently performing to the 'visual-action-pairs' list so 
-          ;that it can be reinforced if the tile fills a hole.
+          ;Enables the calling agent (the pusher) to push a tile by setting the pusher's heading 
+          ;to face its closest-tile, T, and T is asked to do the same so that it moves along the 
+          ;same heading as the pusher.  
+          ;
+          ;If the pusher's breed indicates that it is a CHREST turtle, it will attempt to associate 
+          ;the current visual pattern and the action-pattern it is currently performing together in 
+          ;its LTM.  The CHREST turtle will then update its 'visual-action-pairs' list so that links
+          ;between its contents can be reinforced if T fills a hole.
           ;
           ;The procedure then branches in one of two ways depending on whether there is a hole 
-          ;on the patch ahead of the tile:
+          ;on the patch ahead of T:
           ;
-          ;  1. If there is a hole on the patch immediately ahead of the tile then:
-          ;     a. The tile moves forward by 1 patch.
-          ;     b. The hole on the patch ahead of the tile (that the tile is now on) is asked 
-          ;        to die (simulates the first part of the tile filling the hole). 
-          ;     c. The pusher's score is incremented by 1.
+          ;  1. If there is a hole on the patch immediately ahead of T then:
+          ;     a. T moves forward by 1 patch (simulates the first pat of the tile being 
+          ;        pushed).
+          ;     b. The hole is asked to die (simulates the first part of the tile filling the 
+          ;        hole). 
+          ;     c. The pusher's score is incremented by the value of the global "reward-value" 
+          ;        variable.
           ;     d. The pusher's breed is checked, if it is a CHREST turtle then the pusher's
           ;        'visual-action-pairs' list is iterated through and the pusher attempts to
           ;        reinforce each visual-action pair.  Following this, the pusher then clears
-          ;        the 'visual-action-pairs' list so that redundant visual-action pairs are 
-          ;        not reinforced in future.
-          ;     e. The tile that has been pushed dies (simulating the second part of the 
-          ;        simulated hole fill).
+          ;        the 'visual-action-pairs' list.
+          ;     e. T dies (simulating the second part of the simulated hole fill).
           ;
-          ;  2. If there isn't a hole on the patch immediately ahead of the tile then the tile
-          ;     moves forward onto the patch ahead (simulating the first part of the push).
+          ;  2. If there isn't a hole on the patch immediately ahead of T, T checks to see if
+          ;     there are any other turtles on the patch ahead.
+          ;     a. There is something on the patch ahead of T so T does not move.
+          ;     b. There is nothing on the patch ahead of T so T moves forward 1 patch (simulates
+          ;        the first part of the tile being pushed).
           ;
-          ;Following this procedural branch, the pusher also moves forward one tile thus simulating
-          ;the final part of the push.
+          ;Following this branch, the pusher checks to see if T is directly in on the patch 
+          ;immediately ahead.
+          ;
+          ;  1. If T is on the patch immediately ahead then the pusher does not move.
+          ;  2. If T is not on the patch immediately ahead then it must have been pushed so
+          ;     the pusher also moves forward one patch (simulates the second part of the 
+          ;     push).
           ;
           ;         Name              Data Type     Description
           ;         ----              ---------     -----------
@@ -2248,16 +2243,20 @@ breed [ holes ]
                   die
                 ]
                 [
-                  output-debug-message (word "There are no holes on the patch immediately ahead of me with heading " heading " so I'll move forward by 1 patch...") (who)
-                  forward 1
+                  output-debug-message ("There are no holes ahead so I'll check to see if there is anything else ahead, if there is, I won't move...") (who)
+                  if(not any? turtles-on patch-at-heading-and-distance (heading) (1))[
+                    output-debug-message (word "There are no turtles on the patch immediately ahead of me with heading " heading " so I'll move forward by 1 patch...") (who)
+                    forward 1
+                  ]
                 ]
               ]
             ]
 
-            ;The way ahead will now be free since, if the tile was blocked, the pusher
-            ;would not have executed this procedure.
-            output-debug-message (word "I should also move forward by 1 patch...") (who)
-            forward 1
+            output-debug-message ("Checking to see if the tile I was pushing has moved...") (who)
+            if(not any? turtles-on patch-at-heading-and-distance (heading) (1))[
+              output-debug-message (word "The tile I was pushing has moved so I should also move forward by 1 patch to simulate a push...") (who)
+              forward 1
+            ]
             
             set debug-indent-level (debug-indent-level - 2)
           end
@@ -2609,7 +2608,7 @@ breed [ holes ]
          ;
          ;@author  Martyn Lloyd-Kelly  <martynlloydkelly@gmail.com>
          to specify-debug-message-output-file
-           user-message "Since you have enabled debug mode, please specify where you would like to write debug information to on the next dialog that appears."
+           user-message "Since you have enabled debug mode, please specify where you would like to write debug information to on the next dialog that appears.  To have debug messages output to the command center simply click 'Cancel' on the next dialog that appears."
            set debug-message-output-file (user-new-file)
          end
              
@@ -3077,7 +3076,7 @@ SWITCH
 168
 debug?
 debug?
-0
+1
 1
 -1000
 
