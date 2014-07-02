@@ -983,7 +983,7 @@ breed [ holes ]
                       if( number-free-patches > 0 )[
                         let patch-to-be-placed-on (one-of patches with [not any? turtles-here with [hidden? = false]])
                         move-to patch-to-be-placed-on
-                        show (word "I've moved to the patch whose xcor is: '" xcor "' and ycor is: '" ycor "' since it is currently free." )
+                        output-debug-message (word "I've been placed on the patch whose xcor is: '" xcor "' and ycor is: '" ycor "'." ) (who)
                       ]
                       set debug-indent-level (debug-indent-level - 2)
                     end
