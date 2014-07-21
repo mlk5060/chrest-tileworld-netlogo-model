@@ -2176,6 +2176,7 @@ to play
       set current-training-time 0
       set current-game-time 0
       clear-all-plots
+      file-close-all
       
       ;=======================;
       ;=== END OF SCENARIO ===;
@@ -2978,11 +2979,13 @@ end
 ;@author  Martyn Lloyd-Kelly <martynlloydkelly@gmail.com>  
 to setup-independent-variables
   set debug-indent-level (debug-indent-level + 1)
-  output-debug-message ("EXECUTING THE 'setup-environment-using-user-selected-file' PROCEDURE...") ("")
+  output-debug-message ("EXECUTING THE 'setup-independent-variables' PROCEDURE...") ("")
   set debug-indent-level (debug-indent-level + 1)
   
+  output-debug-message ("CHECKING TO SEE IF THE RELEVANT SCENARIO AND REPEAT DIRECTORY EXISTS") ("")
   check-for-scenario-repeat-directory
-  file-open (word setup-and-results-directory "Scenario" current-scenario-number directory-separator "Scenario" current-scenario-number "Settings.txt" )
+  output-debug-message (word "THE RELEVANT SCENARIO AND REPEAT DIRECTORY EXISTS.  ATTEMPTING TO OPEN " (setup-and-results-directory) "Scenario" (current-scenario-number) (directory-separator) "Scenario" (current-scenario-number) "Settings.txt" ) ("")
+  file-open (word (setup-and-results-directory) "Scenario" (current-scenario-number) (directory-separator) "Scenario" (current-scenario-number) "Settings.txt" )
   
   let variable-name ""
   
@@ -3612,7 +3615,7 @@ SWITCH
 168
 debug?
 debug?
-1
+0
 1
 -1000
 
@@ -3678,7 +3681,7 @@ INPUTBOX
 147
 70
 total-number-of-scenarios
-27
+54
 1
 0
 Number
@@ -3793,7 +3796,7 @@ SWITCH
 201
 draw-plots?
 draw-plots?
-0
+1
 1
 -1000
 
