@@ -5,9 +5,6 @@
 ; =========================== 
 ; by Martyn Lloyd-Kelly
 
-;INPROG: Implementing functionality so that CHREST turtles can/can't reinforce visual-action links and visual-heuristic
-;        deliberation links for ICAART 2014. 
-
 ;TODO: Determine how long it should take to reinforce a link between two patterns.
 ;TODO: Implement decision-making times for heuristics and add this to the time it takes to perform an action when
 ;      the action is loaded.
@@ -135,9 +132,9 @@ holes-own [
 ;******************************;
 ;******************************;
      
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;;; "ADD-ENTRY-TO-visual-action-time-heuristics" PROCEDURE ;;;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;; "ADD-ENTRY-TO-VISUAL-ACTION-TIME-HEURISTICS" PROCEDURE ;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;Adds an entry to the calling turtle's "visual-action-time-heuristics" list.  If the length of the 
 ;"visual-action-time-heuristics" list contains the maximum number of items, the last item is removed 
