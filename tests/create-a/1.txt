@@ -1,0 +1,12 @@
+<test>
+	set tile-birth-prob 1.0
+	set hole-birth-prob 1.0
+	
+	repeat 10[
+		create-a("tiles")
+		create-a("holes")
+	]
+
+	check-equal ( count(tiles-on patches) ) (10)
+	check-equal ( count(holes-on patches) ) (10)
+</test>

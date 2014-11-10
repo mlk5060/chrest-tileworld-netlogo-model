@@ -1,0 +1,93 @@
+;Given a scene where the calling turtle is immediately surrounded by various objects, is the mind's eye of the calling turtle instantiated
+;correctly (is the content of the mind's eye what is expected after retrieving all of its contents)?
+
+<run>create-chrest-turtles 1</run>
+
+reward-value
+1.0
+
+action-performance-time
+0:10000
+
+action-selection-procedure
+0:roulette-selection
+
+add-link-time
+0:10000
+
+discount-rate
+0:0.5
+
+discrimination-time
+0:10000
+
+familiarisation-time
+0:2000
+
+minds-eye-access-time
+0:250
+
+minds-eye-lifespan
+0:10000
+
+minds-eye-object-movement-time
+0:25
+
+minds-eye-object-placement-time
+0:50
+
+pattern-recognition?
+0:true
+
+play-time
+0:14400000.0
+
+problem-solving?
+0:true
+
+reinforce-actions?
+0:true
+
+reinforce-problem-solving?
+0:true
+
+reinforcement-learning-theory
+0:profit_sharing_with_discount_rate
+
+sight-radius
+0:2
+
+time-taken-to-use-pattern-recognition
+0:200
+
+time-taken-to-problem-solve
+0:1000
+
+visually-informed-problem-solving?
+0:true
+
+<test>
+	create-tiles 1 [setxy ( ([pxcor] of turtle 0) ) ( ([pycor] of turtle 0) + 1 )]
+	create-holes 1 [setxy ( ([pxcor] of turtle 0) + 1 ) ( ([pycor] of turtle 0) )]
+	create-chrest-turtles 1 [setxy ( ([pxcor] of turtle 0) ) ( ([pycor] of turtle 0) - 1 )]
+	create-tiles 1 [setxy ( ([pxcor] of turtle 0) - 1 ) ( ([pycor] of turtle 0) )]
+	create-holes 1 [setxy ( ([pxcor] of turtle 0) + 1 ) ( ([pycor] of turtle 0) + 1 )]
+	create-chrest-turtles 1 [setxy ( ([pxcor] of turtle 0) + 1 ) ( ([pycor] of turtle 0) - 1 )]
+	create-chrest-turtles 1 [setxy ( ([pxcor] of turtle 0) - 1 ) ( ([pycor] of turtle 0) - 1 )]
+	create-tiles 1 [setxy ( ([pxcor] of turtle 0) - 1 ) ( ([pycor] of turtle 0) + 1 )]
+
+	ask turtle 0 [
+		instantiate-minds-eye
+		set current-training-time (current-training-time + (minds-eye-object-placement-time * 9))
+
+		let expected ( list 
+			(";-2;-2") (";-2;-1") (";-2;0") (";-2;1") (";-2;2")
+			(";-1;-2") (word chrest-turtle-token ";-1;-1") (word tile-token ";-1;0") (word tile-token ";-1;1") (";-1;2")
+			(";0;-2") (word chrest-turtle-token ";0;-1") (word self-token ";0;0") (word tile-token ";0;1") (";0;2")
+			(";1;-2") (word chrest-turtle-token ";1;-1") (word hole-token ";1;0") (word hole-token ";1;1") (";1;2")
+			(";2;-2") (";2;-1") (";2;0") (";2;1") (";2;2")
+		)
+
+		check-equal (chrest:get-all-minds-eye-content(report-current-time + 100)) (expected)
+	]
+</test>

@@ -1,0 +1,21 @@
+;Given a situation where:
+;
+; - The environment contains no objects.
+; - A turtle is created and its initial coordinates are set to a known location.
+; - Turtle just created calls the 'place-randomly' procedure until it is not located on the known coordinates specified in the previous step.
+;
+;This tests to see if:
+;
+; - The coordinates that the turtle is finally located on are not equal to the known coordinates.
+
+<test>
+	create-chrest-turtles 1[ 
+		setxy (0) (0)
+		place-randomly 
+		while [ [pxcor] of patch-here = 0 and [pycor] of patch-here = 0][
+			place-randomly
+		]
+	
+		check-equal ( [pxcor] of patch-here = 0 and [pycor] of patch-here = 0 ) (false)
+	]
+</test>

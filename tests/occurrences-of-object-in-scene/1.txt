@@ -1,0 +1,13 @@
+<test>
+	let scene (list
+		(";-2;2") ("T;-1;2") ("O;0;2") (";1;2") ("H;2;2")
+		("H;-2;1") ("O;-1;1") (";0;1") (";1;1") ("T,H;2;1")
+		("O;-2;0") (";-1;0") ("S;0;0") (";1;0") ("T;2;0")
+		("H,T;-2;-1") (";-1;-1") ("H,T;0;-1") (";1;-1") (";2;-1")
+		(";-2;-2") (";-1;-2") (";0;-2") ("O;1;-2") (";2;-2")
+	)
+	check-equal (occurrences-of-object-in-scene ("T") (scene)) (5)
+	check-equal (occurrences-of-object-in-scene ("H") (scene)) (5)
+	check-equal (occurrences-of-object-in-scene ("O") (scene)) (4)
+	check-equal (occurrences-of-object-in-scene ("S") (scene)) (1)
+</test>

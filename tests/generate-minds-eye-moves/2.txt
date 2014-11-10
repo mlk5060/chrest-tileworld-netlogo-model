@@ -1,0 +1,18 @@
+<test>
+	create-chrest-turtles 1 [
+		let scene (list
+			(";-2;2") (";-1;2") (word self-token";0;2") (";1;2") (";2;2")
+			(";-2;1") (";-1;1") (";0;1") (";1;1") (";2;1")
+			(";-2;0") (";-1;0") (";0;0") (";1;0") (";2;0")
+			(";-2;-1") (";-1;-1") (";0;-1") (";1;-1") (";2;-1")
+			(";-2;-2") (";-1;-2") (";0;-2") (";1;-2") (";2;-2")
+		)
+
+		foreach(possible-actions)[
+			if( (?) != push-tile-token )[
+				let action-pattern (chrest:create-item-square-pattern (?) (90) (1))
+				check-equal (generate-minds-eye-moves (scene) (action-pattern)) ( (list (list (word self-token ";0;2") (word self-token ";1;2"))) )
+			]
+		]
+	]
+</test>

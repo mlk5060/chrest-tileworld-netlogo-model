@@ -1,0 +1,22 @@
+<test>
+	let actions-with-no-optimality ( list 
+		( list ("[PT 180 1], 0.0") ("[MAT 270 1], 0.0") ) 
+	)
+
+	let two-actions-one-optimal-the-other-not ( list 
+		( list ("[PT 180 1], 0.0") ("[MAT 270 1], 1.0") )
+	)
+
+	let three-actions-two-optimal-one-not ( list 
+		(list ("[PT 180 1], 0.0") ("[MAT 270 1], 0.5") ("[MTT 90 1], 0.5") )
+	)
+	
+	create-chrest-turtles 1[
+		check-equal (roulette-selection (actions-with-no-optimality)) ([])
+		check-equal (roulette-selection (two-actions-one-optimal-the-other-not)) ("[MAT 270 1]")
+
+		repeat 20[
+			check-test-output (roulette-selection (three-actions-two-optimal-one-not)) (list ("[MAT 270 1]") ("[MTT 90 1]") )
+		]
+	]
+</test>

@@ -1,0 +1,8 @@
+;Check that the correct distance is returned when the location to go to is 1 patch away horizontally and the locations do not
+;enable a shorter distance to be calculated by considering wrapping.
+<test>
+	create-chrest-turtles 1 [
+		let distance-calculated (shortest-distance-from-location-to-location (";0;0") (";1;0"))
+		check-equal (distance-calculated) (1)
+	]
+</test>

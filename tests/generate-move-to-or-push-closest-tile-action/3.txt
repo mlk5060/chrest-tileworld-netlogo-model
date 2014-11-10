@@ -1,0 +1,18 @@
+; Tests that the 'generate-move-to-or-push-closest-tile-action' procedure specifies the correct action pattern when the closest tile 
+; to the calling turtle is more than one patch away (to 45 degree heading) and there is only 1 free patch available to move to (west of
+; calling turlte's location in scene).
+<test>
+    create-chrest-turtles 1[
+        let scene []
+
+        set scene ( lput (word self-token ";0;0") (scene) )
+        set scene ( lput (word chrest-turtle-token ";0;1") (scene) )
+        set scene ( lput (word chrest-turtle-token ";1;0") (scene) )
+        set scene ( lput (word chrest-turtle-token ";0;-1") (scene) )
+        set scene ( lput (word tile-token ";1;1") (scene) )
+
+        repeat 10[
+            check-equal (generate-move-to-or-push-closest-tile-action(scene)) (chrest:create-item-square-pattern (move-to-tile-token) (270) (1))
+        ]
+    ]
+</test>

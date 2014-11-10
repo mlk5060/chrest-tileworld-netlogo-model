@@ -1,0 +1,19 @@
+<test>
+	create-chrest-turtles 1
+
+	ask turtle 0[
+		let heading-to-test 0
+		while[heading-to-test <= 360][
+
+			repeat 10[
+				let altered-heading ( alter-heading-randomly-by-adding-or-subtracting-90 (heading-to-test) )
+				let expected-headings ( list 
+					(heading-to-test + 90)
+					(heading-to-test - 90) 
+				)
+			]
+
+			set heading-to-test (heading-to-test + 1)
+		]
+	]
+</test>

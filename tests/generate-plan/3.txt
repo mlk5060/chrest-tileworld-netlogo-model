@@ -1,0 +1,109 @@
+;Given the following situation:
+;
+; - Turtle intially generates a plan given a scene where a tile is north of the calling turtle's current location by 1 patch.
+; - Turtle attempts to continue plan generation after instantiation of the mind's eye has finished.
+;
+;This test ensures that the following conditions are true:
+;
+; - The 'generate-plan' turtle variable is set to 'true' since no end plan generation conditions have been met.
+; - The length of the 'plan' turtle variable is 1 since since the minds eye has been instantiated when the second 'generate-plan' call 
+;   is made and there is information available to plan (not interested in what the plan contains, this is validated in other tests).
+; - The 'time-spent-deliberating-on-plan' turtle variable is set to the value of the 'time-taken-to-problem-solve' since plan deliberation 
+;   has occurred but the turtle can not take advantage of pattern-recognition? in its deliberation process since it hasn't committed any
+;   patterns to its LTM.
+; - The 'deliberation-finished-time' is set to 0 since no end plan generation conditions have been met.
+; - The mind's eye of the turtle still exists since no end plan generation conditions have been met.
+; - The mind's eye content of the turtle is as expected (no other objects expect calling turtle and tile, calling turtle and tile have 
+;   moved one patch north of their initial location and tile is north of the calling turtle by 1 patch).
+
+<run>create-chrest-turtles 1</run>
+
+reward-value
+1.0
+
+action-performance-time
+0:10000
+
+action-selection-procedure
+0:roulette-selection
+
+add-link-time
+0:10000
+
+discount-rate
+0:0.5
+
+discrimination-time
+0:10000
+
+familiarisation-time
+0:2000
+
+minds-eye-access-time
+0:250
+
+minds-eye-lifespan
+0:10000
+
+minds-eye-object-movement-time
+0:25
+
+minds-eye-object-placement-time
+0:50
+
+pattern-recognition?
+0:true
+
+play-time
+0:14400000.0
+
+problem-solving?
+0:true
+
+reinforce-actions?
+0:true
+
+reinforce-problem-solving?
+0:true
+
+reinforcement-learning-theory
+0:profit_sharing_with_discount_rate
+
+sight-radius
+0:2
+
+time-taken-to-use-pattern-recognition
+0:200
+
+time-taken-to-problem-solve
+0:1000
+
+visually-informed-problem-solving?
+0:true
+
+<test>
+	create-tiles 1 [setxy ([pxcor] of turtle 0) ( ([pycor] of turtle 0) + 1) ]
+
+	ask turtle 0 [
+		generate-plan
+	 	set current-training-time (current-training-time + (minds-eye-object-placement-time + 100))
+
+		generate-plan
+		set current-training-time (current-training-time + minds-eye-access-time + (minds-eye-object-movement-time * 2) )
+
+		let expected-minds-eye-content (list
+			(";-2;-2") (";-2;-1") (";-2;0") (";-2;1") (";-2;2")
+			(";-1;-2") (";-1;-1") (";-1;0") (";-1;1") (";-1;2")
+			(";0;-2") (";0;-1") (";0;0") (word self-token";0;1") (word tile-token";0;2")
+			(";1;-2") (";1;-1") (";1;0") (";1;1") (";1;2")
+			(";2;-2") (";2;-1") (";2;0") (";2;1") (";2;2")
+		)
+
+		check-equal (generate-plan?) (true)
+		check-equal (length (plan)) (1)
+		check-equal (time-spent-deliberating-on-plan) (time-taken-to-problem-solve)
+		check-equal (deliberation-finished-time) (0)
+		check-equal (chrest:minds-eye-exist? (report-current-time)) (true)
+		check-equal (chrest:get-all-minds-eye-content (report-current-time )) (expected-minds-eye-content)
+	]
+</test>
