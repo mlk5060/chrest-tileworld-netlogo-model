@@ -17,6 +17,9 @@
 ;TODO: Remove most of the hard-coded global variable values.  A lot of them should be able to be specified by the user.
 ;TODO: Implement functionality to restrict users from specifying certain global/turtle variable values at start of sim.
 ;      e.g. the "generate-action-using-heuristics" turtle variable should only be set programatically, not by the user.
+;TODO: Implement a "depth of search" variable for CHREST turtles to limit the amount of moves performed in the mind's eye.
+;CONSID: Implement areas that are "sticky", "normal" or "smooth".  These areas should cause tile movement to be slowed-down
+;        or sped-up.  Adds another degree of planning that may be interesting when performing experiments with the mind's eye.
 
 ;******************************************;
 ;******************************************;
@@ -5095,9 +5098,9 @@ draw-plots?
 BUTTON
 6
 317
-78
+105
 350
-Run Tests
+Run Unit Tests
 test
 NIL
 1
@@ -5482,7 +5485,7 @@ Polygon -6459832 true true 46 128 33 120 21 118 11 123 3 138 5 160 13 178 9 192 
 Polygon -6459832 true true 67 122 96 126 63 144
 
 @#$#@#$#@
-NetLogo 5.0.5
+NetLogo 5.1.0
 @#$#@#$#@
 @#$#@#$#@
 @#$#@#$#@
