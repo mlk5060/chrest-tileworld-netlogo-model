@@ -5,11 +5,14 @@
 ; ===========================
 ; by Martyn Lloyd-Kelly
 ;
+; - Thinking unit times have not been implemented since problem-solving and pattern-recognition times do the job.
+;   However, it may be worth reconsidering this if the complexity of a thought process needs to be accurately
+;   modelled..  In this case, the problem-solving and pattern-recognition times for a CHREST turtle could act as
+;   "base" times and the added time spent deliberating is added to the base time.
+;
 ;TODO: Extract test procedures into Netlogo extension.
 ;TODO: Implement 'action-performance-time' usage.  Currently, actions have no time-cost associated with performance.
 ;TODO: Should generating the current visual pattern incur a time cost (could be used to manipulate "talent")?
-;TODO: Implement variable decision-making times for heuristics (base cost multiplied by some value) and add this to 
-;      the time it takes to perform an action when the action is loaded.
 ;TODO: Extract action-pattern creation into independent procedures so code is DRY.
 ;TODO: Ensure that all procedures have a description.
 ;TODO: Save any code fragments that are run more than once in a procedure for the purposes of outputting something to
