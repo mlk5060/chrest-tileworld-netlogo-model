@@ -6,11 +6,10 @@
 ;
 ;This test ensures that the following conditions are true:
 ;
-; - The 'generate-plan' turtle variable is set to 'false' since an end plan generation condition has been met (due to the configuration
-;   of tiles, the turtle will eventually no longer be able to see itself in its mind's eye).
+; - The 'generate-plan' turtle variable is set to 'false' since an end plan generation condition has been met (turtle can either no longer
+;   see itself in its mind's eye or its planned x amount of moves where x = the 'depth-of-search' parameter).
 ; - The length of the 'plan' turtle variable is equal to the number of 'generate-plan' calls made that result in an action being added
-;   to 'plan'.  When the turtle can no longer be seen in its mind's eye, the following call to 'generate-plan' should not result in an 
-;   action being added to 'plan'.
+;   to 'plan'.
 ; - The 'time-spent-deliberating-on-plan' turtle variable is set to 0 since an end plan condition has been met and this value will be reset
 ;   for the next plan generation cycle.
 ; - The 'deliberation-finished-time' is set to the sum of the current time and the value of 'time-taken-to-problem-solve' multiplied by the 
@@ -20,6 +19,12 @@
 ; - The mind's eye of the turtle no longer exists since an end plan generation condition has been met.
 ; - Following the final 'generate-plan' call that results in an action being added to 'plan', the mind's eye content of the turtle is as 
 ;   expected (all tiles present but calling turtle not present).
+; - Since the 'depth-of-search' parameter may trigger an end-condition and since the turtle may move east and west repetitively, it is 
+;   difficult to predict what the content of the mind's eye will be for the turtle when plan generation ends so this is not checked.
+;
+; NOTE: The initial 'generate-plan' call simply intantiates the mind's eye of the turtle with visual information.  Consequently, no
+;       planning occurs when this call is made, only when subsequent 'generate-plan' calls are made.  This is why the counter that 
+;       keeps track of how many times 'generate-plan' has been called is only incremented after the initial 'generate-plan' call.
 
 <run>create-chrest-turtles 1</run>
 
@@ -34,6 +39,9 @@ action-selection-procedure
 
 add-link-time
 0:10000
+
+depth-of-search
+0:5
 
 discount-rate
 0:0.5
@@ -108,27 +116,17 @@ visually-informed-problem-solving?
 	 	set current-training-time (current-training-time + minds-eye-object-placement-time * 15)
 
 	 	let number-generate-plan-calls-resulting-in-action 0
-	 	while[ ( get-location-of-self-in-scene(chrest:get-all-minds-eye-content(report-current-time)) ) != "" ][
+	 	let time-stopped-generating-plan 0
+	 	while[ generate-plan? ][
+	 		set time-stopped-generating-plan (report-current-time)
 	 		generate-plan
 	 		set number-generate-plan-calls-resulting-in-action (number-generate-plan-calls-resulting-in-action + 1)
 			set current-training-time (current-training-time + minds-eye-access-time + minds-eye-object-movement-time)
 	 	]
 
-	 	let expected-minds-eye-content (list
-			(word tile-token ";-2;-2") (word tile-token ";-2;-1") (";-2;0") (word tile-token ";-2;1") (word tile-token ";-2;2")
-			(word tile-token ";-1;-2") (word tile-token ";-1;-1") (";-1;0") (word tile-token ";-1;1") (word tile-token ";-1;2")
-			(word tile-token ";0;-2") (word tile-token ";0;-1") (";0;0") (word tile-token ";0;1") (word tile-token ";0;2")
-			(";1;-2") (";1;-1") (word tile-token ";1;0") (";1;1") (";1;2")
-			(";2;-2") (";2;-1") (word tile-token ";2;0") (";2;1") (";2;2")
-		)
-		check-equal (chrest:get-all-minds-eye-content (report-current-time )) (expected-minds-eye-content)
-
-	 	generate-plan
-
 		check-equal (generate-plan?) (false)
 		check-equal (length (plan)) (number-generate-plan-calls-resulting-in-action)
 		check-equal (time-spent-deliberating-on-plan) (0)
-		check-equal (deliberation-finished-time) (report-current-time + (time-taken-to-problem-solve * number-generate-plan-calls-resulting-in-action))
-		check-equal (chrest:minds-eye-exist? (report-current-time)) (false)
+		check-equal (deliberation-finished-time) (time-stopped-generating-plan + (time-taken-to-problem-solve * number-generate-plan-calls-resulting-in-action))
 	]
 </test>

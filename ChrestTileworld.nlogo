@@ -10,6 +10,8 @@
 ;   modelled..  In this case, the problem-solving and pattern-recognition times for a CHREST turtle could act as
 ;   "base" times and the added time spent deliberating is added to the base time.
 ;
+;TODO: Extract procedures into external .nls files so that the code is more "object-orientated" (requires use of
+;      "__includes" keyword).
 ;TODO: Extract test procedures into Netlogo extension.
 ;TODO: Implement 'action-performance-time' usage.  Currently, actions have no time-cost associated with performance.
 ;TODO: Should generating the current visual pattern incur a time cost (could be used to manipulate "talent")?
@@ -103,7 +105,9 @@ chrest-turtles-own [
   chrest-instance                         ;Stores an instance of the CHREST architecture.
   closest-tile                            ;Stores an agentset consisting of the closest tile to the calling turtle when the 'next-to-tile' procedure is called.
   current-visual-pattern                  ;Stores the current visual pattern that has been generated as a string.
+  current-depth-of-search                 ;Stores the number of mind's eye cycles the CHREST turtle has performed.
   deliberation-finished-time              ;Stores the time (in milliseconds) that the CHREST turtle will finish deliberation on the current plan. Controls plan execution.
+  depth-of-search                         ;Stores the number of mind's eye cycles that the CHREST turtle can perform before plan generation ends.
   discount-rate                           ;Stores the discount rate used for the "profit-sharing-with-discount-rate" reinforcement learning algorithm.
   discrimination-time                     ;Stores the length of time (in milliseconds) that it takes to discriminate a new node in LTM of the CHREST architecture.
   episodic-memory                         ;Stores visual patterns generated, action patterns performed in response to that visual pattern, the time the action was performed and whether problem-solving was used to determine the action in a FIFO list data structure.
@@ -585,6 +589,7 @@ to check-variable-values
     let number-type-chrest-turtle-variables (list
       ( list ("action-performance-time") (false) (false) (false) )
       ( list ("add-link-time") (false) (0.0) (max-time) )
+      ( list ("depth-of-search") (true) (1) (false) )
       ( list ("discount-rate") (false) (0.0) (1.0) ) 
       ( list ("discrimination-time") (false) (0.0) (max-time) )
       ( list ("familiarisation-time") (false) (0.0) (max-time) )
@@ -627,18 +632,10 @@ end
 ;;;;; "CHREST-TURTLES-ACT" PROCEDURE ;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;Procedure that is run by every CHREST turtle to "act" on a cycle of play.  The procedure
-;each CHREST turtle follows is described below:
-;
-;1. CHREST turtle determines if it is hidden and if its attention is free:
-;   1.1. If not hidden and its attention is free, the turtle determines if its current plan is 
-;        empty.
-;      1.1.1. Turtle's current plan is empty so a new plan should be generated so the turtle's
-;             mind's eye should be instantiated.
-;      1.1.2. Turtles current plan is not empty so it should try to perform the next action 
-;             in the plan.
-;   1.2. If hidden or its attention is not free the turtle does not do anything.
-;2. CHREST turtle updates its plots.
+;Procedure that is run by every CHREST turtle to "act" on a cycle of play.  The CHREST turtle
+;first determines if it is hidden, if it isn't then it will check to see if it should generate
+;a plan, if it should, a plan will be generated.  Following this, the CHREST turtle will always
+;try to execute its next planned action and update relevant plots.
 ;
 ;@author  Martyn Lloyd-Kelly <martynlk@liverpool.ac.uk>  
 to chrest-turtles-act
@@ -656,7 +653,7 @@ to chrest-turtles-act
        generate-plan
      ]
      [
-       output-debug-message (word "My 'generate-plan?' turtle variable is set to 'false' so I should execute the next action in my 'plan' turtle variable...") (who)
+       output-debug-message (word "My 'generate-plan?' turtle variable is set to 'false' so I should execute the next action in my plan...") (who)
        execute-next-planned-action
      ]
      
@@ -1068,10 +1065,6 @@ to-report deliberate [scene]
       ]
     ]
   ]
-  
-  output-debug-message (word "Incrementing my 'total-deliberation-time' variable (" total-deliberation-time " by the value of the local 'time-taken-to-deliberate' variable (" time-taken-to-deliberate ")...") (who)
-  set total-deliberation-time (total-deliberation-time + time-taken-to-deliberate)
-  output-debug-message (word "My 'total-deliberation-time' variable is now equal to: " total-deliberation-time "...") (who)
   
   ;====================================;
   ;== EXTRACT INFORMATION AND REPORT ==;
@@ -1573,6 +1566,10 @@ to generate-plan
       output-debug-message ( word "Adding the time taken to decide upon this action pattern to the current value of my 'time-spent-deliberating-on-plan' turtle variable (" time-spent-deliberating-on-plan ")...") (who)
       set time-spent-deliberating-on-plan (time-spent-deliberating-on-plan + time-taken-to-deliberate)
       output-debug-message ( word "My 'time-spent-deliberating-on-plan' turtle variable is now equal to: " time-spent-deliberating-on-plan "...") (who)
+      
+      output-debug-message (word "Incrementing my 'total-deliberation-time' variable (" total-deliberation-time " by the value of the local 'time-spent-deliberating-on-plan' variable (" time-spent-deliberating-on-plan ")...") (who)
+      set total-deliberation-time (total-deliberation-time + time-spent-deliberating-on-plan)
+      output-debug-message (word "My 'total-deliberation-time' variable is now equal to: " total-deliberation-time "...") (who)
     
       output-debug-message (word "Constructing mind's eye moves...") (who)
       let object-moves ( generate-minds-eye-moves (scene) (action-pattern) )
@@ -1581,11 +1578,18 @@ to generate-plan
       output-debug-message ( word "Moving objects in the mind's eye..." ) (who)
       chrest:move-objects-in-minds-eye (object-moves) (report-current-time)
       output-debug-message ( word "Completed moving objects in the mind's eye...") (who)
+      
+      output-debug-message ( word "Adding 1 to my 'current-depth-of-search' value (" current-depth-of-search ")..." ) (who)
+      set current-depth-of-search (current-depth-of-search + 1)
     
-      output-debug-message( word "Checking to see if the action identifier in the action pattern generated is a remain-stationary or a random-move token.  If it is, plan generation should not continue...") (who)
       let action-identifier ( item (0) (string:rex-split ( string:rex-replace-all ("\\[|\\]") (action-pattern) ("")) (" ")) )
-      if( (action-identifier = remain-stationary-token) or (action-identifier = move-randomly-token) )[
-        output-debug-message ( word "The action pattern generated is a remain-stationary or move-randomly action (" action-identifier "), setting the local 'end-plan-generation' variable to boolean true..." ) (who)
+      output-debug-message( word "Checking to see if the action identifier in the action pattern generated (" action-identifier ") is a remain-stationary or a random-move token or if 'current-depth-of-search' (" current-depth-of-search ") is greater than 'depth-of-search' (" depth-of-search ").  If any of these are true, plan generation should not continue...") (who)
+      if( 
+        (action-identifier = remain-stationary-token) or 
+        (action-identifier = move-randomly-token) or
+        (current-depth-of-search >= depth-of-search)
+      )[
+        output-debug-message ( word "The action pattern generated is either a remain-stationary or move-randomly action or 'current-depth-of-search' is greater than 'depth-of-search', setting the local 'end-plan-generation' variable to boolean true..." ) (who)
         set end-plan-generation (true)
       ]
     ];Check for 'end-plan-generation'
@@ -1596,7 +1600,8 @@ to generate-plan
       output-debug-message ( word "The local 'end-plan-generation' variable is set to true so I should not plan in my next cycle.  To do this I need to set my 'generate-plan?' turtle variable to false..."  ) (who)
       set generate-plan? false
       
-      output-debug-message ( word "I also need to set my 'deliberation-finished-time' turtle variable so that I simulate inactivity while deliberating.  This will be set to the sum of the current model time (" report-current-time ") and the value of my 'time-spent-deliberating-on-plan' turtle variable (" time-spent-deliberating-on-plan ")..." ) (who)
+      output-debug-message ( word "I also need to set my 'deliberation-finished-time' turtle variable so that I simulate inactivity while deliberating.  This will be set to the sum of the current time (" report-current-time ") and 'time-spent-deliberating-on-plan' turtle variable (" time-spent-deliberating-on-plan ")..." ) (who)
+      ;The length of time taken to manipulate mind's eye information isn't included since the turtle will do nothing if the mind's eye is not available at any point.
       set deliberation-finished-time (report-current-time + time-spent-deliberating-on-plan)
       
       output-debug-message ( word "I'll also set my 'time-spent-deliberating-on-plan' turtle variable to 0 now since it has served its purpose for this plan generation cycle and should be reset for the next cycle..." ) (who)

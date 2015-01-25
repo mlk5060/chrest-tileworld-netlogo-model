@@ -30,6 +30,9 @@ action-selection-procedure
 add-link-time
 (0-1):10000
 
+depth-of-search
+(0-1):5
+
 discount-rate
 (0-1):0.5
 

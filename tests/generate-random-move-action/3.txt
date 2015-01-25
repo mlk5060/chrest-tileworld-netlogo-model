@@ -37,6 +37,9 @@ add-link-time
 discount-rate
 0:0.5
 
+depth-of-search
+0:5
+
 discrimination-time
 0:10.0
 

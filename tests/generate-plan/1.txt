@@ -26,8 +26,8 @@ action-selection-procedure
 add-link-time
 0:10000
 
-discount-rate
-0:0.5
+depth-of-search
+0:5
 
 discrimination-time
 0:10000
