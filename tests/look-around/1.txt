@@ -1,6 +1,7 @@
 ;Given a scene where the calling turtle is immediately surrounded by various objects that are hidden and not hidden, is the correct list 
 ;created when the 'look-around' procedure is called?  Note, the colouring of patches isn't tested since if this were not working correctly,
-;it would be immediately obvious by looking at the world display.
+;it would be immediately obvious by looking at the world display.  Note also that the result is visually flipped (vertical) i.e. vision goes
+;from bottom -> top but the list looks like the bottom is the top and the top is the bottom.
 
 <run>create-chrest-turtles 1</run>
 
@@ -93,12 +94,12 @@ visually-informed-problem-solving?
 
 	ask turtle 0 [
 		
-		let expected ( list 
-			(";-2;-2") (";-1;-2") (";0;-2") (";1;-2") (";2;-2")
-			(";-2;-1") (word chrest-turtle-token ";-1;-1") (word chrest-turtle-token ";0;-1") (word chrest-turtle-token ";1;-1") (";2;-1")
-			(";-2;0") (word tile-token ";-1;0") (word self-token ";0;0") (word hole-token ";1;0") (";2;0")
-			(";-2;1") (word tile-token ";-1;1") (word tile-token ";0;1") (word hole-token ";1;1") (";2;1")
-			(";-2;2") (";-1;2") (";0;2") (";1;2") (";2;2")
+		let expected ( list
+			"[. -2 -2]" "[. -2 -1]" "[. -2 0]" "[. -2 1]" "[. -2 2]"
+			"[. -1 -2]" (word "[" chrest-turtle-token " -1 -1]") (word "[" chrest-turtle-token " -1 0]") (word "[" chrest-turtle-token " -1 1]") "[. -1 2]"
+			"[. 0 -2]" (word "[" tile-token " 0 -1]") (word "[" self-token " 0 0]") (word "[" hole-token " 0 1]") "[. 0 2]"
+			"[. 1 -2]" (word "[" tile-token " 1 -1]") (word "[" tile-token " 1 0]") (word "[" hole-token " 1 1]") "[. 1 2]"
+			"[. 2 -2]" "[. 2 -1]" "[. 2 0]" "[. 2 1]" "[. 2 2]"
 		)
 
 		check-equal (look-around) (expected)

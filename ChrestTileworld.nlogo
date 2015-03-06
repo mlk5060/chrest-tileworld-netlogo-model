@@ -94,6 +94,10 @@ globals [
   tile-token                     ;Stores the string used to indicate that a tile can be seen in visual-patterns.
   training?                      ;Stores boolean true or false: true if the game is a training game, false if not (true by default).
 ]
+
+turtles-own [
+  chrest-scene-identifier                 ;Stores a string that identifies a turlte when a "Scene" object is created in CHREST.
+]
      
 chrest-turtles-own [ 
   action-performance-time                 ;Stores the length of time (in milliseconds) that it takes to perform an action.
@@ -102,6 +106,7 @@ chrest-turtles-own [
   ;cautious?                               ;Stores a boolean value that indicates whether the CHREST turtle is cautious or not.  If it is, patches that can't be seen in the mind's eye will be considered as empty, if false, these patches will not be considered empty.
   chrest-instance                         ;Stores an instance of the CHREST architecture.
   closest-tile                            ;Stores an agentset consisting of the closest tile to the calling turtle when the 'next-to-tile' procedure is called.
+  current-scene                           ;Stores an instance of jchrest.lib.Scene that represents the current scene.  Used by CHREST Netlogo extension.
   current-visual-pattern                  ;Stores the current visual pattern that has been generated as a string.
   deliberation-finished-time              ;Stores the time (in milliseconds) that the CHREST turtle will finish deliberation on the current plan. Controls plan execution.
   discount-rate                           ;Stores the discount rate used for the "profit-sharing-with-discount-rate" reinforcement learning algorithm.
@@ -815,6 +820,7 @@ to create-a [breed-name]
     if(random-float 1.0 < tile-birth-prob) [
       output-debug-message ("A NEW TILE WILL BE CREATED AND PLACED RANDOMLY IN THE ENVIRONMENT...") ("")
       create-tiles 1 [
+        set chrest-scene-identifier (tile-token)
         set heading 0
         set time-to-live tile-lifespan
         set color yellow
@@ -828,6 +834,7 @@ to create-a [breed-name]
         
         output-debug-message ("A NEW HOLE WILL BE CREATED AND PLACED RANDOMLY IN THE ENVIRONMENT...") ("")
         create-holes 1 [
+          set chrest-scene-identifier (hole-token)
           set heading 0
           set time-to-live hole-lifespan
           set color blue
@@ -2390,108 +2397,14 @@ end
 ;                                         ";xcor;ycor".
 ;
 ;@author  Martyn Lloyd-Kelly <martynlk@liverpool.ac.uk>  
-to-report look-around
+to look-around
   set debug-indent-level (debug-indent-level + 1)
   output-debug-message ("EXECUTING THE 'look-around' PROCEDURE...") ("")
   set debug-indent-level (debug-indent-level + 1)
   
-  output-debug-message (word "Creating a local 'vision' variable that will contain information about what can be seen on the patches I can currently see...") (who)
-  let vision []
-  output-debug-message (word "The local 'vision' variable is now set to: '" vision "'...") (who)
-  
-  ;Set 'xCorOffset' and 'yCorOffset' to the south-western point of the calling
-  ;turtle's sight radius by converting the 'sight-radius' variable into its
-  ;negative value i.e. 3 becomes -3.
-  output-debug-message (word "My max xCorOffset and yCorOffset is: '" sight-radius "'.  This is how many patches north, east, south and west of my current location that I can 'see'.") (who)
-  output-debug-message ("Setting the value of the local 'xCorOffset' and 'yCorOffset' variables (should be the negative value of my 'sight-radius' variable value)...") (who)
-  let xCorOffset (sight-radius * -1)
-  let yCorOffset (sight-radius * -1)
-  
-  output-debug-message("Starting to look around...") (who)
-  while[yCorOffset <= sight-radius][
-    
-    ;If the "debug?" global variable is set to true then ask the current patch
-    ;to set its colour to that stored in the calling turtle's "sight-radius-colour'
-    ;variable.  This will result in the calling turtle's sight-radius being displayed
-    ;graphically in the environment. 
-    if(debug?)[
-      ask patch-at xCorOffset yCorOffset [
-        set pcolor ([sight-radius-colour] of myself)
-      ]
-    ]
-    
-    output-debug-message (word "Checking for visible turtles at patch with x-cor offset '" xCorOffset "' and y-cor offset '" yCorOffset "' from the patch I'm on...") (who)
-    ifelse((any? (turtles-at xCorOffset yCorOffset) with [hidden? = false]))[
-      output-debug-message (word "There is a visible turtle at patch with x-cor offset '" xCorOffset "' and y-cor offset '" yCorOffset "' from the patch I'm on.  Determining what it is...") (who)
-      
-      if( any? (turtles-at xCorOffset yCorOffset) with [ (not hidden?) and (breed != tiles) and (breed != holes)] and (member? (self) (turtles-at xCorOffset yCorOffset)) )[
-        set vision ( lput (word self-token ";" xCorOffset ";" yCorOffset) (vision) )
-        output-debug-message (word "I am at the patch with x-cor offset '" xCorOffset "' and y-cor offset '" yCorOffset "' from the patch I'm on.") (who)
-      ]
-      
-      if( any? (turtles-at xCorOffset yCorOffset) with [ (not hidden?) and (breed = chrest-turtles)] and (not member? (self) (turtles-at xCorOffset yCorOffset)) )[
-        set vision ( lput (word chrest-turtle-token ";" xCorOffset ";" yCorOffset) (vision) )
-        output-debug-message (word "There is a CHREST turtle at patch with x-cor offset '" xCorOffset "' and y-cor offset '" yCorOffset "' from the patch I'm on.") (who)
-      ]
-        
-      if( (any? tiles-at xCorOffset yCorOffset) )[
-        set vision ( lput (word tile-token ";" xCorOffset ";" yCorOffset) (vision) )
-        output-debug-message (word "There is a tile at patch with x-cor offset '" xCorOffset "' and y-cor offset '" yCorOffset "' from the patch I'm on.") (who)
-      ]
-        
-      if( (any? holes-at xCorOffset yCorOffset) )[
-        set vision ( lput (word hole-token ";" xCorOffset ";" yCorOffset) (vision) )
-        output-debug-message(word "There is a hole at patch with x-cor offset '" xCorOffset "' and y-cor offset '" yCorOffset "' from the patch I'm on.") (who)
-      ]
-    ]
-    [
-      set vision ( lput (word ";" xCorOffset ";" yCorOffset) (vision) )
-      output-debug-message (word "There is no visible turtle at patch with x-cor offset '" xCorOffset "' and y-cor offset '" yCorOffset "' from the patch I'm on." ) (who)
-    ]
-    
-    output-debug-message (word "The local 'vision' variable is now set to: '" vision "'.") (who)
-    
-    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    ;;; SET VIEW TO 1 PATCH EAST ;;;
-    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    
-    set xCorOffset (xCorOffset + 1)
-     
-    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    ;;; RESET VIEW TO WESTERN-MOST PATCH AND 1 PATCH NORTH IF EASTERN-MOST PATCH REACHED ;;;
-    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    
-    if(xCorOffset > sight-radius)[
-      output-debug-message (word "The local 'xCorOffset' variable value: '" xCorOffset "' is greater than my 'sight-radius' variable value '" sight-radius "' so I'll reset the local 'xCorOffset' variable value to: '" (sight-radius * -1) "'.") (who)
-      set xCorOffset (sight-radius * -1)
-      set yCorOffset (yCorOffset + 1)
-    ]
-  ]
-    
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-  ;;; RESET THE COLOUR OF PATCHES THAT CAN BE SEEN BY THE TURTLE ;;;
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-   
-  if(debug?)[
-    set xCorOffset (sight-radius * -1)
-    set yCorOffset (sight-radius * -1)
-     
-    while[ycorOffset <= sight-radius][
-      ask patch-at xCorOffset yCorOffset [
-        set pcolor black
-      ]
-      
-      set xCorOffset (xCorOffset + 1)
-      if(xCorOffset > sight-radius)[
-        set xCorOffset (sight-radius * -1)
-        set yCorOffset (yCorOffset + 1)
-      ]
-    ]
-  ]
-  
-  output-debug-message (word "Finished looking around.  The local 'vision' variable is now set to: '" vision "'.  Reporting this variable...") (who)
+  output-debug-message("Setting the current scene to my 'current-scene' variable...") (who)
+  chrest:set-current-scene (false)
   set debug-indent-level (debug-indent-level - 2)
-  report vision
 end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3915,7 +3828,7 @@ to setup [testing]
   set hole-token "H"
   set tile-token "T"
   set chrest-turtle-token "C"
-  set self-token "SLF"
+  set self-token "SELF"
   
   ;Set other miscellaneous variables.
   set current-training-time 0
@@ -3978,6 +3891,7 @@ end
 ;@author  Martyn Lloyd-Kelly <martynlk@liverpool.ac.uk>  
 to setup-chrest-turtles [setup-chrest?]
   ask chrest-turtles [
+    set chrest-scene-identifier (chrest-turtle-token)
     set closest-tile ""
     set current-visual-pattern ""
     set heading 0
