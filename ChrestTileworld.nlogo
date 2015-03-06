@@ -123,6 +123,7 @@ chrest-turtles-own [
   minds-eye-object-movement-time          ;Stores the length of time (in milliseconds) that it takes to move an object in the mind's eye.
   minds-eye-object-placement-time         ;Stores the length of time (in milliseconds) that it takes to place an object in the mind's eye during instantiation.
   next-action-to-perform                  ;Stores the action-pattern that the turtle is to perform next.
+  number-fixations                        ;Stores the number of fixations the turtle should perform when learning/scanning the current scene.  Used by CHREST Netlogo extension. 
   pattern-recognition?                    ;Stores a boolean value that indicates whether pattern-recognition can be used or not.
   plan                                    ;Stores a series of moves generated using the contents of the minds-eye and heuristics that should be executed by the CHREST turtle.
   play-time                               ;Stores the length of time (in milliseconds) that the turtle plays for after training.
@@ -598,6 +599,7 @@ to check-variable-values
       ( list ("minds-eye-lifespan") (false) (0.0) (max-time) )
       ( list ("minds-eye-object-movement-time") (false) (0.0) (minds-eye-lifespan) )
       ( list ("minds-eye-object-placement-time") (false) (0.0) (minds-eye-lifespan) )
+      ( list ("number-fixations") (true) (1) (false) )
       ( list ("play-time") (false) (0.0) (false) )
       ( list ("sight-radius") (true) (1) (max-pxcor) )
       ( list ("sight-radius") (true) (1) (max-pycor) )
@@ -2397,14 +2399,16 @@ end
 ;                                         ";xcor;ycor".
 ;
 ;@author  Martyn Lloyd-Kelly <martynlk@liverpool.ac.uk>  
-to look-around
+to-report look-around
   set debug-indent-level (debug-indent-level + 1)
   output-debug-message ("EXECUTING THE 'look-around' PROCEDURE...") ("")
   set debug-indent-level (debug-indent-level + 1)
   
   output-debug-message("Setting the current scene to my 'current-scene' variable...") (who)
   chrest:set-current-scene (false)
+  chrest:learn-current-scene
   set debug-indent-level (debug-indent-level - 2)
+  report chrest:get-current-scene
 end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3904,11 +3908,13 @@ to setup-chrest-turtles [setup-chrest?]
     set generate-plan? true
     
     if(setup-chrest?)[
+      print "setup-chrest"
       chrest:instantiate-chrest-in-turtle
       chrest:set-add-link-time ( add-link-time )
       chrest:set-discrimination-time ( discrimination-time)
       chrest:set-familiarisation-time ( familiarisation-time)
       chrest:set-reinforcement-learning-theory (reinforcement-learning-theory)
+      chrest:set-domain("tileworld")
     ]
     
     place-randomly
@@ -4410,8 +4416,7 @@ end
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;Determines whether the game is being played in a training or non-training
-;context and updates the time according to the time-increment specified in
-;the external settings file.
+;context and updates the time by 1.
 ; 
 ;@author  Martyn Lloyd-Kelly <martynlk@liverpool.ac.uk>  
 to update-time
