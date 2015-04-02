@@ -537,7 +537,6 @@ to check-variable-values
       ( list ("max-length-of-episodic-memory") (true) (0) (false) )
       ( list ("pattern-recognition-time") (false) (0.0) (false) )
       ( list ("problem-solving-time") (false) (0.0) (false) )
-      ( list ("random-action-deliberation-time") (false) (0.0) (false) )
       ( list ("sight-radius") (true) (1) (max-pxcor) )
       ( list ("sight-radius") (true) (1) (max-pycor) )
     )
@@ -2877,9 +2876,8 @@ to setup-chrest-turtles [setup-chrest?]
     setup-plot-pen ("Scores") (0)
     setup-plot-pen ("Total Deliberation Time") (0)
     setup-plot-pen ("Num Visual-Action Links") (0)
-    setup-plot-pen ("#CDs (no vision)") (1)
-    setup-plot-pen ("#CDs (with vision)") (1)
-    setup-plot-pen ("#PRs") (1)
+    setup-plot-pen ("Freq. Problem-Solving") (1)
+    setup-plot-pen ("Freq. Pattern-Recognition") (1)
     setup-plot-pen ("Visual STM Size") (0)
     setup-plot-pen ("Visual LTM Size") (0)
     setup-plot-pen ("Visual LTM Avg. Depth") (0)
@@ -3677,7 +3675,7 @@ PLOT
 10
 1200
 190
-#CDs (with vision)
+Freq. Problem-Solving
 Turtle ID
 NIL
 0.0
@@ -3694,7 +3692,7 @@ PLOT
 190
 1200
 369
-#PRs
+Freq. Pattern-Recognition
 Turtle ID
 NIL
 0.0
