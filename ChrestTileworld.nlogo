@@ -5,28 +5,6 @@
 ; =========================== 
 ; by Martyn Lloyd-Kelly
 
-;INPROG: Implementing functionality so that CHREST turtles can/can't reinforce visual-action links and visual-heuristic
-;        deliberation links for ICAART 2014. 
-
-;TODO: Determine how long it should take to reinforce a link between two patterns.
-;TODO: Implement decision-making times for heuristics and add this to the time it takes to perform an action when
-;      the action is loaded.
-;TODO: Tidy up code layout.
-;TODO: Should turtles generate visual patterns if they are scheduled to perform an action in the future?  Check with
-;      Peter and Fernand.
-;TODO: Extract action-pattern creation into independent procedures so code is DRY.
-;TODO: Should contents of 'closest-tile', 'current-visual-pattern', 'next-action-to-perform' and 
-;      'visual-pattern-used-to-generate-action' variables be stored in a STM modality rather than a turtle variable?
-;TODO: Perform a check after running the setup procedure to see if all required turtle breed variables are set.
-;TODO: Ensure that all procedures have a description.
-;TODO: Ensure that all inner-comment blocks that denote segments of procedures are formatted as ;== ==;
-;TODO: Ensure that all item lists in comment descriptions are of the form 1./1.1/1.1.1 etc.
-;TODO: Save any code fragments that are run more than once in a procedure for the purposes of outputting something to
-;      a debug message as well as to do something in the procedure since this will speed-up execution time slightly.
-;TODO: Remove most of the hard-coded global variable values.  A lot of them should be able to be specified by the user.
-;TODO: Implement functionality to restrict users from specifying certain global/turtle variable values at start of sim.
-;      e.g. the "generate-action-using-heuristics" turtle variable should only be set programatically, not by the user.
-
 ;******************************************;
 ;******************************************;
 ;********* EXTENSION DECLARATIONS *********;
@@ -63,13 +41,13 @@ globals [
   hole-birth-prob             ;Stores the probability that a hole will be created on each tick in the game.
   hole-lifespan               ;Stores the length of time (in seconds) that a hole lives for after creation. 
   hole-token                  ;Stores the string used to indicate that a hole can be seen in visual-patterns.
-  heuristics-token            ;Stores the string used to indicate that a turtle used heuristic decision-making to select an action.
   move-purposefully-token     ;Stores the string used to indicate that the calling turtle moved purposefully in action-patterns.
   move-randomly-token         ;Stores the string used to indicate that the calling turtle moved randomly in action-patterns.
   movement-headings           ;Stores headings that agents can move along.
   move-around-tile-token      ;Stores the string used to indicate that the calling turtle moved around a tile in action-patterns.
   move-to-tile-token          ;Stores the string used to indicate that the calling turtle moved to a tile in action-patterns.
   output-interval             ;Stores the interval of time that must pass before data is output to the model's output area.
+  problem-solving-token       ;Stores the string used to indicate that a turtle used problem-solving to select an action.
   push-tile-token             ;Stores the string used to indicate that the calling turtle pushed a tile in action-patterns.
   remain-stationary-token     ;Stores the string used to indicate that the calling turtle is remaining stationary.
   setup-and-results-directory ;Stores the directory that simulation setups are to be input from and results are to be output to.
@@ -96,28 +74,25 @@ chrest-turtles-own [
   current-visual-pattern                            ;Stores the current visual pattern that has been generated.
   discount-rate                                     ;Stores the discount rate used for the "profit-sharing-with-discount-rate" reinforcement learning algorithm.
   discrimination-time                               ;Stores the length of time (in seconds) that the CHREST turtle takes to discriminate a new node in LTM.
+  episodic-memory                                   ;Stores visual patterns generated, action patterns performed in response to that visual pattern, the time the action was performed and whether problem-solving was used to determine the action in a FIFO list data structure.
   familiarisation-time                              ;Stores the length of time (in seconds) that the CHREST turtle takes to familiarise a node in LTM.
-  generate-action-using-heuristics                  ;Stores a boolean value that indicates whether the CHREST turtle should use/did use heuristics to decide upon the current action.
-  heuristic-deliberation-time                       ;Stores the length of time (in seconds) that the CHREST turtle takes to deliberate about what action to perform using heuristics.
-  max-length-of-visual-action-time-heuristics-list  ;Stores the maximum length that the CHREST turtle's "visual-action-time-heuristics" list can be.
+  max-length-of-episodic-memory                     ;Stores the maximum length that the CHREST turtle's "episodic-memory" list can be.
   next-action-to-perform                            ;Stores the action-pattern that the turtle is to perform next.
-  number-conscious-decisions-no-vision              ;Stores the total number of times conscious decision-making not informed by visual information has been used to generate an action for the CHREST turtle.
-  number-conscious-decisions-with-vision            ;Stores the total number of times conscious decision-making informed by visual information has been used to generate an action for the CHREST turtle.
-  number-pattern-recognitions                       ;Stores the total number of times pattern recognition has been used to generate an action for the CHREST turtle.
-  pattern-association-deliberation-time             ;Stores the length of time (in seconds) that the CHREST turtle takes to deliberate about what action to perform using pattern association.
+  pattern-recognition-frequency                     ;Stores the total number of times pattern recognition has been used to generate an action for the CHREST turtle.
+  pattern-recognition-time                          ;Stores the length of time (in seconds) that the CHREST turtle takes to deliberate about what action to perform using pattern recognition.
   play-time                                         ;Stores the length of time (in seconds) that the CHREST turtle can play a non-training game for.
-  random-action-deliberation-time                   ;Stores the length of time (in seconds) that the CHREST turtle takes to deliberate about what action to perform using random selection.
+  problem-solving-frequency                         ;Stores the total number of times problem-solving has been used to generate an action for the CHREST turtle.
+  problem-solving-time                              ;Stores the length of time (in seconds) that the CHREST turtle takes to deliberate about what action to perform using problem-solving.
   reinforce-actions                                 ;Stores a boolean value that indicates whether CHREST turtles should reinforce links between visual patterns and actions.
-  reinforce-heuristics                              ;Stores a boolean value that indicates whether CHREST turtles should reinforce links between visual patterns and heuristic deliberation.
+  reinforce-problem-solving                         ;Stores a boolean value that indicates whether CHREST turtles should reinforce links between visual patterns and problem-solving.
   reinforcement-learning-theory                     ;Stores the name of the reinforcement learning theory the CHREST turtle will use.
-  rule-based-action-selection                       ;Stores a boolean value that indicates whether a CHREST turtle can use rule-based action selection or not.
   score                                             ;Stores the score of the agent (the number of holes that have been filled by the turtle).
   sight-radius                                      ;Stores the number of patches north, east, south and west that the turtle can see.
   sight-radius-colour                               ;Stores the colour that the patches a CHREST turtle can see will be set to (used for debugging). 
   time-to-perform-next-action                       ;Stores the time that the action-pattern stored in the "next-action-to-perform" turtle variable should be performed.
   total-deliberation-time                           ;Stores the total time that it has taken for a CHREST turtle to deliberate about actions that should be performed.
   training-time                                     ;Stores the length of time (in seconds) that the turtle can train for.
-  visual-action-time-heuristics                     ;Stores visual patterns generated, action patterns performed in response to that visual pattern, the time the action was performed and whether heuristics were used to determine the action in a FIFO list data structure.
+  use-problem-solving                               ;Stores a boolean value that indicates whether the CHREST turtle should use/did use problem-solving to decide upon the current action.
   visual-pattern-used-to-generate-action            ;Stores the visual-pattern that was used to generate the action-pattern stored in the "next-action-to-perform" turtle variable.
 ]
      
@@ -135,13 +110,13 @@ holes-own [
 ;******************************;
 ;******************************;
      
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;;; "ADD-ENTRY-TO-visual-action-time-heuristics" PROCEDURE ;;;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;; "ADD-ENTRY-TO-EPISODIC-MEMORY" PROCEDURE ;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;Adds an entry to the calling turtle's "visual-action-time-heuristics" list.  If the length of the 
-;"visual-action-time-heuristics" list contains the maximum number of items, the last item is removed 
-;and the new item added to the front of the list. If the length of the "visual-action-time-heuristics" 
+;Adds an entry to the calling turtle's "episodic-memory" list.  If the length of the 
+;"episodic-memory" list contains the maximum number of items, the last item is removed 
+;and the new item added to the front of the list. If the length of the "episodic-memory" 
 ;list is less than the maximum length then the new item is added to the front of the list.
 ;
 ;         Name              Data Type     Description
@@ -150,9 +125,9 @@ holes-own [
 ;@params  action-pattern    String        The action pattern to be paired.
 ;
 ;@author  Martyn Lloyd-Kelly <martynlloydkelly@gmail.com>  
-to add-entry-to-visual-action-time-heuristics [visual-pattern action-pattern]
+to add-entry-to-episodic-memory [visual-pattern action-pattern]
   set debug-indent-level (debug-indent-level + 1)
-  output-debug-message ("EXECUTING THE 'add-entry-to-visual-action-time-heuristics' PROCEDURE...") ("")
+  output-debug-message ("EXECUTING THE 'add-entry-to-episodic-memory' PROCEDURE...") ("")
   set debug-indent-level (debug-indent-level + 1)
   
   let rlt ("null")
@@ -163,20 +138,20 @@ to add-entry-to-visual-action-time-heuristics [visual-pattern action-pattern]
   output-debug-message (word "Checking to see if my reinforcement learning theory is set to 'null' (" rlt ").  If so, I won't continue with this procedure...") (who)
   if(rlt != "null")[
   
-    output-debug-message (word "Before modification my 'visual-action-time-heuristics' list is set to: " visual-action-time-heuristics ) (who)
-    output-debug-message (word "Checking to see if the length of the 'visual-action-time-heuristics' list (" length visual-action-time-heuristics ") is greater than or equal to the value specified for the 'max-length-of-visual-action-time-heuristics-list' variable (" max-length-of-visual-action-time-heuristics-list ")...") (who)
-    if( (length (visual-action-time-heuristics)) >= max-length-of-visual-action-time-heuristics-list )[
-      output-debug-message ("The length of the 'visual-action-time-heuristics' list is greater than or equal to the value specified for the 'max-length-of-visual-action-time-heuristics-list' variable...") (who)
-      output-debug-message ("Removing the last item (oldest item) from the 'visual-action-time-heuristics' list...") (who)
-      set visual-action-time-heuristics (but-last visual-action-time-heuristics)
-      output-debug-message (word "After removing the last item the 'visual-action-time-heuristics' list is set to: " visual-action-time-heuristics ) (who)
+    output-debug-message (word "Before modification my 'episodic-memory' list is set to: " episodic-memory ) (who)
+    output-debug-message (word "Checking to see if the length of the 'episodic-memory' list (" length episodic-memory ") is greater than or equal to the value specified for the 'max-length-of-episodic-memory' variable (" max-length-of-episodic-memory ")...") (who)
+    if( (length (episodic-memory)) >= max-length-of-episodic-memory )[
+      output-debug-message ("The length of the 'episodic-memory' list is greater than or equal to the value specified for the 'max-length-of-episodic-memory' variable...") (who)
+      output-debug-message ("Removing the last item (oldest item) from the 'episodic-memory' list...") (who)
+      set episodic-memory (but-last episodic-memory)
+      output-debug-message (word "After removing the last item the 'episodic-memory' list is set to: " episodic-memory ) (who)
     ]
     
-    output-debug-message ("The length of the 'visual-action-time-heuristics' list is less than the value specified for the 'max-length-of-visual-action-time-heuristics-list' variable...") (who)
-    let visual-action-time-heuristic (list (visual-pattern) (action-pattern) (report-current-time) (generate-action-using-heuristics))
-    output-debug-message (word "Adding " visual-action-time-heuristic " to the front of the 'visual-action-time-heuristics' list...") (who)
-    set visual-action-time-heuristics (fput (visual-action-time-heuristic) (visual-action-time-heuristics))
-    output-debug-message (word "Final state of the 'visual-action-time-heuristics' list: " visual-action-time-heuristics) (who)
+    output-debug-message ("The length of the 'episodic-memory' list is less than the value specified for the 'max-length-of-episodic-memory' variable...") (who)
+    let episode (list (visual-pattern) (action-pattern) (report-current-time) (use-problem-solving))
+    output-debug-message (word "Adding " episode " to the front of the 'episodic-memory' list...") (who)
+    set episodic-memory (fput (episode) (episodic-memory))
+    output-debug-message (word "Final state of the 'episodic-memory' list: " episodic-memory) (who)
   ]
   
   set debug-indent-level (debug-indent-level - 2)
@@ -559,9 +534,9 @@ to check-variable-values
       ( list ("discount-rate") (false) (0.0) (1.0) ) 
       ( list ("discrimination-time") (false) (0.0) (false) )
       ( list ("familiarisation-time") (false) (0.0) (false) )
-      ( list ("heuristic-deliberation-time") (false) (0.0) (false) )
-      ( list ("max-length-of-visual-action-time-heuristics-list") (true) (0) (false) )
-      ( list ("pattern-association-deliberation-time") (false) (0.0) (false) )
+      ( list ("max-length-of-episodic-memory") (true) (0) (false) )
+      ( list ("pattern-recognition-time") (false) (0.0) (false) )
+      ( list ("problem-solving-time") (false) (0.0) (false) )
       ( list ("random-action-deliberation-time") (false) (0.0) (false) )
       ( list ("sight-radius") (true) (1) (max-pxcor) )
       ( list ("sight-radius") (true) (1) (max-pycor) )
@@ -574,8 +549,7 @@ to check-variable-values
     ;Boolean type variables
     let boolean-type-chrest-turtle-variables (list
       ( list ("reinforce-actions") )
-      ( list ("reinforce-heuristics") )
-      ( list ("rule-based-action-selection") )
+      ( list ("reinforce-problem-solving") )
     )
     
     foreach(boolean-type-chrest-turtle-variables)[
@@ -654,9 +628,8 @@ to chrest-turtles-act
      update-plot-no-x-axis-value ("Scores") (score)
      update-plot-no-x-axis-value ("Total Deliberation Time") (total-deliberation-time)
      update-plot-no-x-axis-value ("Num Visual-Action Links") (chrest:get-ltm-modality-num-action-links "visual")
-     update-plot-with-x-axis-value ("#CDs (no vision)") (who) (number-conscious-decisions-no-vision) 
-     update-plot-with-x-axis-value ("#CDs (with vision)") (who) (number-conscious-decisions-with-vision)
-     update-plot-with-x-axis-value ("#PRs") (who) (number-pattern-recognitions)
+     update-plot-with-x-axis-value ("Freq. Problem-Solving") (who) (problem-solving-frequency)
+     update-plot-with-x-axis-value ("Freq. Pattern-Recognition") (who) (pattern-recognition-frequency)
      update-plot-no-x-axis-value ("Visual STM Size") (chrest:get-stm-modality-size "visual")
      update-plot-no-x-axis-value ("Visual LTM Size") (chrest:get-ltm-modality-size "visual")
      update-plot-no-x-axis-value ("Visual LTM Avg. Depth")(chrest:get-ltm-modality-avg-depth "visual")
@@ -860,7 +833,7 @@ end
 ;              random and is then passed to the 'load-action' procedure so that it can be executed.
 ;       4.1.3. If there is only one item in the list then this is passed to the 'load-action' 
 ;              procedure so that it can be executed.   
-;    4.2. If it is then an action to perform is selected using heuristics.
+;    4.2. If it is then an action to perform is selected using problem-solving.
 ;       4.2.1. The calling turtle's 'current-visual-pattern' variable is checked to see if it 
 ;              contains any tiles.
 ;          4.2.1.1. If tiles can be seen then the calling turtle checks to see if its 
@@ -886,9 +859,9 @@ to deliberate
   
   if(breed = chrest-turtles)[
     output-debug-message ("I am a chrest-turtle so I will deliberate accordingly...") (who)
-    output-debug-message (word "Setting my 'generate-action-using-heuristics' variable to 'true' and the local 'actions-associated-with-visual-pattern' variable to empty since this is a fresh deliberation...") (who)
+    output-debug-message (word "Setting my 'use-problem-solving' variable to 'true' and the local 'actions-associated-with-visual-pattern' variable to empty since this is a fresh deliberation...") (who)
     let actions-associated-with-visual-pattern []
-    set generate-action-using-heuristics (true)
+    set use-problem-solving (true)
     
     let rlt ("null")
     if(breed = chrest-turtles)[
@@ -908,99 +881,61 @@ to deliberate
         set action-to-perform (roulette-selection (actions-associated-with-visual-pattern))
         
         output-debug-message (word "The action I will perform is: '" action-to-perform "', checking to see if this is empty...") (who)
-        if( (not empty? action-to-perform) and (not member? (heuristics-token) (action-to-perform)) )[
-          output-debug-message (word "The action I am to perform is not empty and does not indicate that I should use heuristics to deliberate on my next action so I'll set my 'generate-action-using-heuristics' variable to 'false'...") (who)
-          set generate-action-using-heuristics (false)
+        if( (not empty? action-to-perform) and (not member? (problem-solving-token) (action-to-perform)) )[
+          output-debug-message (word "The action I am to perform is not empty and does not indicate that I should use problem-solving to deliberate on my next action so I'll set my 'use-problem-solving' variable to 'false'...") (who)
+          set use-problem-solving (false)
           
           output-debug-message (word "The action I am to perform is: " action-to-perform ", loading this action for execution...") (who)
-          load-action (action-to-perform) (pattern-association-deliberation-time)
+          load-action (action-to-perform) (pattern-recognition-time)
           
-          output-debug-message (word "Since I am generating an action using pattern association, I will increment my 'total-deliberation-time' variable (" total-deliberation-time ") by the value of my 'pattern-association-deliberation-time' variable (" pattern-association-deliberation-time ")...") (who)
-          set total-deliberation-time (precision (total-deliberation-time + pattern-association-deliberation-time) (1))
+          output-debug-message (word "Since I am generating an action using pattern-recognition, I will increment my 'total-deliberation-time' variable (" total-deliberation-time ") by the value of my 'pattern-recognition-time' variable (" pattern-recognition-time ")...") (who)
+          set total-deliberation-time (precision (total-deliberation-time + pattern-recognition-time) (1))
           output-debug-message (word "My 'total-deliberation-time' variable is now equal to: " total-deliberation-time "...") (who)
           
-          output-debug-message (word "Since I am generating an action using pattern association, I will increment my 'number-pattern-recognitions' variable (" number-pattern-recognitions ") by 1...") (who)
-          set number-pattern-recognitions (number-pattern-recognitions + 1)
-          output-debug-message (word "My 'number-pattern-recognitions' variable is now equal to: " number-pattern-recognitions "...") (who)
+          output-debug-message (word "Since I am generating an action using pattern-recognition, I will increment my 'pattern-recognition-frequency' variable (" pattern-recognition-frequency ") by 1...") (who)
+          set pattern-recognition-frequency (pattern-recognition-frequency + 1)
+          output-debug-message (word "My 'pattern-recognition-frequency' variable is now equal to: " pattern-recognition-frequency "...") (who)
         ]
       ]
     ]
     
-    output-debug-message (word "Checking to see if the local 'generate-action-using-heuristics' variable value (" generate-action-using-heuristics ") is set to 'true'.  If so, I'll attempt to generate an action using heuristics...") (who)
-    if(generate-action-using-heuristics)[
+    output-debug-message (word "Checking to see if the local 'use-problem-solving' variable value (" use-problem-solving ") is set to 'true'.  If so, I'll attempt to generate an action using problem-solving...") (who)
+    if(use-problem-solving)[
       
-      output-debug-message (word "I can generate an action using heuristics but first I need to check if I should use visual information to determine what heuristic to use or whether I should just select one at random...") (who)
-      output-debug-message (word "Checking to see if my 'rule-based-action-selection' variable is set to true (" rule-based-action-selection ")...") (who)
-      ifelse(rule-based-action-selection)[
-        output-debug-message (word "My 'rule-based-action-selection' variable is set to true so I can select a heuristic based on visual information.") (who)
+      output-debug-message (word "Checking if I can see any tiles...") (who)
+      let number-of-tiles (check-for-substring-in-string-and-report-occurrences ("T") (current-visual-pattern) )
+      output-debug-message (word "I can see " number-of-tiles " tiles" ) (who)
       
-        output-debug-message (word "Checking if I can see any tiles...") (who)
-        let number-of-tiles (check-for-substring-in-string-and-report-occurrences ("T") (current-visual-pattern) )
-        output-debug-message (word "I can see " number-of-tiles " tiles" ) (who)
+      ifelse( number-of-tiles > 0)[
+        output-debug-message ("I can see one or more tiles, checking if I can see any holes...") (who)
         
-        ifelse( number-of-tiles > 0)[
-          output-debug-message ("I can see one or more tiles, checking if I can see any holes...") (who)
-          
-          let number-of-holes ( check-for-substring-in-string-and-report-occurrences ("H") (current-visual-pattern) )
-          output-debug-message (word "I can see " number-of-holes " holes") (who)
-          
-          ifelse(number-of-holes > 0)[
-            output-debug-message ("Since I can see one or more tiles and holes, I'll try to push the tile closest to my closest hole into my closest hole...") (who)
-            set action-to-perform (generate-push-closest-tile-to-closest-hole-action)
-          ]
-          [
-            output-debug-message ("I can't see a hole, I'll either move to my closest tile if its not adjacent to me or turn to face it and push it along this heading if it is...") (who)
-            set action-to-perform (generate-move-to-or-push-closest-tile-action)
-          ] 
-        ]
-        [
-          output-debug-message ("I can't see any tiles, I'll just select a random heading to move 1 patch forward...") (who)
-          set action-to-perform (generate-random-move-action)
-        ]
+        let number-of-holes ( check-for-substring-in-string-and-report-occurrences ("H") (current-visual-pattern) )
+        output-debug-message (word "I can see " number-of-holes " holes") (who)
         
-        output-debug-message (word "The action I am to perform is: " action-to-perform ", loading this action for execution...") (who)
-        load-action (action-to-perform) (heuristic-deliberation-time)
-        
-        output-debug-message (word "Incrementing my 'total-deliberation-time' variable (" total-deliberation-time ") by the value of my 'heuristic-deliberation-time' variable (" heuristic-deliberation-time ")...") (who)
-        set total-deliberation-time (precision(total-deliberation-time + heuristic-deliberation-time) (1))
-        output-debug-message (word "My 'total-deliberation-time' variable is now equal to: " total-deliberation-time "...") (who)
-        
-        output-debug-message (word "Since I am generating an action using conscious decision-making informed by visual information, I will increment my 'number-conscious-decisions-with-vision' variable (" number-conscious-decisions-with-vision ") by 1...") (who)
-        set number-conscious-decisions-with-vision (number-conscious-decisions-with-vision + 1)
-        output-debug-message (word "My 'number-conscious-decisions-with-vision' variable is now equal to: " number-conscious-decisions-with-vision "...") (who)
-      ]
-      [
-        output-debug-message ("My 'rule-based-action-selection' variable is set to false so I'll randomly choose a heuristic to generate an action...") (who)
-        let choices [1 2 3]
-        let choice (item (random (length choices)) (choices))
-        output-debug-message (word "I had the following choices: " choices " and I chose " choice "..." ) (who)
-      
-        ifelse(choice = 0)[
-          output-debug-message (word "Since my choice was: " choice ", I'll run the 'generate-push-closest-tile-to-closest-hole-action' procedure...") (who)
+        ifelse(number-of-holes > 0)[
+          output-debug-message ("Since I can see one or more tiles and holes, I'll try to push the tile closest to my closest hole into my closest hole...") (who)
           set action-to-perform (generate-push-closest-tile-to-closest-hole-action)
         ]
         [
-          ifelse(choice = 1)[
-            output-debug-message (word "Since my choice was: " choice ", I'll run the 'generate-move-to-or-push-closest-tile-action' procedure...") (who)
-            set action-to-perform (generate-move-to-or-push-closest-tile-action)
-          ]
-          [
-            output-debug-message (word "Since my choice was: " choice ", I'll run the 'generate-random-move-action' procedure...") (who)
-            set action-to-perform (generate-random-move-action)
-          ]
-        ]
-      
-        output-debug-message (word "The action I am to perform is: " action-to-perform ", loading this action for execution...") (who)
-        load-action (action-to-perform) (random-action-deliberation-time)
-      
-        output-debug-message (word "Since I chose an action to perform without considering my current visual information I'll increment my 'total-deliberation-time' variable (" total-deliberation-time ") by the value of my 'random-action-deliberation-time' variable (" random-action-deliberation-time ")...") (who)
-        set total-deliberation-time (precision(total-deliberation-time + random-action-deliberation-time) (1))
-        output-debug-message (word "My 'total-deliberation-time' variable is now equal to: " total-deliberation-time "...") (who)
-        
-        output-debug-message (word "Since I am generating an action using conscious decision-making not informed by visual information, I will increment my 'number-conscious-decisions-no-vision' variable (" number-conscious-decisions-no-vision ") by 1...") (who)
-        set number-conscious-decisions-no-vision (number-conscious-decisions-no-vision + 1)
-        output-debug-message (word "My 'number-conscious-decisions-no-vision' variable is now equal to: " number-conscious-decisions-no-vision "...") (who)
+          output-debug-message ("I can't see a hole, I'll either move to my closest tile if its not adjacent to me or turn to face it and push it along this heading if it is...") (who)
+          set action-to-perform (generate-move-to-or-push-closest-tile-action)
+        ] 
       ]
+      [
+        output-debug-message ("I can't see any tiles, I'll just select a random heading to move 1 patch forward...") (who)
+        set action-to-perform (generate-random-move-action)
+      ]
+      
+      output-debug-message (word "The action I am to perform is: " action-to-perform ", loading this action for execution...") (who)
+      load-action (action-to-perform) (problem-solving-time)
+      
+      output-debug-message (word "Incrementing my 'total-deliberation-time' variable (" total-deliberation-time ") by the value of my 'problem-solving-time' variable (" problem-solving-time ")...") (who)
+      set total-deliberation-time (precision(total-deliberation-time + problem-solving-time) (1))
+      output-debug-message (word "My 'total-deliberation-time' variable is now equal to: " total-deliberation-time "...") (who)
+      
+      output-debug-message (word "Since I am generating an action using conscious decision-making informed by visual information, I will increment my 'problem-solving-frequency' variable (" problem-solving-frequency ") by 1...") (who)
+      set problem-solving-frequency (problem-solving-frequency + 1)
+      output-debug-message (word "My 'problem-solving-frequency' variable is now equal to: " problem-solving-frequency "...") (who)
     ]
   ]
   
@@ -1145,12 +1080,12 @@ to-report generate-move-to-or-push-closest-tile-action
     ifelse(closest-tile != nobody)[
       
       output-debug-message (word "The 'who' variable value of the tile indicated by the value of my 'closest-tile' value is: " [who] of closest-tile "...") (who)
-      let closest-tile-distance (distance closest-tile)
-      output-debug-message (word "Checking to see if the number of patches seperating me and my closest tile (" closest-tile-distance ") is less than or equal to my sight-radius (" sight-radius ").  Since my 'rule-based-action-selection' variable may be set to false, I can't guarantee that I can 'see' it and if I can't, I won't continue this procedure...") (who)
+      let closest-tile-distance (floor (distance closest-tile))
+      output-debug-message (word "Checking to see if the number of patches seperating me and my closest tile (" closest-tile-distance ") is less than or equal to my sight-radius (" sight-radius ")...") (who)
       ifelse(closest-tile-distance <= sight-radius)[
         output-debug-message ("The number of patches seperating me from my closest tile is <= my sight-radius so I can continue to generate an action...") (who)
       
-        output-debug-message (word "Checking to see if my closest-tile is more than 1 patch away far away my closest-tile is from me...") (who)
+        output-debug-message (word "Checking to see if my closest-tile is more than 1 patch away from me...") (who)
         ifelse(closest-tile-distance > 1)[
           output-debug-message ("My closest tile is more than 1 patch away so I need to move closer to it.") (who)
           output-debug-message ("I'll face the tile indicated in my 'closest-tile' variable and then rectify my heading from there...") (who)
@@ -1177,6 +1112,7 @@ to-report generate-move-to-or-push-closest-tile-action
         [
           output-debug-message ("My closest tile is 1 patch away from me or less so I'll turn to face it and attempt to push it...")(who)
           face closest-tile
+          set heading (rectify-heading(heading))
           output-debug-message ("Checking to see if there is anything blocking my closest tile from being pushed (other players or tiles, holes can't block a tile)...") (who)
          
           ifelse(any? (turtles-on (patch-at-heading-and-distance (heading) (2)) ) with [ (breed != holes) and (hidden? = false) ] )[
@@ -1342,8 +1278,8 @@ to-report generate-push-closest-tile-to-closest-hole-action
     
       output-debug-message (word "My closest hole's 'who' variable is: " [who] of closest-hole "...") (who)
       
-      let closest-hole-distance (distance closest-hole)
-      output-debug-message (word "Checking to see if the number of patches seperating me and my closest hole (" closest-hole-distance ") is greater than my sight-radius (" sight-radius ").  Since my 'rule-based-action-selection' variable may be set to false, I can't guarantee that I can 'see' it and if I can't, I won't continue this procedure...") (who)
+      let closest-hole-distance (floor (distance closest-hole))
+      output-debug-message (word "Checking to see if the number of patches seperating me and my closest hole (" closest-hole-distance ") is greater than my sight-radius (" sight-radius ")...") (who)
       ifelse(closest-hole-distance <= sight-radius)[
         output-debug-message (word "The number of patches seperating me and my closest hole is <= my sight-radius so I'll continue with this procedure...") (who)
         
@@ -1892,17 +1828,17 @@ to perform-action [action-to-perform]
     output-debug-message ("I'm not to move randomly so I'll continue trying to perform an action if my current-visual-pattern is not empty...") (who)
     if(not empty? current-visual-pattern)[
       output-debug-message ("Adding my current visual pattern and action to perform to episodic memory..") (who)
-      add-entry-to-visual-action-time-heuristics (current-visual-pattern) (chrest:create-item-square-pattern (action) (heading-to-move-along) (patches-to-move))
+      add-entry-to-episodic-memory (current-visual-pattern) (chrest:create-item-square-pattern (action) (heading-to-move-along) (patches-to-move))
       
       output-debug-message (word "Checking the value of my 'breed' variable (" breed ") to see if I'm a CHREST turtle.  If I am, I'll associate the action I'm to perform with my current visual pattern...")  (who)
       if( breed = chrest-turtles )[
         
-        output-debug-message (word "I am a CHREST turtle and I have a 50% chance of associating either heuristics or the action performed with the current visual pattern...") (who)
+        output-debug-message (word "I am a CHREST turtle and I have a 50% chance of associating either problem-solving or the action performed with the current visual pattern...") (who)
         let random-choice (random-float 1)
-        output-debug-message (word "I've generated a random float (" random-choice "), if this is <= 0.4 then I'll associate my current visual pattern with heuristic choice.  Otherwise, I'll associate it with the action performed...") (who)
+        output-debug-message (word "I've generated a random float (" random-choice "), if this is <= 0.4 then I'll associate my current visual pattern with problem-solving.  Otherwise, I'll associate it with the action performed...") (who)
         ifelse(random-float 1 <= 0.4)[
-          output-debug-message (word "The random float was <= 0.4 so I'll associate the 'heuristics' action, [" heuristics-token " 0 0] with my current visual pattern (" current-visual-pattern ")...") (who)
-          chrest:associate-patterns ("visual") ("item_square") (current-visual-pattern) ("action") ("item_square") (chrest:create-item-square-pattern (heuristics-token) (0) (0) ) (convert-seconds-to-milliseconds(report-current-time))
+          output-debug-message (word "The random float was <= 0.4 so I'll associate problem-solving, [" problem-solving-token " 0 0] with my current visual pattern (" current-visual-pattern ")...") (who)
+          chrest:associate-patterns ("visual") ("item_square") (current-visual-pattern) ("action") ("item_square") (chrest:create-item-square-pattern (problem-solving-token) (0) (0) ) (convert-seconds-to-milliseconds(report-current-time))
         ]
         [
           output-debug-message (word "The random float was > 0.4 so I'll associate the the action ([" (action) " " (heading-to-move-along) " " (patches-to-move) "]) with my current visual pattern (" current-visual-pattern ")...") (who)
@@ -2144,9 +2080,8 @@ to play
       output-print (word "Avg score: " (mean [score] of chrest-turtles) )
       output-print (word "Avg deliberation time: " (mean [total-deliberation-time] of chrest-turtles) )
       output-print (word "Avg # visual-action links: " (mean [chrest:get-ltm-modality-num-action-links "visual"] of chrest-turtles) )
-      output-print (word "Avg # conscious decisions without vison input: " (mean [number-conscious-decisions-no-vision] of chrest-turtles) )
-      output-print (word "Avg # conscious decisions with vison input: " (mean [number-conscious-decisions-with-vision] of chrest-turtles) )
-      output-print (word "Avg # pattern recognitions: " (mean [number-pattern-recognitions] of chrest-turtles) )
+      output-print (word "Avg # problem-solving: " (mean [problem-solving-frequency] of chrest-turtles) )
+      output-print (word "Avg # pattern recognitions: " (mean [pattern-recognition-frequency] of chrest-turtles) )
       output-print (word "Avg # visual LTM nodes: " (mean [chrest:get-ltm-modality-size "visual"] of chrest-turtles) )
       output-print (word "Avg depth visual LTM: " (mean [chrest:get-ltm-modality-avg-depth "visual"] of chrest-turtles) )
       output-print (word "Avg # action LTM nodes: " (mean [chrest:get-ltm-modality-size "action"] of chrest-turtles) )
@@ -2176,7 +2111,6 @@ to play
       set current-training-time 0
       set current-game-time 0
       clear-all-plots
-      file-close-all
       
       ;=======================;
       ;=== END OF SCENARIO ===;
@@ -2283,7 +2217,7 @@ end
 ;
 ;If the pusher's breed indicates that it is a CHREST turtle, it will attempt to associate 
 ;the current visual pattern and the action-pattern it is currently performing together in 
-;its LTM.  The CHREST turtle will then update its 'visual-action-time-heuristics' list so that links
+;its LTM.  The CHREST turtle will then update its 'episodic-memory' list so that links
 ;between its contents can be reinforced if T fills a hole.
 ;
 ;The procedure then branches in one of two ways depending on whether there is a hole 
@@ -2297,9 +2231,9 @@ end
 ;     c. The pusher's score is incremented by the value of the global "reward-value" 
 ;        variable.
 ;     d. The pusher's breed is checked, if it is a CHREST turtle then the pusher's
-;        'visual-action-time-heuristics' list is iterated through and the pusher attempts to
+;        'episodic-memory' list is iterated through and the pusher attempts to
 ;        reinforce each visual-action pair.  Following this, the pusher then clears
-;        the 'visual-action-time-heuristics' list.
+;        the 'episodic-memory' list.
 ;     e. T dies (simulating the second part of the simulated hole fill).
 ;
 ;  2. If there isn't a hole on the patch immediately ahead of T, T checks to see if
@@ -2349,7 +2283,7 @@ to push-tile [push-heading]
           output-debug-message (word "Since I have successfully pushed a tile into a hole I should increase my current score (" score ") by the 'reward-value' variable value (" reward-value ")...") (who)
           set score (score + reward-value)
           output-debug-message (word "My score is now equal to: " score ".") (who)
-          output-debug-message ("I will also try to reinforce the visual-action links in my 'visual-action-time-heuristics' list if I am able to...") (who)
+          output-debug-message ("I will also try to reinforce the visual-action links in my 'episodic-memory' list if I am able to...") (who)
           reinforce-visual-action-links
         ]
         
@@ -2453,7 +2387,9 @@ to-report rectify-heading [heading-to-rectify]
  set debug-indent-level (debug-indent-level + 1)
  output-debug-message ("EXECUTING THE 'recitify-heading' PROCEDURE...") ("")
  set debug-indent-level (debug-indent-level + 1)
- output-debug-message (word "THE VALUE OF THE LOCAL VARIABLE 'heading-to-rectify' IS: '" heading-to-rectify "'.") ("")
+ 
+ set heading-to-rectify (round heading-to-rectify) 
+ output-debug-message (word "AFTER ROUNDING, THE VALUE OF THE LOCAL VARIABLE 'heading-to-rectify' IS: '" heading-to-rectify "'.") ("")
  
  if(heading-to-rectify < 0)[
    set heading-to-rectify (360 + heading-to-rectify)
@@ -2562,9 +2498,9 @@ end
 ;Uses a turtle's reinforcement learning theory to reinforce all visual-action 
 ;links in episodic memory if the turtle is able to do so.
 ;
-;The procedure also reinforces heruistic deliberation if the turtle is able to
-;do so and the action pattern in the visual-action link in question was generated
-;using heuristic deliberation. 
+;The procedure also reinforces problem-solving if the turtle is able to do so 
+;and the action pattern in the visual-action link in question was generated
+;using problem-solving. 
 ;
 ;@author  Martyn Lloyd-Kelly <martynlloydkelly@gmail.com>
 to reinforce-visual-action-links
@@ -2580,23 +2516,23 @@ to reinforce-visual-action-links
   output-debug-message (word "Checking to see if my reinforcement learning theory is set to 'null' (" rlt ").  If so, I won't continue with this procedure...") (who)
   if(rlt != "null")[
     
-    output-debug-message ("Retrieving each of the items in my 'visual-action-time-heuristics' list and reinforcing the links between the patterns...") (who)
+    output-debug-message ("Retrieving each of the items in my 'episodic-memory' list and reinforcing the links between the patterns...") (who)
     output-debug-message (word "Time that reward was awarded: " report-current-time "s.") (who)
-    output-debug-message (word "The contents of my 'visual-action-time-heuristics' list is: " visual-action-time-heuristics) (who)
+    output-debug-message (word "The contents of my 'episodic-memory' list is: " episodic-memory) (who)
     
-    foreach(visual-action-time-heuristics)[
+    foreach(episodic-memory)[
       output-debug-message (word "Processing the following item: " ? "...") (who)
       output-debug-message (word "Visual pattern is: " (item (0) (?))) (who)
       output-debug-message (word "Action pattern is: " (item (1) (?))) (who)
       output-debug-message (word "Action pattern was performed at time " (item (2) (?)) "s") (who)
-      output-debug-message (word "Was a heuristic used to determine that this action pattern should be performed: " (item (3) (?))) (who)
+      output-debug-message (word "Was problem-solving used to determine that this action pattern should be performed: " (item (3) (?))) (who)
      
       output-debug-message (word (item 0 ?) "'s action links before reinforcement: " (chrest:recognise-pattern-and-return-patterns-of-specified-modality ("visual") ("item_square") (item (0) (?)) ("action") ) ) (who)
      
-      output-debug-message (word "Checking to see if I am able to reinforce heuristic deliberation (" reinforce-heuristics ") and if this action was generated by heuristic deliberation (" (item (3) (?)) ")...") (who)
-      if( (reinforce-heuristics) and (item (3) (?)) )[
-        output-debug-message (word "I am able to reinforce heuristic deliberation and this action was generated by heuristic deliberation.  I'll reinforce the link between this visual pattern and heruistic deliberation then...") (who)
-        chrest:reinforce-action-link ("visual") ("item_square") (item (0) (?)) ("item_square") (chrest:create-item-square-pattern (heuristics-token) (0) (0)) (list (reward-value) (discount-rate) (report-current-time) (item (2) (?)))
+      output-debug-message (word "Checking to see if I am able to reinforce problem-solving (" reinforce-problem-solving ") and if this action was generated by problem-solving (" (item (3) (?)) ")...") (who)
+      if( (reinforce-problem-solving) and (item (3) (?)) )[
+        output-debug-message (word "I am able to reinforce problem-solving and this action was generated by problem-solving.  I'll reinforce the link between this visual pattern and problem-solving then...") (who)
+        chrest:reinforce-action-link ("visual") ("item_square") (item (0) (?)) ("item_square") (chrest:create-item-square-pattern (problem-solving-token) (0) (0)) (list (reward-value) (discount-rate) (report-current-time) (item (2) (?)))
       ]
       
       output-debug-message (word "Checking to see if I am able to reinforce actions (" reinforce-actions ")...") (who)
@@ -2608,9 +2544,9 @@ to reinforce-visual-action-links
       output-debug-message (word (item 0 ?) "'s action links after reinforcement: " ( chrest:recognise-pattern-and-return-patterns-of-specified-modality ("visual") ("item_square") (item 0 ?) ("action") ) ) (who)
     ]
     
-    output-debug-message ("Reinforcement of visual-action patterns complete.  Clearing my 'visual-action-time-heuristics' list...") (who)
-    set visual-action-time-heuristics []
-    output-debug-message (word "My 'visual-action-time-heuristics' list is now equal to: " visual-action-time-heuristics "...") (who)
+    output-debug-message ("Reinforcement of visual-action patterns complete.  Clearing my 'episodic-memory' list...") (who)
+    set episodic-memory []
+    output-debug-message (word "My 'episodic-memory' list is now equal to: " episodic-memory "...") (who)
   ]
   
   set debug-indent-level (debug-indent-level - 2)
@@ -2863,7 +2799,7 @@ to setup
   set training? true
   
   ;Set action strings.
-  set heuristics-token "HDM"
+  set problem-solving-token "PS"
   set move-around-tile-token "MAT"
   set move-purposefully-token "MP"
   set move-randomly-token "MR"
@@ -2924,7 +2860,7 @@ to setup-chrest-turtles [setup-chrest?]
     set next-action-to-perform ""
     set score 0
     set time-to-perform-next-action -1 ;Set to -1 initially since if it is set to 0 the turtle will think it has some action to perform in the initial round.
-    set visual-action-time-heuristics []
+    set episodic-memory []
     set visual-pattern-used-to-generate-action []
     set sight-radius-colour (color + 2)
     
@@ -2979,13 +2915,11 @@ end
 ;@author  Martyn Lloyd-Kelly <martynlloydkelly@gmail.com>  
 to setup-independent-variables
   set debug-indent-level (debug-indent-level + 1)
-  output-debug-message ("EXECUTING THE 'setup-independent-variables' PROCEDURE...") ("")
+  output-debug-message ("EXECUTING THE 'setup-environment-using-user-selected-file' PROCEDURE...") ("")
   set debug-indent-level (debug-indent-level + 1)
   
-  output-debug-message ("CHECKING TO SEE IF THE RELEVANT SCENARIO AND REPEAT DIRECTORY EXISTS") ("")
   check-for-scenario-repeat-directory
-  output-debug-message (word "THE RELEVANT SCENARIO AND REPEAT DIRECTORY EXISTS.  ATTEMPTING TO OPEN " (setup-and-results-directory) "Scenario" (current-scenario-number) (directory-separator) "Scenario" (current-scenario-number) "Settings.txt" ) ("")
-  file-open (word (setup-and-results-directory) "Scenario" (current-scenario-number) (directory-separator) "Scenario" (current-scenario-number) "Settings.txt" )
+  file-open (word setup-and-results-directory "Scenario" current-scenario-number directory-separator "Scenario" current-scenario-number "Settings.txt" )
   
   let variable-name ""
   
@@ -3615,7 +3549,7 @@ SWITCH
 168
 debug?
 debug?
-0
+1
 1
 -1000
 
@@ -3681,7 +3615,7 @@ INPUTBOX
 147
 70
 total-number-of-scenarios
-54
+27
 1
 0
 Number
@@ -3742,24 +3676,7 @@ PLOT
 954
 10
 1200
-189
-#CDs (no vision)
-Turtle ID
-NIL
-0.0
-10.0
-0.0
-10.0
-true
-false
-"" ""
-PENS
-
-PLOT
-954
-189
-1200
-368
+190
 #CDs (with vision)
 Turtle ID
 NIL
@@ -3774,9 +3691,9 @@ PENS
 
 PLOT
 954
-368
+190
 1200
-547
+369
 #PRs
 Turtle ID
 NIL
@@ -3796,7 +3713,7 @@ SWITCH
 201
 draw-plots?
 draw-plots?
-1
+0
 1
 -1000
 
@@ -4169,7 +4086,7 @@ Polygon -6459832 true true 46 128 33 120 21 118 11 123 3 138 5 160 13 178 9 192 
 Polygon -6459832 true true 67 122 96 126 63 144
 
 @#$#@#$#@
-NetLogo 5.0.5
+NetLogo 5.1.0
 @#$#@#$#@
 @#$#@#$#@
 @#$#@#$#@

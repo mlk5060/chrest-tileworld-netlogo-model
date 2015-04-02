@@ -1,0 +1,8 @@
+reinforce-actions
+0:true
+
+reinforce-problem-solving
+0:false
+
+reinforcement-learning-theory
+0:profit-sharing-with-discount-rate
