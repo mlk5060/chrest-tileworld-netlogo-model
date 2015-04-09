@@ -61,7 +61,7 @@ reinforce-problem-solving
 (0-1):true
 
 reinforcement-learning-theory
-(0-1):profit-sharing-with-discount-rate
+(0-1):profit_sharing_with_discount_rate
 
 discount-rate
 (0-1):0.2

@@ -61,7 +61,7 @@ reinforce-problem-solving
 (0-3):false
 
 reinforcement-learning-theory
-(0-3):profit-sharing-with-discount-rate
+(0-3):profit_sharing_with_discount_rate
 
 discount-rate
 (0-3):0.5

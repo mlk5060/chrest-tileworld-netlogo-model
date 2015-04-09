@@ -5,4 +5,4 @@ reinforce-problem-solving
 0:true
 
 reinforcement-learning-theory
-0:profit-sharing-with-discount-rate
+0:profit_sharing_with_discount_rate
