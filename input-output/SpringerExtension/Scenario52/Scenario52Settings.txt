@@ -58,7 +58,7 @@ reinforce-actions
 (0-1):true
 
 reinforce-problem-solving
-(0-1):false
+(0-1):true
 
 reinforcement-learning-theory
 (0-1):profit_sharing_with_discount_rate
@@ -67,4 +67,4 @@ discount-rate
 (0-1):0.7
 
 max-length-of-episodic-memory
-(0-1):10
+(0-1):6

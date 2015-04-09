@@ -2,10 +2,10 @@ hole-born-every
 1.0
 
 hole-birth-prob
-0.1
+0.9
 
 hole-lifespan
-80.0
+20.0
 
 reward-value
 1.0
@@ -14,57 +14,57 @@ tile-born-every
 1.0
 
 tile-birth-prob
-0.1
+0.9
 
 tile-lifespan
-80.0
+20.0
 
 time-increment
 0.1
 
-"create-chrest-turtles 4"
+"create-chrest-turtles 8"
 
 action-performance-time
-(0-3):0.0
+(0-7):0.0
 
 add-link-time
-(0-3):10.0
+(0-7):10.0
 
 discrimination-time
-(0-3):10.0
+(0-7):10.0
 
 familiarisation-time
-(0-3):2.0
+(0-7):2.0
 
 max-length-of-episodic-memory
-(0-3):10
+(0-7):10
 
 pattern-recognition-time
-(0-3):0.2
+(0-7):0.2
 
 play-time
-(0-3):28800.1
+(0-7):28800.1
 
 problem-solving-time
-(0-3):1.0
+(0-7):1.0
 
 sight-radius
-(0-3):2
+(0-7):2
 
 training-time
-(0-3):0.0
+(0-7):0.0
 
 reinforce-actions
-(0-3):true
+(0-7):true
 
 reinforce-problem-solving
-(0-3):true
+(0-7):false
 
 reinforcement-learning-theory
-(0-3):profit_sharing_with_discount_rate
+(0-7):profit_sharing_with_discount_rate
 
 discount-rate
-(0-3):0.4
+(0-7):0.4
 
 max-length-of-episodic-memory
-(0-3):7
+(0-7):6

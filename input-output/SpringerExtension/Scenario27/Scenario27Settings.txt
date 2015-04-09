@@ -67,4 +67,4 @@ discount-rate
 (0-1):0.9
 
 max-length-of-episodic-memory
-(0-1):7
+(0-1):10
