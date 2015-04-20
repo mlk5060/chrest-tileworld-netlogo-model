@@ -18,65 +18,72 @@ chmod 774 "$RESULTS_FILE"
 
 #Append the string below to the file specified by the RESULTS_FILE variable.
 #The string can be interpreted as giving column headers to a table. 
-echo "env_complexity, num_players, agent_type, repeat, avg_score, avg_delib_time, avg_num_va_links, avg_num_non_visual_cd, avg_num_visual_cd, avg_num_pat_rcg, avg_vis_ltm_size_, avg_vis_ltm_depth, avg_act_ltm_size" >> "$RESULTS_FILE"
+echo "complexity, agent_type, episodic_mem_size, discount_rate, repeat, avg_score, avg_delib_time, avg_num_va_links, avg_num_prob_sol, avg_num_pat_rcg, avg_vis_ltm_size_, avg_vis_ltm_depth, avg_act_ltm_size" >> "$RESULTS_FILE"
 
 #Main loop
-while [ $SCENARIO_NUMBER -le 27 ]; do
-	case $SCENARIO_NUMBER in
-		1 )
-			INDEPENDENT_VARIABLE_STRING="1, 2, 1";;
-		2 )
-			INDEPENDENT_VARIABLE_STRING="1, 2, 2";;
-		3 )
-			INDEPENDENT_VARIABLE_STRING="1, 2, 3";;
-		4 )
-			INDEPENDENT_VARIABLE_STRING="1, 4, 1";;
-		5 )
-			INDEPENDENT_VARIABLE_STRING="1, 4, 2";;
-		6 )
-			INDEPENDENT_VARIABLE_STRING="1, 4, 3";;
-		7 )
-			INDEPENDENT_VARIABLE_STRING="1, 8, 1";;
-		8 )
-			INDEPENDENT_VARIABLE_STRING="1, 8, 2";;
-		9 )
-			INDEPENDENT_VARIABLE_STRING="1, 8, 3";;
-		10 )
-			INDEPENDENT_VARIABLE_STRING="2, 2, 1";;
-		11 )
-			INDEPENDENT_VARIABLE_STRING="2, 2, 2";;
-		12 )
-			INDEPENDENT_VARIABLE_STRING="2, 2, 3";;
-		13 )
-			INDEPENDENT_VARIABLE_STRING="2, 4, 1";;
-		14 )
-			INDEPENDENT_VARIABLE_STRING="2, 4, 2";;
-		15 )
-			INDEPENDENT_VARIABLE_STRING="2, 4, 3";;
-		16 )
-			INDEPENDENT_VARIABLE_STRING="2, 8, 1";;
-		17 )
-			INDEPENDENT_VARIABLE_STRING="2, 8, 2";;
-		18 )
-			INDEPENDENT_VARIABLE_STRING="2, 8, 3";;
-		19 )
-			INDEPENDENT_VARIABLE_STRING="3, 2, 1";;
-		20 )
-			INDEPENDENT_VARIABLE_STRING="3, 2, 2";;
-		21 )
-			INDEPENDENT_VARIABLE_STRING="3, 2, 3";;
-		22 )
-			INDEPENDENT_VARIABLE_STRING="3, 4, 1";;
-		23 )
-			INDEPENDENT_VARIABLE_STRING="3, 4, 2";;
-		24 )
-			INDEPENDENT_VARIABLE_STRING="3, 4, 3";;
-		25 )
-			INDEPENDENT_VARIABLE_STRING="3, 8, 1";;
-		26 )
-			INDEPENDENT_VARIABLE_STRING="3, 8, 2";;
-		27 )
-			INDEPENDENT_VARIABLE_STRING="3, 8, 3";;
+while [ $SCENARIO_NUMBER -le 270 ]; do
+	
+	# Determine complexity
+	INTEGER=$((SCENARIO_NUMBER/90))
+	FRACTION=$((SCENARIO_NUMBER%90))
+	if [ \( $INTEGER -eq 0 -a $FRACTION -gt 0 \) -o \( $INTEGER -eq 1 -a $FRACTION -eq 0 \) ]; then
+		ENV_COMPLEXITY=1
+		NUM_PLAYERS=2
+		NUMERATOR=90
+	elif [ \( $INTEGER -eq 1 -a $FRACTION -gt 0 \) -o \( $INTEGER -eq 2 -a $FRACTION -eq 0 \) ]; then
+		ENV_COMPLEXITY=2
+		NUM_PLAYERS=4
+		NUMERATOR=180
+	else
+		ENV_COMPLEXITY=3
+		NUM_PLAYERS=8
+		NUMERATOR=270
+	fi
+
+	#Determine agent type
+	if [ $SCENARIO_NUMBER -ge $((NUMERATOR-90)) -a $SCENARIO_NUMBER -le $(((NUMERATOR-90)+45)) ]; then
+		AGENT_TYPE=2
+		AGENT_TYPE_START=$((NUMERATOR-90))
+	else
+		AGENT_TYPE=3
+		AGENT_TYPE_START=$((NUMERATOR-45))
+	fi
+
+	#Determine episodic memory size
+	if [ $SCENARIO_NUMBER -ge $AGENT_TYPE_START -a $SCENARIO_NUMBER -le $(($AGENT_TYPE_START+9)) ]; then
+		EPISODIC_MEMORY_SIZE=6
+	elif [ $SCENARIO_NUMBER -ge $AGENT_TYPE_START -a $SCENARIO_NUMBER -le $(($AGENT_TYPE_START+18)) ]; then
+		EPISODIC_MEMORY_SIZE=8
+	elif [ $SCENARIO_NUMBER -ge $AGENT_TYPE_START -a $SCENARIO_NUMBER -le $(($AGENT_TYPE_START+27)) ]; then
+		EPISODIC_MEMORY_SIZE=10
+	elif [ $SCENARIO_NUMBER -ge $AGENT_TYPE_START -a $SCENARIO_NUMBER -le $(($AGENT_TYPE_START+36)) ]; then
+		EPISODIC_MEMORY_SIZE=12
+	elif [ $SCENARIO_NUMBER -ge $AGENT_TYPE_START -a $SCENARIO_NUMBER -le $(($AGENT_TYPE_START+45)) ]; then
+		EPISODIC_MEMORY_SIZE=14
+	fi
+
+
+	#Determine discount rate
+	FRACTION=$((SCENARIO_NUMBER%9))
+	case $FRACTION in
+		1)
+			DISCOUNT_RATE=0.1;;
+		2)
+			DISCOUNT_RATE=0.2;;
+		3)
+			DISCOUNT_RATE=0.3;;
+		4)
+			DISCOUNT_RATE=0.4;;
+		5)
+			DISCOUNT_RATE=0.5;;
+		6)
+			DISCOUNT_RATE=0.6;;
+		7)
+			DISCOUNT_RATE=0.7;;
+		8)
+			DISCOUNT_RATE=0.8;;
+		0)
+			DISCOUNT_RATE=0.9;;
 	esac
 
 	#Set repeat number and loop through repeat directories.
@@ -107,7 +114,7 @@ while [ $SCENARIO_NUMBER -le 27 ]; do
 						AVG_NUM_NODES_VISUAL_LTM=$(grep "Avg # visual LTM nodes" "Repeat$REPEAT_NUMBER.txt" | cut -d':' -f2 | awk '{gsub(/^ +|  +$/,"")}1' | tr -d '\r')
 						AVG_DEPTH_VISUAL_LTM=$(grep "Avg depth visual LTM" "Repeat$REPEAT_NUMBER.txt" | cut -d':' -f2 | awk '{gsub(/^ +|  +$/,"")}1' | tr -d '\r')
 						AVG_NUM_NODES_ACTION_LTM=$(grep "Avg # action LTM nodes" "Repeat$REPEAT_NUMBER.txt" | cut -d':' -f2 | awk '{gsub(/^ +|  +$/,"")}1' | tr -d '\r')
-						echo "$INDEPENDENT_VARIABLE_STRING, $REPEAT_NUMBER, $AVG_SCORE, $AVG_DELIBERATION_TIME, $AVG_NUM_VISUAL_ACTION_LINKS, $AVG_NUM_PROBLEM_SOLVING, $AVG_NUM_PATTERN_RECOGNITIONS, $AVG_NUM_NODES_VISUAL_LTM, $AVG_DEPTH_VISUAL_LTM, $AVG_NUM_NODES_ACTION_LTM" >> "$RESULTS_FILE"
+						echo "$ENV_COMPLEXITY, $AGENT_TYPE, $EPISODIC_MEMORY_SIZE, $DISCOUNT_RATE, $REPEAT_NUMBER, $AVG_SCORE, $AVG_DELIBERATION_TIME, $AVG_NUM_VISUAL_ACTION_LINKS, $AVG_NUM_PROBLEM_SOLVING, $AVG_NUM_PATTERN_RECOGNITIONS, $AVG_NUM_NODES_VISUAL_LTM, $AVG_DEPTH_VISUAL_LTM, $AVG_NUM_NODES_ACTION_LTM" >> "$RESULTS_FILE"
 					else
 						echo "$RESULTS_DIR/Scenario$SCENARIO_NUMBER/Repeat$REPEAT_NUMBER/Repeat$REPEAT_NUMBER.txt does not have read permission."
 				fi
