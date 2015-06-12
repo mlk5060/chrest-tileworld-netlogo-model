@@ -54,6 +54,9 @@ minds-eye-object-movement-time
 minds-eye-object-placement-time
 (0-1):25
 
+number-fixations
+(0-1):4
+
 pattern-recognition?
 (0-1):true
 

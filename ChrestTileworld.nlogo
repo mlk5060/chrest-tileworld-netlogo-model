@@ -55,7 +55,7 @@ breed [ holes ]
 
 globals [
   breeds                         ;Stores the names of turtle breeds (not automatically updated).
-  chrest-turtle-token            ;Stores the string used to indicate that a CHREST turtle can be seen in visual-patterns.
+  chrest-turtle-token            ;Stores the string used to indicate a CHREST turtle in scene instances.
   current-game-time              ;Stores the length of time (in milliseconds) that the non-training game has run for.
   current-repeat-number          ;Stores the current repeat number.
   current-scenario-number        ;Stores the current scenario number.
@@ -63,10 +63,11 @@ globals [
   debug-indent-level             ;Stores the current indent level (3 spaces per indent) for debug messages.
   debug-message-output-file      ;Stores the location where debug messages should be written to.
   directory-separator            ;Stores the directory separator for the operating system the model is being run on.
+  empty-patch-token              ;Stores the string used to indicate an empty patch (patch that contains no visible turtles) in scene instances.
   hole-born-every                ;Stores the length of time (in milliseconds) that must pass before a hole may possibly be created.
   hole-birth-prob                ;Stores the probability that a hole will be created on each tick in the game.
   hole-lifespan                  ;Stores the length of time (in milliseconds) that a hole lives for after creation. 
-  hole-token                     ;Stores the string used to indicate that a hole can be seen in visual-patterns.
+  hole-token                     ;Stores the string used to indicate a hole in scene instances.
   move-purposefully-token        ;Stores the string used to indicate that the calling turtle moved purposefully in action-patterns.
   move-randomly-token            ;Stores the string used to indicate that the calling turtle moved randomly in action-patterns.
   movement-headings              ;Stores headings that agents can move along.
@@ -83,7 +84,7 @@ globals [
   save-training-data?            ;Stores a boolean value that indicates whether or not data should be saved when training completes.
   save-world-data?               ;Stores a boolean value that indicates whether the user wishes to save world data when running the model.
   procedure-not-applicable-token ;Stores the string used to indicate that the procedure called during deliberation is not applicable given the current observable environment.
-  self-token                     ;Stores the string used to indicate that the turtle itself can be seen in visual-patterns.
+  self-token                     ;Stores the string used to indicate the turtle that generates a scene instance.
   setup-and-results-directory    ;Stores the directory that simulation setups are to be input from and results are to be output to.
   testing?                       ;Stores a boolean value that indicates whether the model is being executed in a training context or not.
   testing-debug-messages         ;Stores a string composed of all debug messages output when tests are run.
@@ -91,19 +92,14 @@ globals [
   tile-born-every                ;Stores the length of time (in milliseconds) that must pass before a tile may possibly be created.
   tile-birth-prob                ;Stores the probability that a hole will be created on each tick in the game.
   tile-lifespan                  ;Stores the length of time (in milliseconds) that a tile lives for after creation.
-  tile-token                     ;Stores the string used to indicate that a tile can be seen in visual-patterns.
+  tile-token                     ;Stores the string used to indicate a tile in scene instances.
   training?                      ;Stores boolean true or false: true if the game is a training game, false if not (true by default).
-]
-
-turtles-own [
-  chrest-scene-identifier                 ;Stores a string that identifies a turlte when a "Scene" object is created in CHREST.
 ]
      
 chrest-turtles-own [ 
   action-performance-time                 ;Stores the length of time (in milliseconds) that it takes to perform an action.
   action-selection-procedure              ;Stores the name of the action-selection procedure that should be used to select an action after pattern-recognition.
   add-link-time                           ;Stores the length of time (in milliseconds) that it takes to add a link between two nodes in LTM.
-  ;cautious?                               ;Stores a boolean value that indicates whether the CHREST turtle is cautious or not.  If it is, patches that can't be seen in the mind's eye will be considered as empty, if false, these patches will not be considered empty.
   chrest-instance                         ;Stores an instance of the CHREST architecture.
   closest-tile                            ;Stores an agentset consisting of the closest tile to the calling turtle when the 'next-to-tile' procedure is called.
   current-scene                           ;Stores an instance of jchrest.lib.Scene that represents the current scene.  Used by CHREST Netlogo extension.
@@ -615,7 +611,6 @@ to check-variable-values
     
     ;Boolean type variables
     let boolean-type-chrest-turtle-variables (list
-      ;( list ("cautious?") ) 
       ( list ("generate-plan?") )
       ( list ("pattern-recognition?") )
       ( list ("problem-solving?") )
@@ -822,7 +817,6 @@ to create-a [breed-name]
     if(random-float 1.0 < tile-birth-prob) [
       output-debug-message ("A NEW TILE WILL BE CREATED AND PLACED RANDOMLY IN THE ENVIRONMENT...") ("")
       create-tiles 1 [
-        set chrest-scene-identifier (tile-token)
         set heading 0
         set time-to-live tile-lifespan
         set color yellow
@@ -836,7 +830,6 @@ to create-a [breed-name]
         
         output-debug-message ("A NEW HOLE WILL BE CREATED AND PLACED RANDOMLY IN THE ENVIRONMENT...") ("")
         create-holes 1 [
-          set chrest-scene-identifier (hole-token)
           set heading 0
           set time-to-live hole-lifespan
           set color blue
@@ -964,7 +957,7 @@ to-report deliberate [scene]
     output-debug-message (word "If my 'pattern-recognition?' variable is set to 'true' (" pattern-recognition? ") and the local 'scene' variable isn't empty (" scene ") I can use pattern-recognition to select an action...") (who)
     if( pattern-recognition? and (not empty? scene) )[
       output-debug-message (word "My 'pattern-recognition?' variable is set to 'true' and the local 'scene' variable isn't empty so I'll return any action-patterns associated with the contents of 'scene' in LTM along with their weights...") (who)
-      set action-patterns-and-weights-associated-with-scene (chrest:recognise-pattern-and-return-patterns-of-specified-modality ("visual") ("item_square") (generate-visual-chunk-from-scene(scene)) ("action"))
+      set action-patterns-and-weights-associated-with-scene (chrest:recognise-pattern-and-return-patterns-of-specified-modality ("visual") ("item_square") (generate-visual-chunk-from-scene(scene)) ("action") (report-current-time))
       
       output-debug-message (word "Checking to see if the 'action-patterns-and-weights-associated-with-scene' variable value is empty...") (who)
       if(not empty? action-patterns-and-weights-associated-with-scene)[
@@ -1504,122 +1497,122 @@ to generate-plan
   set debug-indent-level (debug-indent-level + 1)
   
   output-debug-message (word "Checking to see if I have instantiated my mind's eye, if I haven't, I'll instantiate it now...") (who)
-  if( not chrest:minds-eye-exist?(report-current-time) )[
-    output-debug-message (word "I haven't instantiated a mind's eye so I will instantiate one then start plan generation...") (who)
+  ;if( not chrest:minds-eye-exist?(report-current-time) )[
+    ;output-debug-message (word "I haven't instantiated a mind's eye so I will instantiate one then start plan generation...") (who)
     instantiate-minds-eye
-  ]
+  ;]
   
   output-debug-message(word "Setting a local 'end-plan-generation' variable to 'false'. This will control whether plan generation should continue since, if it is set to 'true' at any point, this procedure will set my 'generate-plan?' turtle variable to 'false'.") (who)
   let end-plan-generation (false)
   output-debug-message(word "The local 'end-plan-generation' variable is now set to: '" end-plan-generation "'.") (who)
   
-  output-debug-message (word "Setting a local 'scene' variable to the current content of my mind's eye...")  (who)
-  let scene ( chrest:get-all-minds-eye-content(report-current-time) )
-  output-debug-message (word "The local 'scene' variable is now set to: '" scene "'.  Checking to see if the first item is 'null' (mind's eye attention is not currently free).  If not, I'll continue plan generation..." )  (who)
-  
-  if( (item (0) (scene) != "null") )[
-    output-debug-message (word "My mind's eye attention is free and the local 'end-plan-generation' variable is set to boolean false...") (who)
-    
-    output-debug-message ("Setting a local variable: 'location-of-self' to the current location of myself in the scene being used to plan...") (who)
-    let location-of-self (get-location-of-self-in-scene (scene))
-    
-    output-debug-message ("Checking to see if my 'plan' turtle variable is currently empty.  If not, I'll retrieve the last action in the plan and see if it was to push a tile...") (who)
-    output-debug-message ("If it was, and I can no longer see the tile on the patch adjacent to me along the heading specified in the last action of the plan from my location in scene, I'll set the local 'end-plan-generation' variable to false...") (who)
-    output-debug-message ("If this isn't done, further deliberation will continue which will result in me abandoning the tile...") (who)
-    if(not empty? plan)[
-      
-      output-debug-message ("Setting three local variables: 'last-action-in-plan-identifier', 'last-action-in-plan-heading', and 'last-action-in-plan-patches' to the relevant parts of the last action in my 'plan' turtle variable...") (who)
-      let last-action-in-plan-info (string:rex-split (string:rex-replace-all ("\\[|\\]") (item (0) (last (plan))) ("")) (" "))
-      let last-action-in-plan-identifier (item (0) (last-action-in-plan-info))
-      let last-action-in-plan-heading ( read-from-string (item (1) (last-action-in-plan-info)) )
-      let last-action-in-plan-patches ( read-from-string (item (2) (last-action-in-plan-info)) )
-      output-debug-message ( word "The 'last-action-in-plan-identifier', 'last-action-in-plan-heading' and 'last-action-in-plan-patches' variables are now set to '" last-action-in-plan-identifier "', '" last-action-in-plan-heading "' and '" last-action-in-plan-patches "', respectively..." ) (who)
-      
-      output-debug-message ( word "Checking to see if the local 'last-action-in-plan-identifier' is equal to '" push-tile-token "' and if a tile can be seen on the patch immediately ahead of me along heading '" last-action-in-plan-heading "' in the scene...") (who)
-      if(
-        ( last-action-in-plan-identifier = push-tile-token ) and 
-        ( ( item (0) (string:rex-split (get-object-and-patch-coordinates-ahead-of-location-in-scene (scene) (last-action-in-plan-heading) (last-action-in-plan-patches)) (";")) ) = "null" )
-      )[
-        output-debug-message ("My last action in 'plan' is to push a tile and I can no longer see it on the patch ahead with the heading adopted in scene so I'll set the local 'end-plan-generation' variable to true...") (who)
-        set end-plan-generation (true)
-      ]
-    ]
-    
-    output-debug-message ("Checking that the 'end-plan-generation' variable is not already set to true and either I can't see myself in scene or a tile and a hole exist on the same coordinates in scene...") (who)
-    if(
-      ( not end-plan-generation ) and
-      (
-        ( empty? location-of-self ) or 
-        ( not empty? (get-locations-of-object-in-scene (word tile-token "," hole-token) (scene)) ) or
-        ( not empty? (get-locations-of-object-in-scene (word hole-token "," tile-token) (scene)) )
-      )
-    )[
-      output-debug-message ("The local 'end-plan-generation' variable is set to false and I either can't see myself in scene or a tile and hole are on the same patch in the scene I'm using to plan so I'll set the 'end-plan-generation' variable to true...") (who)
-      set end-plan-generation (true)
-    ]
-    
-    output-debug-message ( word "Checking the value of the local 'end-plan-generation' value (" end-plan-generation ").  If it is set to 'true', I shouldn't continue plan generation..." ) (who)
-    if(not end-plan-generation)[
-      
-      output-debug-message("The value of the local 'end-plan-generation' variable is not true so I'll deliberate and set the result of this deliberation to a local 'action-pattern-time-taken-to-deliberate-and-used-pattern-recognition' variable...") (who)
-      let action-pattern-time-taken-to-deliberate-and-used-pattern-recognition (deliberate (scene))
-      
-      output-debug-message (word "Deliberation complete, extracting the action pattern to perform, time taken to decide upon this action and whether pattern-reocgnition was used to produce this action to three local variables: 'action-pattern', 'time-taken-to-deliberate' and 'used-pattern-recognition', respectively...") (who)
-      let action-pattern ( item (0) (action-pattern-time-taken-to-deliberate-and-used-pattern-recognition) )
-      let time-taken-to-deliberate ( item (1) (action-pattern-time-taken-to-deliberate-and-used-pattern-recognition) )
-      let used-pattern-recognition ( item (2) (action-pattern-time-taken-to-deliberate-and-used-pattern-recognition) )
-      output-debug-message (word "The local 'action-pattern' variable value is: '" action-pattern "'.") (who)
-      output-debug-message (word "The local 'time-taken-to-deliberate' variable value is: " time-taken-to-deliberate ".") (who)
-      output-debug-message (word "The local 'used-pattern-recognition' variable value is: " used-pattern-recognition ".") (who)
-      
-      output-debug-message ("Converting the action generated into an action chunk and attempting to commit it to LTM...") (who)
-      let result-of-recognising-action-pattern ( chrest:recognise-and-learn-pattern ("action") ("item_square") (action-pattern) (report-current-time) )
-    
-      output-debug-message ("Creating a list from the 'action-pattern' and 'used-pattern-recognition' variables and appending this list to my 'plan' turtle variable...") (who)
-      set plan ( lput ( list (action-pattern) (used-pattern-recognition) ) (plan) )
-      output-debug-message ( word "My plan turtle variable is now equal to: '" plan "'..." ) (who)
-    
-      output-debug-message ( word "Adding the time taken to decide upon this action pattern to the current value of my 'time-spent-deliberating-on-plan' turtle variable (" time-spent-deliberating-on-plan ")...") (who)
-      set time-spent-deliberating-on-plan (time-spent-deliberating-on-plan + time-taken-to-deliberate)
-      output-debug-message ( word "My 'time-spent-deliberating-on-plan' turtle variable is now equal to: " time-spent-deliberating-on-plan "...") (who)
-    
-      output-debug-message (word "Constructing mind's eye moves...") (who)
-      let object-moves ( generate-minds-eye-moves (scene) (action-pattern) )
-      output-debug-message (word "A local 'object-moves' variable now holds the moves to be performed in the minds eye.  Its value is set to: " object-moves "...") (who)
-    
-      output-debug-message ( word "Moving objects in the mind's eye..." ) (who)
-      chrest:move-objects-in-minds-eye (object-moves) (report-current-time)
-      output-debug-message ( word "Completed moving objects in the mind's eye...") (who)
-    
-      output-debug-message( word "Checking to see if the action identifier in the action pattern generated is a remain-stationary or a random-move token.  If it is, plan generation should not continue...") (who)
-      let action-identifier ( item (0) (string:rex-split ( string:rex-replace-all ("\\[|\\]") (action-pattern) ("")) (" ")) )
-      if( (action-identifier = remain-stationary-token) or (action-identifier = move-randomly-token) )[
-        output-debug-message ( word "The action pattern generated is a remain-stationary or move-randomly action (" action-identifier "), setting the local 'end-plan-generation' variable to boolean true..." ) (who)
-        set end-plan-generation (true)
-      ]
-    ];Check for 'end-plan-generation'
-  
-    output-debug-message (word "Checking the value of the local 'end-plan-generation' variable (" end-plan-generation "), if true, I will not plan in my next cycle...") (who)
-    if(end-plan-generation)[
-      
-      output-debug-message ( word "The local 'end-plan-generation' variable is set to true so I should not plan in my next cycle.  To do this I need to set my 'generate-plan?' turtle variable to false..."  ) (who)
-      set generate-plan? false
-      
-      output-debug-message ( word "I also need to set my 'deliberation-finished-time' turtle variable so that I simulate inactivity while deliberating.  This will be set to the sum of the current model time (" report-current-time ") and the value of my 'time-spent-deliberating-on-plan' turtle variable (" time-spent-deliberating-on-plan ")..." ) (who)
-      set deliberation-finished-time (report-current-time + time-spent-deliberating-on-plan)
-      
-      output-debug-message ( word "I'll also set my 'time-spent-deliberating-on-plan' turtle variable to 0 now since it has served its purpose for this plan generation cycle and should be reset for the next cycle..." ) (who)
-      set time-spent-deliberating-on-plan 0
-      
-      output-debug-message ("I'll also destroy my mind's eye since I don't need it until plan generation begins again. Also, if it isn't destroyed and I start to generate a new plan before its terminus is reached, a tile and hole may still exist on the same patch causing me to incorrectly halt plan generation)..." ) (who)
-      chrest:destroy-minds-eye ( report-current-time )
-      output-debug-message ( word "Checking to see if my mind's eye exists: (" ( chrest:minds-eye-exist? ( report-current-time ) ) ")...") (who)
-      
-      output-debug-message (word "My 'generate-plan?', 'deliberation-finished-time' and 'time-spent-deliberating-on-plan' turtle variables are now set to: '" generate-plan? "', '" deliberation-finished-time "' and '" time-spent-deliberating-on-plan "' respectively...") (who)
-      output-debug-message (word "The final plan is set to: '" plan "'.") (who)
-    ]
-  
-  ];Check for 'null' minds-eye-contents. 
+;  output-debug-message (word "Setting a local 'scene' variable to the current content of my mind's eye...")  (who)
+;  let scene ( chrest:get-all-minds-eye-content(report-current-time) )
+;  output-debug-message (word "The local 'scene' variable is now set to: '" scene "'.  Checking to see if the first item is 'null' (mind's eye attention is not currently free).  If not, I'll continue plan generation..." )  (who)
+;  
+;  if( (item (0) (scene) != "null") )[
+;    output-debug-message (word "My mind's eye attention is free and the local 'end-plan-generation' variable is set to boolean false...") (who)
+;    
+;    output-debug-message ("Setting a local variable: 'location-of-self' to the current location of myself in the scene being used to plan...") (who)
+;    let location-of-self (get-location-of-self-in-scene (scene))
+;    
+;    output-debug-message ("Checking to see if my 'plan' turtle variable is currently empty.  If not, I'll retrieve the last action in the plan and see if it was to push a tile...") (who)
+;    output-debug-message ("If it was, and I can no longer see the tile on the patch adjacent to me along the heading specified in the last action of the plan from my location in scene, I'll set the local 'end-plan-generation' variable to false...") (who)
+;    output-debug-message ("If this isn't done, further deliberation will continue which will result in me abandoning the tile...") (who)
+;    if(not empty? plan)[
+;      
+;      output-debug-message ("Setting three local variables: 'last-action-in-plan-identifier', 'last-action-in-plan-heading', and 'last-action-in-plan-patches' to the relevant parts of the last action in my 'plan' turtle variable...") (who)
+;      let last-action-in-plan-info (string:rex-split (string:rex-replace-all ("\\[|\\]") (item (0) (last (plan))) ("")) (" "))
+;      let last-action-in-plan-identifier (item (0) (last-action-in-plan-info))
+;      let last-action-in-plan-heading ( read-from-string (item (1) (last-action-in-plan-info)) )
+;      let last-action-in-plan-patches ( read-from-string (item (2) (last-action-in-plan-info)) )
+;      output-debug-message ( word "The 'last-action-in-plan-identifier', 'last-action-in-plan-heading' and 'last-action-in-plan-patches' variables are now set to '" last-action-in-plan-identifier "', '" last-action-in-plan-heading "' and '" last-action-in-plan-patches "', respectively..." ) (who)
+;      
+;      output-debug-message ( word "Checking to see if the local 'last-action-in-plan-identifier' is equal to '" push-tile-token "' and if a tile can be seen on the patch immediately ahead of me along heading '" last-action-in-plan-heading "' in the scene...") (who)
+;      if(
+;        ( last-action-in-plan-identifier = push-tile-token ) and 
+;        ( ( item (0) (string:rex-split (get-object-and-patch-coordinates-ahead-of-location-in-scene (scene) (last-action-in-plan-heading) (last-action-in-plan-patches)) (";")) ) = "null" )
+;      )[
+;        output-debug-message ("My last action in 'plan' is to push a tile and I can no longer see it on the patch ahead with the heading adopted in scene so I'll set the local 'end-plan-generation' variable to true...") (who)
+;        set end-plan-generation (true)
+;      ]
+;    ]
+;    
+;    output-debug-message ("Checking that the 'end-plan-generation' variable is not already set to true and either I can't see myself in scene or a tile and a hole exist on the same coordinates in scene...") (who)
+;    if(
+;      ( not end-plan-generation ) and
+;      (
+;        ( empty? location-of-self ) or 
+;        ( not empty? (get-locations-of-object-in-scene (word tile-token "," hole-token) (scene)) ) or
+;        ( not empty? (get-locations-of-object-in-scene (word hole-token "," tile-token) (scene)) )
+;      )
+;    )[
+;      output-debug-message ("The local 'end-plan-generation' variable is set to false and I either can't see myself in scene or a tile and hole are on the same patch in the scene I'm using to plan so I'll set the 'end-plan-generation' variable to true...") (who)
+;      set end-plan-generation (true)
+;    ]
+;    
+;    output-debug-message ( word "Checking the value of the local 'end-plan-generation' value (" end-plan-generation ").  If it is set to 'true', I shouldn't continue plan generation..." ) (who)
+;    if(not end-plan-generation)[
+;      
+;      output-debug-message("The value of the local 'end-plan-generation' variable is not true so I'll deliberate and set the result of this deliberation to a local 'action-pattern-time-taken-to-deliberate-and-used-pattern-recognition' variable...") (who)
+;      let action-pattern-time-taken-to-deliberate-and-used-pattern-recognition (deliberate (scene))
+;      
+;      output-debug-message (word "Deliberation complete, extracting the action pattern to perform, time taken to decide upon this action and whether pattern-reocgnition was used to produce this action to three local variables: 'action-pattern', 'time-taken-to-deliberate' and 'used-pattern-recognition', respectively...") (who)
+;      let action-pattern ( item (0) (action-pattern-time-taken-to-deliberate-and-used-pattern-recognition) )
+;      let time-taken-to-deliberate ( item (1) (action-pattern-time-taken-to-deliberate-and-used-pattern-recognition) )
+;      let used-pattern-recognition ( item (2) (action-pattern-time-taken-to-deliberate-and-used-pattern-recognition) )
+;      output-debug-message (word "The local 'action-pattern' variable value is: '" action-pattern "'.") (who)
+;      output-debug-message (word "The local 'time-taken-to-deliberate' variable value is: " time-taken-to-deliberate ".") (who)
+;      output-debug-message (word "The local 'used-pattern-recognition' variable value is: " used-pattern-recognition ".") (who)
+;      
+;      output-debug-message ("Converting the action generated into an action chunk and attempting to commit it to LTM...") (who)
+;      let result-of-recognising-action-pattern ( chrest:recognise-and-learn-pattern ("action") ("item_square") (action-pattern) (report-current-time) )
+;    
+;      output-debug-message ("Creating a list from the 'action-pattern' and 'used-pattern-recognition' variables and appending this list to my 'plan' turtle variable...") (who)
+;      set plan ( lput ( list (action-pattern) (used-pattern-recognition) ) (plan) )
+;      output-debug-message ( word "My plan turtle variable is now equal to: '" plan "'..." ) (who)
+;    
+;      output-debug-message ( word "Adding the time taken to decide upon this action pattern to the current value of my 'time-spent-deliberating-on-plan' turtle variable (" time-spent-deliberating-on-plan ")...") (who)
+;      set time-spent-deliberating-on-plan (time-spent-deliberating-on-plan + time-taken-to-deliberate)
+;      output-debug-message ( word "My 'time-spent-deliberating-on-plan' turtle variable is now equal to: " time-spent-deliberating-on-plan "...") (who)
+;    
+;      output-debug-message (word "Constructing mind's eye moves...") (who)
+;      let object-moves ( generate-minds-eye-moves (scene) (action-pattern) )
+;      output-debug-message (word "A local 'object-moves' variable now holds the moves to be performed in the minds eye.  Its value is set to: " object-moves "...") (who)
+;    
+;      output-debug-message ( word "Moving objects in the mind's eye..." ) (who)
+;      chrest:move-objects-in-minds-eye (object-moves) (report-current-time)
+;      output-debug-message ( word "Completed moving objects in the mind's eye...") (who)
+;    
+;      output-debug-message( word "Checking to see if the action identifier in the action pattern generated is a remain-stationary or a random-move token.  If it is, plan generation should not continue...") (who)
+;      let action-identifier ( item (0) (string:rex-split ( string:rex-replace-all ("\\[|\\]") (action-pattern) ("")) (" ")) )
+;      if( (action-identifier = remain-stationary-token) or (action-identifier = move-randomly-token) )[
+;        output-debug-message ( word "The action pattern generated is a remain-stationary or move-randomly action (" action-identifier "), setting the local 'end-plan-generation' variable to boolean true..." ) (who)
+;        set end-plan-generation (true)
+;      ]
+;    ];Check for 'end-plan-generation'
+;  
+;    output-debug-message (word "Checking the value of the local 'end-plan-generation' variable (" end-plan-generation "), if true, I will not plan in my next cycle...") (who)
+;    if(end-plan-generation)[
+;      
+;      output-debug-message ( word "The local 'end-plan-generation' variable is set to true so I should not plan in my next cycle.  To do this I need to set my 'generate-plan?' turtle variable to false..."  ) (who)
+;      set generate-plan? false
+;      
+;      output-debug-message ( word "I also need to set my 'deliberation-finished-time' turtle variable so that I simulate inactivity while deliberating.  This will be set to the sum of the current model time (" report-current-time ") and the value of my 'time-spent-deliberating-on-plan' turtle variable (" time-spent-deliberating-on-plan ")..." ) (who)
+;      set deliberation-finished-time (report-current-time + time-spent-deliberating-on-plan)
+;      
+;      output-debug-message ( word "I'll also set my 'time-spent-deliberating-on-plan' turtle variable to 0 now since it has served its purpose for this plan generation cycle and should be reset for the next cycle..." ) (who)
+;      set time-spent-deliberating-on-plan 0
+;      
+;      output-debug-message ("I'll also destroy my mind's eye since I don't need it until plan generation begins again. Also, if it isn't destroyed and I start to generate a new plan before its terminus is reached, a tile and hole may still exist on the same patch causing me to incorrectly halt plan generation)..." ) (who)
+;      chrest:destroy-minds-eye ( report-current-time )
+;      output-debug-message ( word "Checking to see if my mind's eye exists: (" ( chrest:minds-eye-exist? ( report-current-time ) ) ")...") (who)
+;      
+;      output-debug-message (word "My 'generate-plan?', 'deliberation-finished-time' and 'time-spent-deliberating-on-plan' turtle variables are now set to: '" generate-plan? "', '" deliberation-finished-time "' and '" time-spent-deliberating-on-plan "' respectively...") (who)
+;      output-debug-message (word "The final plan is set to: '" plan "'.") (who)
+;    ]
+;  
+;  ];Check for 'null' minds-eye-contents. 
   
   set debug-indent-level (debug-indent-level - 2)
 end
@@ -2405,10 +2398,106 @@ to-report look-around
   set debug-indent-level (debug-indent-level + 1)
   
   output-debug-message("Setting the current scene to my 'current-scene' variable...") (who)
-  chrest:set-current-scene (false)
-  chrest:learn-current-scene
+  
+  let scene []
+  
+  ;Set 'xCorOffset' and 'yCorOffset' to the south-western point of the calling
+  ;turtle's sight radius by converting the 'sight-radius' variable into its
+  ;negative value i.e. 3 becomes -3.
+  output-debug-message (word "My max xCorOffset and yCorOffset is: '" sight-radius "'.  This is how many patches north, east, south and west of my current location that I can 'see'.") (who)
+  output-debug-message ("Setting the value of the local 'xCorOffset' and 'yCorOffset' variables (should be the negative value of my 'sight-radius' variable value)...") (who)
+  let xCorOffset (sight-radius * -1)
+  let yCorOffset (sight-radius * -1)
+  
+  while[ycorOffset <= sight-radius][
+    output-debug-message (word "Checking for turtles at patch with xCorOffset '" xCorOffset "' and yCorOffset '" yCorOffset "' from the patch I'm on...") (who)
+    
+    ;If the "debug?" global variable is set to true then ask the current patch
+    ;to set its colour to that stored in the calling turtle's "sight-radius-colour'
+    ;variable.  This will result in the calling turtle's sight-radius being displayed
+    ;graphically in the environment. 
+    if(debug?)[
+      ask patch-at xCorOffset yCorOffset [
+        set pcolor ([sight-radius-colour] of myself)
+      ]
+    ]
+    
+    let turtles-at-x-and-y-offset ( (turtles-at xCorOffset yCorOffset) with [hidden? = false] )
+    
+    ifelse(empty? turtles-at-x-and-y-offset)[
+      set scene (lput (chrest:create-item-square-pattern (empty-patch-token) (xCorOffset) (yCorOffset)) (scene)) 
+    ]
+    [
+      foreach(turtles-at-x-and-y-offset)[
+        let object-identifier ""
+        
+        ifelse(? = self)[
+          set object-identifier (self-token)
+        ]
+        [
+          let breed-of-turtle ([breed] of ?)
+          ifelse( breed-of-turtle = tiles)[
+            set object-identifier (tile-token)
+          ]
+          [
+            ifelse( breed-of-turtle = holes)[
+              set object-identifier (hole-token)
+            ]
+            [
+              set object-identifier (chrest-turtle-token)
+            ]
+          ]
+        ]
+        
+        set scene (lput (chrest:create-item-square-pattern (object-identifier) (xCorOffset) (yCorOffset)) (scene)) 
+      ] 
+    ]
+    
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ;;; SET VIEW TO 1 PATCH EAST ;;;
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    
+    set xCorOffset (xCorOffset + 1)
+    
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ;;; RESET VIEW TO WESTERN-MOST PATCH AND 1 PATCH NORTH IF EASTERN-MOST PATCH REACHED ;;;
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    
+    if(xCorOffset > sight-radius)[
+      output-debug-message (word "The local 'xCorOffset' variable value: '" xCorOffset "' is greater than my 'sight-radius' variable value '" sight-radius "' so I'll reset the local 'xCorOffset' variable value to: '" (sight-radius * -1) "'.") (who)
+      set xCorOffset (sight-radius * -1)
+      set yCorOffset (yCorOffset + 1)
+    ]
+  ]
+  
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  ;;; RESET THE COLOUR OF PATCHES THAT CAN BE SEEN BY THE TURTLE ;;;
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  
+  if(debug?)[
+    set xCorOffset (sight-radius * -1)
+    set yCorOffset (sight-radius * -1)
+    
+    while[ycorOffset <= sight-radius][
+      ask patch-at xCorOffset yCorOffset [
+        set pcolor black
+      ]
+      
+      set xCorOffset (xCorOffset + 1)
+      if(xCorOffset > sight-radius)[
+        set xCorOffset (sight-radius * -1)
+        set yCorOffset (yCorOffset + 1)
+      ]
+    ]
+  ]
+  
+  output-debug-message (word "Scene generated: " scene) (who)
+  
+  ;chrest:set-current-scene (false)
+  ;chrest:learn-current-scene
   set debug-indent-level (debug-indent-level - 2)
-  report chrest:get-current-scene
+  ;report chrest:get-current-scene
+  report scene
 end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3505,21 +3594,36 @@ to reinforce-visual-action-links
       output-debug-message (word "Action pattern was performed at time " (item (2) (?)) "s") (who)
       output-debug-message (word "Was pattern-recognition used to determine that this action pattern should be performed: " (item (3) (?))) (who)
      
-      output-debug-message (word (item 0 ?) "'s action links before reinforcement: " (chrest:recognise-pattern-and-return-patterns-of-specified-modality ("visual") ("item_square") (item (0) (?)) ("action") ) ) (who)
+      output-debug-message (word (item 0 ?) "'s action links before reinforcement: " (chrest:recognise-pattern-and-return-patterns-of-specified-modality ("visual") ("item_square") (item (0) (?)) ("action") (report-current-time)) ) (who)
      
       output-debug-message (word "Checking to see if I am able to reinforce problem-solving (" reinforce-problem-solving? ") and if this action was generated by pattern-recognition (" (item (3) (?)) ")...") (who)
       if( (reinforce-problem-solving?) and not (item (3) (?)) )[
         output-debug-message (word "Since I am able to reinforce problem-solving and this action was not generated by pattern-recognition, I'll reinforce the link between this visual pattern and problem-solving...") (who)
-        chrest:reinforce-action-link ("visual") ("item_square") (item (0) (?)) ("item_square") (chrest:create-item-square-pattern (problem-solving-token) (0) (0)) (list (reward-value) (discount-rate) (report-current-time) (item (2) (?)))
+        chrest:reinforce-action-link
+          ("visual") 
+          ("item_square") 
+          (item (0) (?)) 
+          ("item_square") 
+          (chrest:create-item-square-pattern (problem-solving-token) (0) (0)) 
+          (list (reward-value) (discount-rate) (report-current-time) (item (2) (?)))
+          (report-current-time)
+       
       ]
       
       output-debug-message (word "Checking to see if I am able to reinforce actions (" reinforce-actions? ")...") (who)
       if( reinforce-actions? )[
         output-debug-message (word "I can reinforce actions so I will...") (who)
-        chrest:reinforce-action-link ("visual") ("item_square") (item (0) (?)) ("item_square") (item (1) (?)) (list (reward-value) (discount-rate) (report-current-time) (item (2) (?)))
+        chrest:reinforce-action-link 
+        ("visual") 
+        ("item_square") 
+        (item (0) (?)) 
+        ("item_square") 
+        (item (1) (?)) 
+        (list (reward-value) (discount-rate) (report-current-time) (item (2) (?)))
+        (report-current-time)
       ]
       
-      output-debug-message (word (item 0 ?) "'s action links after reinforcement: " ( chrest:recognise-pattern-and-return-patterns-of-specified-modality ("visual") ("item_square") (item 0 ?) ("action") ) ) (who)
+      output-debug-message (word (item 0 ?) "'s action links after reinforcement: " ( chrest:recognise-pattern-and-return-patterns-of-specified-modality ("visual") ("item_square") (item 0 ?) ("action") (report-current-time) ) ) (who)
     ]
     
     output-debug-message ("Reinforcement of visual-action patterns complete.  Clearing my 'visual-action-time-heuristics' list...") (who)
@@ -3829,10 +3933,11 @@ to setup [testing]
   set remain-stationary-token "RS"
   
   ;Set object identifier strings.
+  set empty-patch-token (chrest:get-empty-square-identifier-in-scene)
   set hole-token "H"
   set tile-token "T"
   set chrest-turtle-token "C"
-  set self-token "SELF"
+  set self-token (chrest:get-self-identifier-in-scene)
   
   ;Set other miscellaneous variables.
   set current-training-time 0
@@ -3894,8 +3999,10 @@ end
 ;
 ;@author  Martyn Lloyd-Kelly <martynlk@liverpool.ac.uk>  
 to setup-chrest-turtles [setup-chrest?]
+  
+  let domains chrest:get-declared-domains
+        
   ask chrest-turtles [
-    set chrest-scene-identifier (chrest-turtle-token)
     set closest-tile ""
     set current-visual-pattern ""
     set heading 0
@@ -3908,13 +4015,16 @@ to setup-chrest-turtles [setup-chrest?]
     set generate-plan? true
     
     if(setup-chrest?)[
-      print "setup-chrest"
-      chrest:instantiate-chrest-in-turtle
+      foreach domains[
+        if(? string:ends-with? "TileworldDomain")[
+          chrest:instantiate-chrest-in-turtle(?)
+        ]
+      ]
+      
       chrest:set-add-link-time ( add-link-time )
       chrest:set-discrimination-time ( discrimination-time)
       chrest:set-familiarisation-time ( familiarisation-time)
       chrest:set-reinforcement-learning-theory (reinforcement-learning-theory)
-      chrest:set-domain("tileworld")
     ]
     
     place-randomly
