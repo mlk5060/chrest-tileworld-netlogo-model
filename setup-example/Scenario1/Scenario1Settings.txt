@@ -45,14 +45,20 @@ max-length-of-episodic-memory
 minds-eye-access-time
 (0-1):100
 
-minds-eye-lifespan
-(0-1):2500
+minds-eye-empty-square-placement-time
+(0-1):10
 
 minds-eye-object-movement-time
 (0-1):50
 
 minds-eye-object-placement-time
 (0-1):25
+
+minds-eye-recognised-object-lifespan
+(0-1):10000
+
+minds-eye-unrecognised-object-lifespan
+(0-1):50000
 
 number-fixations
 (0-1):4
@@ -62,9 +68,6 @@ pattern-recognition?
 
 play-time
 (0-1):14400000.0
-
-problem-solving?
-(0-1):true
 
 reinforce-actions?
 (0-1):true
@@ -89,6 +92,3 @@ time-taken-to-problem-solve
 
 training-time
 (0-1):0.0
-
-visually-informed-problem-solving?
-(0-1):true

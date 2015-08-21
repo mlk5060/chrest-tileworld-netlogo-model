@@ -1,0 +1,12 @@
+<test>
+	create-chrest-turtles 1
+	ask turtle 0[
+		let object-set ( list 
+			(";1;1")
+			(";1;2") 
+		)
+		let closest-object-and-manhattan-distance (closest-object-in-set-to-specified-object-and-manhattan-distance (object-set) (";0;0"))
+		check-equal (item (0) (closest-object-and-manhattan-distance)) (";1;1")
+		check-equal (item (1) (closest-object-and-manhattan-distance)) (2)
+	]
+</test>

@@ -1,0 +1,96 @@
+;Given:
+; 
+; - A particular scene with regular object locations: 1 patch north/south of source location contains a tile, 2 patches north/south of
+;   source location doesn't contain an object, 3 patches north/south of source location contains a hole, 1 patch east/west of source 
+;   location doesn't contain an object, 2 patches east/west of source location contains an opponent and 3 patches east/west of source 
+;   location doesn't contain an object. 
+; - A specified source location containing an object identifier.
+; - Headings of due north, east, south and west.
+;
+;This tests to see if the correct object identifiers and patch coordinates are returned.
+
+<test>
+	create-chrest-turtles 1[
+		let scene ( list
+			(";-3;3") (";-2;3") (";-1;3") ("H;0;3") (";1;3") (";2;3") (";3;3")
+			(";-3;2") (";-2;2") (";-1;2") (";0;2") (";1;2") (";2;2") (";3;2")
+			(";-3;1") (";-2;1") (";-1;1") ("T;0;1") (";1;1") (";2;1") (";3;1")
+			(";-3;0") ("O;-2;0") (";-1;0") (word self-token ";0;0") (";1;0") ("O;2;0") (";3;0")
+			(";-3;-1") (";-2;-1") (";-1;-1") ("T;0;-1") (";1;-1") (";2;-1") (";3;-1")
+			(";-3;-2") (";-2;-2") (";-1;-2") (";0;-2") (";1;-2") (";2;-2") (";3;-2")
+			(";-3;-3") (";-2;-3") (";-1;-3") ("H;0;-3") (";1;-3") (";2;-3") (";3;-3")
+		)
+
+		let source-location "S;0;0"
+
+		foreach([0 90 180 270])[
+
+			let number-patches-ahead 3
+			
+			while[ number-patches-ahead < 4 ][
+
+				let result ( get-object-and-patch-coordinates-ahead-of-location-in-scene (scene) (?) (number-patches-ahead) )
+
+				if( ? = 0 )
+				[
+					if( number-patches-ahead = 1 )[
+						check-equal (result) (word "T;0;" number-patches-ahead)
+					]
+
+					if( number-patches-ahead = 2 )[
+						check-equal (result) (word ";0;" number-patches-ahead)
+					]
+
+					if( number-patches-ahead = 3 )[
+						check-equal (result) (word "H;0;" number-patches-ahead)
+					]
+				]
+
+				if( ? = 90 )[
+					if( number-patches-ahead = 1 )[
+						check-equal (result) (word ";" number-patches-ahead ";0" )
+					]
+
+					if( number-patches-ahead = 2 )[
+						check-equal (result) (word "O;" number-patches-ahead ";0" )
+					]
+
+					if( number-patches-ahead = 3 )[
+						check-equal (result) (word ";" number-patches-ahead ";0" )
+					]
+				]
+
+				if( ? = 180 )
+				[
+					if( number-patches-ahead = 1 )[
+						check-equal (result) (word "T;0;-" number-patches-ahead)
+					]
+
+					if( number-patches-ahead = 2 )[
+						check-equal (result) (word ";0;-" number-patches-ahead)
+					]
+
+					if( number-patches-ahead = 3 )[
+						check-equal (result) (word "H;0;-" number-patches-ahead)
+					]
+				]
+
+				if( ? = 270 )[
+					if( number-patches-ahead = 1 )[
+						check-equal (result) (word ";-" number-patches-ahead ";0" )
+					]
+
+					if( number-patches-ahead = 2 )[
+						check-equal (result) (word "O;-" number-patches-ahead ";0" )
+					]
+
+					if( number-patches-ahead = 3 )[
+						check-equal (result) (word ";-" number-patches-ahead ";0" )
+					]
+				]
+
+				set number-patches-ahead (number-patches-ahead + 1)
+			]
+		]
+	]
+</test>

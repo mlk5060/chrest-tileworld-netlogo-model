@@ -1,0 +1,20 @@
+;Given a situation where:
+;
+; - There are visible tiles and holes in the environment.
+; - All turtles that aren't of the breeds 'tiles' and 'holes' are visible.
+;
+;This tests to see if the following conditions are true:
+;
+; - The 'player-turtles-finished?' procedure reports boolean true.
+
+<test>
+	foreach(breeds)[
+		run (word "create-" ? " 1")
+
+		if(? != "holes" and ? != "tiles")[
+			run ( word "ask " (?) " [ set hidden? true]" )
+		]
+	]
+
+	check-equal (player-turtles-finished?) (true)
+</test>

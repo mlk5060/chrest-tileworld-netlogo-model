@@ -1,0 +1,9 @@
+<test>
+	set training? true
+	set current-training-time 1234546
+	check-equal (report-current-time) (1234546)
+
+	set training? false
+	set current-game-time 7890
+	check-equal (report-current-time) (7890)
+</test>

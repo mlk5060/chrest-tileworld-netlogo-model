@@ -1,18 +1,56 @@
-;Given the following situation:
+;==============================
+;========== TEST AIM ==========
+;==============================
 ;
-; - Turtle intially generates a plan given a scene where a tile is north of the calling turtle's current location by 1 patch.
-; - Turtle attempts to continue plan generation before instantiation of the mind's eye has finished.
+; 1) To determine if mind's eye instantiation occurs correctly when a CHREST turtle invokes the "generate-plan" procedure and:
+;    a) The CHREST turtle's attention is free.
+;    b) The CHREST turtle is not already instantiating a mind's eye.
 ;
-;This test ensures that the following conditions are true:
+;======================================
+;========== TEST DESCRIPTION ==========
+;======================================
 ;
-; - The 'generate-plan' turtle variable is set to 'true' since no end plan generation conditions have been met.
-; - The length of the 'plan' turtle variable is 0 (not interested in what the plan contains, this is validated in other tests).
-; - The 'time-spent-deliberating-on-plan' turtle variable is set to 0 since plan deliberation has not yet occurred.
-; - The 'deliberation-finished-time' is set to 0 since no end plan generation conditions have been met.
-; - The mind's eye of the turtle still exists since no end plan generation conditions have been met.
-; - The mind's eye content of the turtle is as expected (no other objects expect calling turtle and tile and tile is north of the calling
-;   turtle by 1 patch).
-
+; 1) At time 0 in the domain, a CHREST turtle attempts to generate a plan when a tile is north of its current location by 1 patch.
+;
+;When the "generate-plan" procedure is invoked the CHREST turtle should instantiate its mind's eye and not move any object's in its mind's eye
+;or add any actions to its plan.  The visual-spatial field should therefore look like the following when the mind's eye is instantiated (numbers 
+;indicate coordinates of visual-spatial field squares relative to the CHREST turtle's avatar and are referenced in the test code):
+;
+;LEGEND
+;------
+;
+; A = CHREST turtle
+; T = tile
+;
+;   |---|---|---|---|---|
+; 1 |   |   |   |   |   |
+;   |---|---|---|---|---|
+; 0 |   |   | T |   |   |
+;   |---|---|---|---|---|
+;-1 |   |   | A |   |   |
+;   |---|---|---|---|---|
+;-2 |   |   |   |   |   |
+;   |---|---|---|---|---|
+;-3 |   |   |   |   |   |
+;   |---|---|---|---|---|
+;     -2  -1  0   1   2  
+;
+;=====================================
+;========== TESTS PERFORMED ==========
+;=====================================
+; 
+;When domain-time, T, equals the time taken to instantiate the mind's eye of the CHREST turtle that invokes "generate-plan" at time 0, t:
+;
+; - The attention-clock of the CHREST turtle's CHREST model should be set to some value (dependent on various parameters) other than 0 since 
+;   attention should be consumed instantiating the mind's eye.
+; - The 'instantiate-minds-eye?' turtle variable should be set to boolean false since planning is not complete and a mind's eye has been instantiated.
+; - The 'generate-plan' turtle variable is set to boolean true since no *actual* plan generation has occurred and therefore, no end plan generation 
+;   conditions will have been met.
+; - The length of the 'plan' turtle variable is 0 since no *actual* plan generation has occurred.
+; - The 'time-spent-deliberating-on-plan' turtle variable is set to 0 since no *actual* plan generation has occurred.
+; - The 'deliberation-finished-time' is set to 0 since no *actual* plan generation has occurred.
+; - When T=t, the visual-spatial field of the CHREST turtle is as expected (see section "Test Description" above).
+;
 <run>create-chrest-turtles 1</run>
 
 reward-value
@@ -37,25 +75,31 @@ familiarisation-time
 0:2000
 
 minds-eye-access-time
-0:250
+0:100
 
-minds-eye-lifespan
-0:10000
+minds-eye-empty-square-placement-time
+0:10
 
 minds-eye-object-movement-time
-0:25
+0:50
 
 minds-eye-object-placement-time
-0:50
+0:25
+
+minds-eye-recognised-object-lifespan
+0:10000
+
+minds-eye-unrecognised-object-lifespan
+0:50000
+
+number-fixations
+0:4
 
 pattern-recognition?
 0:true
 
 play-time
 0:14400000.0
-
-problem-solving?
-0:true
 
 reinforce-actions?
 0:true
@@ -75,29 +119,66 @@ time-taken-to-use-pattern-recognition
 time-taken-to-problem-solve
 0:1000
 
-visually-informed-problem-solving?
-0:true
-
 <test>
 	create-tiles 1 [setxy ([pxcor] of turtle 0) ( ([pycor] of turtle 0) + 1) ]
 
-	ask turtle 0 [
-		generate-plan
-		generate-plan
+	let empty (chrest:get-empty-square-identifier-in-scene)
+	let expected-visual-spatial-field ( list 
+		( chrest:create-item-square-pattern (empty) (-2) (-2) )
+		( chrest:create-item-square-pattern (empty) (-1) (-2) )
+		( chrest:create-item-square-pattern (empty) (0) (-2) )
+		( chrest:create-item-square-pattern (empty) (1) (-2) )
+		( chrest:create-item-square-pattern (empty) (2) (-2) )
+		( chrest:create-item-square-pattern (empty) (-2) (-1) )
+		( chrest:create-item-square-pattern (empty) (-1) (-1) )
+		( chrest:create-item-square-pattern (empty) (0) (-1) )
+		( chrest:create-item-square-pattern (empty) (1) (-1) )
+		( chrest:create-item-square-pattern (empty) (2) (-1) )
+		( chrest:create-item-square-pattern (empty) (-2) (0) )
+		( chrest:create-item-square-pattern (empty) (-1) (0) )
+		( chrest:create-item-square-pattern (chrest:get-self-identifier-in-scene) (0) (0) )
+		( chrest:create-item-square-pattern (empty) (1) (0) )
+		( chrest:create-item-square-pattern (empty) (2) (0) )
+		( chrest:create-item-square-pattern (empty) (-2) (1) )
+		( chrest:create-item-square-pattern (empty) (-1) (1) )
+		( chrest:create-item-square-pattern (tile-token) (0) (1) )
+		( chrest:create-item-square-pattern (empty) (1) (1) )
+		( chrest:create-item-square-pattern (empty) (2) (1) )
+		( chrest:create-item-square-pattern (empty) (-2) (2) )
+		( chrest:create-item-square-pattern (empty) (-1) (2) )
+		( chrest:create-item-square-pattern (empty) (0) (2) )
+		( chrest:create-item-square-pattern (empty) (1) (2) )
+		( chrest:create-item-square-pattern (empty) (2) (2) )
+	)
+	set expected-visual-spatial-field (chrest:get-list-pattern-as-string (chrest:create-list-pattern ("visual") (expected-visual-spatial-field)))
 
-		let expected-minds-eye-contents ( list 
-			(";-2;-2") (";-2;-1") (";-2;0") (";-2;1") (";-2;2")
-			(";-1;-2") (";-1;-1") (";-1;0") (";-1;1") (";-1;2")
-			(";0;-2") (";0;-1") (word self-token ";0;0") (word tile-token ";0;1") (";0;2")
-			(";1;-2") (";1;-1") (";1;0") (";1;1") (";1;2")
-			(";2;-2") (";2;-1") (";2;0") (";2;1") (";2;2")
+	ask turtle 0[
+		generate-plan
+		
+		let total-number-patches-visible ( ((sight-radius * 2) + 1) ^ 2 )
+		let number-non-empty-patches (count turtles)
+		let number-empty-patches (total-number-patches-visible - number-non-empty-patches)
+		let expected-time-attention-free 
+		(
+			minds-eye-access-time +
+			(minds-eye-empty-square-placement-time * number-empty-patches) +
+			(minds-eye-object-placement-time * number-non-empty-patches)
 		)
 
+		let visual-spatial-field
+		( chrest:get-list-pattern-as-string (
+			chrest:get-scene-contents (
+				chrest:get-minds-eye-scene (chrest:get-attention-clock)
+			) 
+			(false))
+		)
+
+		check-equal (chrest:get-attention-clock) (expected-time-attention-free)
+		check-equal (instantiate-minds-eye?) (false)
 		check-equal (generate-plan?) (true)
-		check-equal (length plan) (0)
+		check-equal (length (plan)) (0)
 		check-equal (time-spent-deliberating-on-plan) (0)
 		check-equal (deliberation-finished-time) (0)
-		check-equal (chrest:minds-eye-exist? (report-current-time)) (true)
-		check-equal (chrest:get-all-minds-eye-content (report-current-time + (minds-eye-object-placement-time * 2) )) (expected-minds-eye-contents)
+		check-equal (visual-spatial-field) (expected-visual-spatial-field)
 	]
 </test>

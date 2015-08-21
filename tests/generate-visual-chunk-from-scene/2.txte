@@ -1,0 +1,17 @@
+;Given a scene where some patches are empty or are 'blind-spots' and others have one or more objects with spaces between object delimiter 
+;(comma) on a coordinate in the scene, this tests to see if the visual pattern reported is as expected (multiple objects on same patch have 
+;individual patterns, spaces in multiple object identifiers and all empty/null patches are removed and each visual pattern in the chunk is
+; separated by a space).
+
+<test>
+	create-chrest-turtles 1[
+
+		let scene ( list
+			(";-1;1") (" T , H   ;0;1") ("null;1;1")
+			("T;-1;0") ("null;0;0") ("  O  ;1;0")
+			("null;-1;-1") (";0;-1") ("O;1;-1")
+		)
+
+		check-equal (generate-visual-chunk-from-scene(scene)) ("[T 0 1] [H 0 1] [T -1 0] [O 1 0] [O 1 -1]")
+	]
+</test>

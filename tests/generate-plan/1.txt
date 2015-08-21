@@ -1,101 +1,131 @@
-;Given the following situation:
+;==============================
+;========== TEST AIM ==========
+;==============================
 ;
-; - Turtle intially generates a plan given a scene where a tile is north of the calling turtle's current location by 1 patch.
+; 1) To determine if plan generation is blocked when a CHREST turtle invokes the "generate-plan" procedure when its attention is occupied.
 ;
-;This test ensures that the following conditions are true:
+;======================================
+;========== TEST DESCRIPTION ==========
+;======================================
 ;
-; - The 'generate-plan' turtle variable is set to 'true' since no end plan generation conditions have been met.
-; - The length of the 'plan' turtle variable is 0 (not interested in what the plan contains, this is validated in other tests).
-; - The 'time-spent-deliberating-on-plan' turtle variable is set to 0 since plan deliberation has not yet occurred.
-; - The 'deliberation-finished-time' is set to 0 since no end plan generation conditions have been met.
-; - The mind's eye of the turtle still exists since no end plan generation conditions have been met.
-; - The mind's eye content of the turtle is as expected (no other objects expect calling turtle and tile and tile is north of the calling
-;   turtle by 1 patch).
-
-<run>create-chrest-turtles 1</run>
-
-reward-value
-1.0
-
-action-performance-time
-0:10000
-
-action-selection-procedure
-0:roulette-selection
-
-add-link-time
-0:10000
-
-discount-rate
-0:0.5
-
-discrimination-time
-0:10000
-
-familiarisation-time
-0:2000
-
-minds-eye-access-time
-0:250
-
-minds-eye-lifespan
-0:10000
-
-minds-eye-object-movement-time
-0:25
-
-minds-eye-object-placement-time
-0:50
-
-pattern-recognition?
-0:true
-
-play-time
-0:14400000.0
-
-problem-solving?
-0:true
-
-reinforce-actions?
-0:true
-
-reinforce-problem-solving?
-0:true
-
-reinforcement-learning-theory
-0:profit_sharing_with_discount_rate
-
-sight-radius
-0:2
-
-time-taken-to-use-pattern-recognition
-0:200
-
-time-taken-to-problem-solve
-0:1000
-
-visually-informed-problem-solving?
-0:true
-
+;To plan, a CHREST turtle's attention must be free since plan generation involves manipulating information in the mind's eye. Since a CHREST 
+;turtle's attention can be consumed performing a multitude of CHREST functions, calls to the "generate-plan" procedure may be blocked in
+;certain scenarios.  Consequently, this test creates a number of scenarios that result in the CHREST turtle's attention becoming consumed 
+;before calling "generate-plan" after some domain-time has passed but not enough for the CHREST turle's attention to become "free".  These 
+;scenarios are not an exhaustive list of all scenarios that consume attention but are sufficient to test whether the progression of the 
+;"generate-plan" procedure is correctly blocked due to it being called when a CHREST turtle's attention is engaged.
+;
+; 1) Invoke "generate-plan".
+; 2) Learning the scene created by looking at the observable environment.
+;
+;Descriptions of these scenarios and why they should block plan generation follow.
+;
+;SCENARIO 1
+;----------
+;
+;When "generate-plan" is called and the CHREST turtle's attention is free, the procedure will first attempt to instantiate a mind's eye for the
+;CHREST turtle if it is required (as it is when "generate-plan" is called in scenario 1); this consumes attention.
+;
+;SCENARIO 2
+;----------
+;
+;When a CHREST turtle learns a scene, discrimination/familiarisation will occur; this consumes attention.
+;
+;=====================================
+;========== TESTS PERFORMED ==========
+;=====================================
+;
+; - The attention-clock of the CHREST turtle should be set to one of the following values based upon the scenario being tested:
+; 	+ Scenario 1: the time taken to completely instantiate the minds eye. 
+;	+ Scenario 2: the time taken to discriminate and familiarise a new visual LTM node since CHREST's perceptual mechanisms will cause the 
+;                 CHREST model of the CHREST turtle to perform both operations in one invocation of "learn-scene".
+; - The 'instantiate-minds-eye?' turtle variable should be set according to the scenario being tested:
+;	+ Scenario 1: boolean false since the mind's eye of the CHREST turtle will have already been instantiated when the first "generate-plan"
+;                 procedure is invoked.
+;   + Scenario 2: boolean true since no attempt to instantiate the mind's eye will have been made when the second "generate-plan" procedure
+;                 is invoked.
+; - The 'generate-plan' turtle variable is set to 'true' since no *actual* plan generation will occur for any scenario therefore, no end plan 
+;   generation conditions will be met.
+; - The length of the 'plan' turtle variable is 0 since no *actual* plan generation will occur for any scenario.
+; - The 'time-spent-deliberating-on-plan' turtle variable is set to 0 since no *actual* plan generation will occur for any scenario.
+; - The 'deliberation-finished-time' is set to 0 since no *actual* plan generation will occur for any scenario.
+;
 <test>
-	create-tiles 1 [setxy ([pxcor] of turtle 0) ( ([pycor] of turtle 0) + 1) ]
+	foreach([0 1])[
 
-	ask turtle 0[
-		generate-plan
+		create-chrest-turtles 1 [
+			set action-performance-time 10000
+			set action-selection-procedure "roulette-selection"
+			set add-link-time 10000
+			set discount-rate 0.5
+			set discrimination-time 10000
+			set familiarisation-time 2000
+			set minds-eye-access-time 100
+			set minds-eye-empty-square-placement-time 10
+			set minds-eye-object-movement-time 50
+			set minds-eye-object-placement-time 25
+			set minds-eye-recognised-object-lifespan 10000
+			set minds-eye-unrecognised-object-lifespan 50000
+			set number-fixations 4
+			set pattern-recognition? true
+			set play-time 14400000.0
+			set reinforce-actions? true
+			set reinforce-problem-solving? true
+			set reinforcement-learning-theory "profit_sharing_with_discount_rate" 
+			set sight-radius 2
+			set time-taken-to-use-pattern-recognition 200
+			set time-taken-to-problem-solve 1000
+		]
+		setup (true)
 
-		let expected-minds-eye-contents ( list 
-			(";-2;-2") (";-2;-1") (";-2;0") (";-2;1") (";-2;2")
-			(";-1;-2") (";-1;-1") (";-1;0") (";-1;1") (";-1;2")
-			(";0;-2") (";0;-1") (word self-token ";0;0") (word tile-token ";0;1") (";0;2")
-			(";1;-2") (";1;-1") (";1;0") (";1;1") (";1;2")
-			(";2;-2") (";2;-1") (";2;0") (";2;1") (";2;2")
-		)
+		create-tiles 1 [setxy ([pxcor] of turtle 0) ( ([pycor] of turtle 0) + 1) ]
+		
+		let expected-attention-free-time 0
+		let expected-minds-eye-instantiation-value false
 
-		check-equal (generate-plan?) (true)
-		check-equal (length plan) (0)
-		check-equal (time-spent-deliberating-on-plan) (0)
-		check-equal (deliberation-finished-time) (0)
-		check-equal (chrest:minds-eye-exist? (report-current-time)) (true)
-		check-equal (chrest:get-all-minds-eye-content (report-current-time + (minds-eye-object-placement-time * 2) )) (expected-minds-eye-contents)
+		ask turtle 0 [
+
+			if(? = 0)[
+				generate-plan
+
+				let total-number-patches-visible ( ((sight-radius * 2) + 1) ^ 2 )
+				let number-non-empty-patches (count turtles)
+				let number-empty-patches (total-number-patches-visible - number-non-empty-patches)
+				 
+				set expected-attention-free-time(
+					minds-eye-access-time +
+					(minds-eye-empty-square-placement-time * number-empty-patches) +
+					(minds-eye-object-placement-time * number-non-empty-patches)
+				)
+			]
+
+			if(? = 1)[
+
+				;Since there is only 1 object in the environment only than itself, the CHREST turtle should learn the scene it can
+				;observe until it has 2 nodes in visual LTM.  Visual LTM always contains 1 node: the root however, the second will
+				;contain information about the location of the tile.
+
+				let environment-as-scene ( chrest:create-scene (get-observable-environment-as-list-pattern) ("") )
+				while[ chrest:get-ltm-modality-size ("visual") < 2 ][
+					chrest:learn-scene (environment-as-scene) (1) (report-current-time)
+					update-time
+				]
+				
+				set expected-attention-free-time (discrimination-time + familiarisation-time)
+				set expected-minds-eye-instantiation-value true
+			]
+
+			update-time
+			generate-plan
+
+			check-equal (chrest:get-attention-clock) (expected-attention-free-time)
+			check-equal (instantiate-minds-eye?) (expected-minds-eye-instantiation-value)
+			check-equal (generate-plan?) (true)
+			check-equal (length plan) (0)
+			check-equal (time-spent-deliberating-on-plan) (0)
+			check-equal (deliberation-finished-time) (0)
+		]
+
+		reset (true)
 	]
 </test>

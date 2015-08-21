@@ -1,0 +1,9 @@
+<test>
+	check-equal (quote-string-or-read-from-string ("1")) (1)
+	check-equal (quote-string-or-read-from-string ("-1")) (-1)
+	check-equal (quote-string-or-read-from-string ("1.0")) (1.0)
+	check-equal (quote-string-or-read-from-string ("-1.0")) (-1.0)
+	check-equal (quote-string-or-read-from-string ("true")) (true)
+	check-equal (quote-string-or-read-from-string ("false")) (false)
+	check-equal (quote-string-or-read-from-string ("darkside")) ("\"darkside\"")
+</test>

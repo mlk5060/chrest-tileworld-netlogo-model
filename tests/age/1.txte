@@ -1,0 +1,13 @@
+<test>
+	create-tiles 1
+	check-equal (any? tiles-on patches) (true)
+
+	ask tiles [
+		set time-to-live 2
+		age
+		check-equal (time-to-live) (1)
+		age
+	]
+	
+	check-equal (any? tiles-on patches) (false)
+</test>

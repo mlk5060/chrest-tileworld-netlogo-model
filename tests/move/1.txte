@@ -1,0 +1,25 @@
+;Given the following situation:
+;
+; - The calling turtle attempts to move 1 patch along each heading in the global 'movement-heading' list.
+; - A hidden turtle is on the patch immediately adjacent to the calling turtle along the heading specified.
+;
+;This tests that the following conditions are true:
+;
+; - For each heading, the 'move' procedure reports boolean 'true' indicating that the move was successful.
+; - The calling turtle is now located on the patch that it should have moved to.
+
+<test>
+	create-chrest-turtles 1
+
+	foreach(movement-headings)[
+		ask turtle 0 [
+			let patch-to-move-to (patch-at-heading-and-distance (?) (1))
+			ask patch-to-move-to [
+				sprout-chrest-turtles 1 [set hidden? true]
+			]
+
+			check-equal (move (?) (1)) (true)
+			check-equal ( member? (turtle 0) (turtles-on (patch-to-move-to)) ) (true)
+		]
+	] 
+</test>

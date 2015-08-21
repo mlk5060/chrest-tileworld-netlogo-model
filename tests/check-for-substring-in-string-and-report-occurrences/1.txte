@@ -1,0 +1,4 @@
+<test>
+	check-equal (check-for-substring-in-string-and-report-occurrences ("F") ("TEST")) (0)
+	check-equal (check-for-substring-in-string-and-report-occurrences ("T") ("TEST")) (2)
+</test>

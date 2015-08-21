@@ -1,0 +1,40 @@
+;Given a situation where:
+;
+; - The environment is full of hidden objects.
+; - A turtle is created and its initial coordinates are set to a known location.
+; - Turtle just created calls the 'place-randomly' procedure until it is not located on the known coordinates specified in the previous step.
+;
+;This tests to see if:
+;
+; - The coordinates that the turtle is finally located on are not equal to the known coordinates.
+
+<test>
+	create-chrest-turtles (world-width * world-height)[
+		set hidden? true
+	]
+
+	let xcoord (min-pxcor)
+	let ycoord (min-pycor)
+	let turtle-id 0
+
+	while[ ycoord <= max-pycor ][
+		
+		ask turtle (turtle-id)[
+			setxy (xcoord) (ycoord)
+		]
+
+		set xcoord (xcoord + 1)
+
+		if(xcoord > max-pxcor)[
+			set xcoord (min-pxcor)
+			set ycoord (ycoord + 1)
+		]
+
+		set turtle-id (turtle-id + 1)
+	]
+	
+	create-chrest-turtles 1[ 
+		place-randomly 
+		check-equal (count turtles with [hidden? = false]) (1)
+	]
+</test>

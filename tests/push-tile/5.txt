@@ -39,14 +39,32 @@ familiarisation-time
 max-length-of-episodic-memory
 0:30000
 
+minds-eye-access-time
+0:100
+
+minds-eye-empty-square-placement-time
+0:10
+
+minds-eye-object-movement-time
+0:50
+
+minds-eye-object-placement-time
+0:25
+
+minds-eye-recognised-object-lifespan
+0:10000
+
+minds-eye-unrecognised-object-lifespan
+0:50000
+
+number-fixations
+0:4
+
 pattern-recognition?
 0:true
 
 play-time
 0:14400000.0
-
-problem-solving?
-0:true
 
 reinforce-actions?
 0:false
@@ -55,7 +73,7 @@ reinforce-problem-solving?
 0:false
 
 reinforcement-learning-theory
-0:null
+0:profit_sharing_with_discount_rate
 
 sight-radius
 0:2
@@ -66,8 +84,6 @@ time-taken-to-use-pattern-recognition
 time-taken-to-problem-solve
 0:1000
 
-visually-informed-problem-solving?
-0:true
 <test>
 	foreach(movement-headings)[
 

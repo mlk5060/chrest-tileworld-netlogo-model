@@ -1,0 +1,7 @@
+<test>
+	create-chrest-turtles 1 [
+		let from-loc (word ";" max-pxcor ";" min-pycor)
+		let to-loc (word ";" min-pxcor ";" max-pycor )
+		check-equal (heading-that-gives-shortest-distance-from-location-to-location (from-loc) (to-loc)) (135)
+	]
+</test>

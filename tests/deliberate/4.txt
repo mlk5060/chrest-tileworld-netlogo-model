@@ -53,8 +53,6 @@ time-taken-to-use-pattern-recognition
 time-taken-to-problem-solve
 0:1000
 
-visually-informed-problem-solving?
-0:false
 
 <test>
 	ask turtle 0 [
