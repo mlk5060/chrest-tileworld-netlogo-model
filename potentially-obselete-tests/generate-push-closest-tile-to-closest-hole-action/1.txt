@@ -112,7 +112,10 @@ training-time
 		let number-patches-seen ((sight-radius * sight-radius) + 1) ^ 2
 		let number-objects-seen (count turtles)
 
-		let scene ( chrest:get-minds-eye-scene (minds-eye-access-time + (number-objects-seen * minds-eye-object-placement-time) + ((number-patches-seen - number-objects-seen) * minds-eye-empty-square-placement-time)))
+		let scene ( chrest:get-visual-spatial-field-as-scene 
+		  (minds-eye-access-time + (number-objects-seen * minds-eye-object-placement-time) + ((number-patches-seen - number-objects-seen) * minds-eye-empty-square-placement-time))
+		  (false)
+		)
 
 		let result ( deliberate (scene))
 		let action-pattern (item (0) (result))
