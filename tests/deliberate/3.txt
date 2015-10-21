@@ -1,95 +1,96 @@
-;An action pattern that prescribes use of the problem-solving? system is learned and associated with a learned visual pattern.  When asked
-;to deliberate, a CHREST turtle should use its problem-solving? system (verified by checking deliberation time) to propose a valid action.
-
-<run>create-chrest-turtles 1</run>
-
-reward-value
-1.0
-
-action-performance-time
-0:10000
-
-action-selection-procedure
-0:roulette-selection
-
-add-link-time
-0:10000
-
-discount-rate
-0:0.5
-
-discrimination-time
-0:10000
-
-familiarisation-time
-0:2000
-
-pattern-recognition?
-0:true
-
-play-time
-0:14400000.0
-
-problem-solving?
-0:true
-
-reinforce-actions?
-0:true
-
-reinforce-problem-solving?
-0:true
-
-reinforcement-learning-theory
-0:profit_sharing_with_discount_rate
-
-sight-radius
-0:2
-
-time-taken-to-use-pattern-recognition
-0:200
-
-time-taken-to-problem-solve
-0:1000
-
-
+;==============================
+;========== TEST AIM ==========
+;==============================
+;
+; 1) To determine if deliberation produces an expected action when the calling turtle uses problem solving and is guaranteed to not see
+;    a tile given the state of the observable environment.
+;
+;======================================
+;========== TEST DESCRIPTION ==========
+;======================================
+;
+; 1) A CHREST turtle is created and its environment is populated with every other object but a tile.
+; 2) The CHREST turtle passes its observable environment as a Scene to the "deliberate" function and stores the result.
+;
+; The observable environment state of the CHREST turtle is depicted visually below.  Each object is denoted by its "who" number followed by the 
+; class of the object in parenthesis.
+;
+; LEGEND
+; ======
+;
+; - H: hole
+; - O: opponent
+; - T: tile
+; - S: self
+;        
+; |------|------|------|
+; | 8(O) | 1(H) | 2(O) |
+; |------|------|------|
+; | 7(H) | 0(S) | 3(H) |
+; |------|------|------|
+; | 6(O) | 5(H) | 4(O) |
+; |------|------|------|
+;                                        
+;=====================================
+;========== TESTS PERFORMED ==========
+;=====================================
+;
+; The result of the "deliberation" procedure is checked to see if it is as expected:
+; - The first item should be an expected action.  Given that no tiles can be seen, a "move" action with any cardinal compass heading.
+; - The second item should be the time taken to deliberate, i.e. the time defined for the CHREST turtle to use problem-solving.
+; - The third item should be equal to false, i.e. the turtle used problem-solving to generate the action reported.
 <test>
-	ask turtle 0 [
-
-		let time 0
-	
-		let scene ( list 
-			(";-2;2") (";-1;2") (";0;2") (";1;2") (";2;2")
-			(";-2;1") (";-1;1") (word tile-token ";0;1") (";1;1") (";2;1")
-			(";-2;0") (";-1;0") (word self-token ";0;0") (";1;0") (";2;0")
-			(";-2;-1") (";-1;-1") (";0;-1") (";1;-1") (";2;-1")
-			(";-2;-2") (";-1;-2") (";0;-2") (";1;-2") (";2;-2")
-		)
+	repeat 50 [
 		
-		let visual-chunk (generate-visual-chunk-from-scene(scene))
-		let action-pattern ( chrest:create-item-square-pattern (problem-solving-token) (0) (0) )
-		
-		while[ ( chrest:recognise-and-learn-pattern ("visual") ("item_square") (visual-chunk) (time)) != (word "< " visual-chunk " >") ][
-			set time (time + 1000)
+		create-chrest-turtles 1[
+			set action-performance-time 10000
+			set action-selection-procedure "roulette-selection"
+			set add-link-time 10000
+			set discount-rate 0.5
+			set discrimination-time 10000
+			set familiarisation-time 2000
+			set max-search-iteration 5
+			set number-fixations 4
+			set pattern-recognition? true
+			set play-time 14400000.0
+			set reinforce-actions? true
+			set reinforce-problem-solving? true
+			set reinforcement-learning-theory "profit_sharing_with_discount_rate" 
+			set sight-radius 1
+			set time-taken-to-use-pattern-recognition 200
+			set time-taken-to-problem-solve 1000
+			set visual-spatial-field-access-time 50
+			set visual-spatial-field-empty-square-placement-time 5
+			set visual-spatial-field-object-movement-time 25
+			set visual-spatial-field-object-placement-time 10
+			set visual-spatial-field-recognised-object-lifespan 100000
+			set visual-spatial-field-unrecognised-object-lifespan 90000
 		]
+		setup (true)
 
-		while[ ( chrest:recognise-and-learn-pattern ("action") ("item_square") (action-pattern) (time)) != (word "< " action-pattern " >") ][
-			set time (time + 1000)
+		create-holes 1 [setxy ([pxcor] of turtle 0) (([pycor] of turtle 0) + 1)]
+		create-chrest-turtles 1 [setxy (([pxcor] of turtle 0) + 1) (([pycor] of turtle 0) + 1)]
+		create-holes 1 [setxy (([pxcor] of turtle 0) + 1) ([pycor] of turtle 0)]
+		create-chrest-turtles 1 [setxy (([pxcor] of turtle 0) + 1) (([pycor] of turtle 0) - 1)]
+		create-holes 1 [setxy ([pxcor] of turtle 0) (([pycor] of turtle 0) - 1)]
+		create-chrest-turtles 1 [setxy (([pxcor] of turtle 0) - 1) (([pycor] of turtle 0) - 1)]
+		create-holes 1 [setxy (([pxcor] of turtle 0) - 1) ([pycor] of turtle 0)]
+		create-chrest-turtles 1 [setxy (([pxcor] of turtle 0) - 1) (([pycor] of turtle 0) + 1)]
+
+		ask turtle 0 [
+
+			let deliberation-result ( deliberate (chrest:Scene.new (get-observable-environment) ("test")) )
+			let expected-actions (list
+				chrest:ItemSquarePattern.get-as-string (chrest:ItemSquarePattern.new (move-token) (0) (1))
+				chrest:ItemSquarePattern.get-as-string (chrest:ItemSquarePattern.new (move-token) (90) (1))
+				chrest:ItemSquarePattern.get-as-string (chrest:ItemSquarePattern.new (move-token) (180) (1))
+				chrest:ItemSquarePattern.get-as-string (chrest:ItemSquarePattern.new (move-token) (270) (1))
+			)
+
+			check-test-output (chrest:ItemSquarePattern.get-as-string (item (0) (deliberation-result))) (expected-actions) ("when checking action reported")
+			check-equal (item (1) (deliberation-result)) (time-taken-to-problem-solve) ("when checking time taken to deliberate")
+			check-equal item (2) (deliberation-result) (false) ("when checking if pattern recognition used")
 		]
-
-		while[ (chrest:get-ltm-modality-num-action-links ("visual")) = 0 ][
-			chrest:associate-patterns ("visual") ("item_square") (visual-chunk) ("action") ("item_square") (action-pattern) (time)
-			set time (time + 1000)
-		]
-
-		chrest:reinforce-action-link ("visual") ("item_square") (visual-chunk) ("item_square") (action-pattern) (list (reward-value) (discount-rate) (time) (time))
-
-		let result (deliberate (scene))
-		let action-pattern-returned ( item (0) (result) )
-		let time-taken ( item (1) (result) )
-		let pattern-recognition?-used? ( item (2) (result) )
-		
-		check-equal (action-pattern-returned) (chrest:create-item-square-pattern (push-tile-token) (0) (1))
-		check-equal (time-taken) (time-taken-to-use-pattern-recognition + time-taken-to-problem-solve)
-		check-equal (pattern-recognition?-used?) (false)
+		reset (true)
 	]
 </test>

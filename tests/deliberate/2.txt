@@ -1,222 +1,105 @@
-;Determines if problem-solving is implemented correctly:
-; - A CHREST turtle deliberates on a scene where a single tile can be seen in each compass direction
-; - The CHREST turtle can use pattern-recognition but has no LTM info to make use of it so should use problem-solving
-
-<run>create-chrest-turtles 1</run>
-
-reward-value
-1.0
-
-action-performance-time
-0:10000
-
-action-selection-procedure
-0:roulette-selection
-
-add-link-time
-0:10000
-
-discount-rate
-0:0.5
-
-discrimination-time
-0:10000
-
-familiarisation-time
-0:2000
-
-minds-eye-access-time
-0:100
-
-minds-eye-empty-square-placement-time
-0:10
-
-minds-eye-object-movement-time
-0:50
-
-minds-eye-object-placement-time
-0:25
-
-minds-eye-recognised-object-lifespan
-0:10000
-
-minds-eye-unrecognised-object-lifespan
-0:50000
-
-number-fixations
-0:4
-
-pattern-recognition?
-0:true
-
-play-time
-0:14400000.0
-
-reinforce-actions?
-0:true
-
-reinforce-problem-solving?
-0:true
-
-reinforcement-learning-theory
-0:profit_sharing_with_discount_rate
-
-sight-radius
-0:2
-
-time-taken-to-use-pattern-recognition
-0:200
-
-time-taken-to-problem-solve
-0:1000
-
+;==============================
+;========== TEST AIM ==========
+;==============================
+;
+; 1) To determine if deliberation produces an expected action when the calling turtle uses problem solving and is guaranteed to see
+;    a tile given the state of the observable environment.
+;
+;======================================
+;========== TEST DESCRIPTION ==========
+;======================================
+;
+; 1) A CHREST turtle is created and its observable environment is populated entirely with tiles.
+; 2) The CHREST turtle passes its observable environment as a Scene to the "deliberate" function and stores the result.
+;
+; The observable environment state of the CHREST turtle is depicted visually below.  Each object is denoted by its "who" number followed by the 
+; class of the object in parenthesis.
+;
+; LEGEND
+; ======
+;
+; - H: hole
+; - O: opponent
+; - T: tile
+; - S: self
+;        
+; |------|------|------|
+; | 8(T) | 1(T) | 2(T) |
+; |------|------|------|
+; | 7(T) | 0(S) | 3(T) |
+; |------|------|------|
+; | 6(T) | 5(T) | 4(T) |
+; |------|------|------|
+;                                        
+;=====================================
+;========== TESTS PERFORMED ==========
+;=====================================
+;
+; The result of the "deliberation" procedure is checked to see if it is as expected:
+; - The first item should be an expected action.  Given that any tile in the environment may be seen and the stochastic nature of CHREST's perceptual
+;   mechanisms, a wide range of actions may be produced: a "move-around-tile", "move-to-tile" or "push-tile" action with any cardinal compass heading.
+; - The second item should be the time taken to deliberate, i.e. the time defined for the CHREST turtle to use problem-solving.
+; - The third item should be equal to false, i.e. the turtle used problem-solving to generate the action reported.
 <test>
-	ask turtle 0 [
-
-		let time 0
-
-		let tile-xcor -2
-		let tile-ycor -2
-
-		while[tile-ycor <= 2][
-			while[tile-xcor <= 2][
-
-				let vision []
-				let xcoord -2
-				let ycoord -2
-
-				while[ycoord <= 2][
-					while[xcoord <= 2][
-
-						let item-identifier (chrest:get-empty-square-identifier-in-scene)
-
-						ifelse(xcoord = 0 and ycoord = 0)[
-							set item-identifier (chrest:get-self-identifier-in-scene)
-						]
-						[
-							if( (xcoord = tile-xcor) and (tile-ycor = ycoord) )[
-								set item-identifier (tile-token)
-							]
-						]
-						set vision (lput (chrest:create-item-square-pattern (item-identifier) (xcoord) (ycoord)) (vision))
-						set xcoord (xcoord + 1)
-					]
-					set xcoord (-2)
-					set ycoord (ycoord + 1)
-				]
-
-				if(not (tile-xcor = 0 and tile-ycor = 0) )[
-					
-					let scene (chrest:create-scene (chrest:create-list-pattern ("visual") (vision)) (""))
-
-					let actions-expected []
-
-					if( 
-						(tile-xcor = -2 and tile-ycor = -2) or 
-						(tile-xcor = -1 and tile-ycor = -2) or
-						(tile-xcor = -2 and tile-ycor = -1) or 
-						(tile-xcor = -1 and tile-ycor = -1)
-					)[
-						set actions-expected (lput (chrest:create-item-square-pattern (move-to-tile-token) (180) (1)) (actions-expected) )
-						set actions-expected (lput (chrest:create-item-square-pattern (move-to-tile-token) (270) (1)) (actions-expected) )
-					]
-
-					if( 
-						(tile-xcor = 1 and tile-ycor = -2) or 
-						(tile-xcor = 2 and tile-ycor = -2) or
-						(tile-xcor = 1 and tile-ycor = -1) or 
-						(tile-xcor = 2 and tile-ycor = -1)
-					)[
-						set actions-expected (lput (chrest:create-item-square-pattern (move-to-tile-token) (90) (1)) (actions-expected) )
-						set actions-expected (lput (chrest:create-item-square-pattern (move-to-tile-token) (180) (1)) (actions-expected) )
-					]
-
-					if( 
-						(tile-xcor = -2 and tile-ycor = 1) or 
-						(tile-xcor = -1 and tile-ycor = 1) or
-						(tile-xcor = -2 and tile-ycor = 2) or 
-						(tile-xcor = -1 and tile-ycor = 2)
-					)[
-						set actions-expected (lput (chrest:create-item-square-pattern (move-to-tile-token) (0) (1)) (actions-expected) )
-						set actions-expected (lput (chrest:create-item-square-pattern (move-to-tile-token) (270) (1)) (actions-expected) )
-					]
-
-					if( 
-						(tile-xcor = 1 and tile-ycor = 1) or 
-						(tile-xcor = 2 and tile-ycor = 1) or
-						(tile-xcor = 1 and tile-ycor = 2) or 
-						(tile-xcor = 2 and tile-ycor = 2)
-					)[
-						set actions-expected (lput (chrest:create-item-square-pattern (move-to-tile-token) (0) (1)) (actions-expected) )
-						set actions-expected (lput (chrest:create-item-square-pattern (move-to-tile-token) (90) (1)) (actions-expected) )
-					]
-
-					if(tile-xcor = 0 and tile-ycor = -2)[
-						set actions-expected (lput (chrest:create-item-square-pattern (move-to-tile-token) (180) (1)) (actions-expected) )
-					]
-
-					if(tile-xcor = -2 and tile-ycor = 0)[
-						set actions-expected (lput (chrest:create-item-square-pattern (move-to-tile-token) (270) (1)) (actions-expected) )
-					]
-
-					if(tile-xcor = 2 and tile-ycor = 0)[
-						set actions-expected (lput (chrest:create-item-square-pattern (move-to-tile-token) (90) (1)) (actions-expected) )
-					]
-
-					if(tile-xcor = 0 and tile-ycor = 2)[
-						set actions-expected (lput (chrest:create-item-square-pattern (move-to-tile-token) (0) (1)) (actions-expected) )
-					]
-
-					if(tile-xcor = 0 and tile-ycor = -1)[
-						set actions-expected (lput (chrest:create-item-square-pattern (move-around-tile-token) (90) (1)) (actions-expected) )
-						set actions-expected (lput (chrest:create-item-square-pattern (move-around-tile-token) (270) (1)) (actions-expected) )
-						set actions-expected (lput (chrest:create-item-square-pattern (push-tile-token) (180) (1)) (actions-expected) )
-					]
-
-					if(tile-xcor = -1 and tile-ycor = 0)[
-						set actions-expected (lput (chrest:create-item-square-pattern (move-around-tile-token) (0) (1)) (actions-expected) )
-						set actions-expected (lput (chrest:create-item-square-pattern (move-around-tile-token) (180) (1)) (actions-expected) )
-						set actions-expected (lput (chrest:create-item-square-pattern (push-tile-token) (270) (1)) (actions-expected) )
-					]
-
-					if(tile-xcor = 1 and tile-ycor = 0)[
-						set actions-expected (lput (chrest:create-item-square-pattern (move-around-tile-token) (0) (1)) (actions-expected) )
-						set actions-expected (lput (chrest:create-item-square-pattern (move-around-tile-token) (180) (1)) (actions-expected) )
-						set actions-expected (lput (chrest:create-item-square-pattern (push-tile-token) (90) (1)) (actions-expected) )
-					]
-
-					if(tile-xcor = 0 and tile-ycor = 1)[
-						set actions-expected (lput (chrest:create-item-square-pattern (move-around-tile-token) (90) (1)) (actions-expected) )
-						set actions-expected (lput (chrest:create-item-square-pattern (move-around-tile-token) (270) (1)) (actions-expected) )
-						set actions-expected (lput (chrest:create-item-square-pattern (push-tile-token) (0) (1)) (actions-expected) )
-					]
-
-
-					set actions-expected (map ([chrest:get-item-square-pattern-as-string (?)]) (actions-expected))
-					let result (deliberate (scene))
-					let action-returned (item (0) (result))
-					let time-taken ( item (1) (result) )
-					let pattern-recognition-used? ( item (2) (result) )
-
-					while[ chrest:get-item-from-item-square-pattern (action-returned) = move-token ][
-						set result (deliberate (scene))
-						set action-returned (item (0) (result))
-						set time-taken ( item (1) (result) )
-						set pattern-recognition-used? ( item (2) (result) )
-					]
-
-					
-					
-					check-test-output (chrest:get-item-square-pattern-as-string (action-returned)) (actions-expected)
-					check-equal (time-taken) (time-taken-to-problem-solve)
-					check-equal (pattern-recognition-used?) (false)
-				]
-
-				set tile-xcor (tile-xcor + 1)
-			]
-
-			set tile-xcor (-2)
-			set tile-ycor (tile-ycor + 1)
+	repeat 50 [
+		
+		create-chrest-turtles 1[
+			set action-performance-time 10000
+			set action-selection-procedure "roulette-selection"
+			set add-link-time 10000
+			set discount-rate 0.5
+			set discrimination-time 10000
+			set familiarisation-time 2000
+			set max-search-iteration 5
+			set number-fixations 4
+			set pattern-recognition? true
+			set play-time 14400000.0
+			set reinforce-actions? true
+			set reinforce-problem-solving? true
+			set reinforcement-learning-theory "profit_sharing_with_discount_rate" 
+			set sight-radius 1
+			set time-taken-to-use-pattern-recognition 200
+			set time-taken-to-problem-solve 1000
+			set visual-spatial-field-access-time 50
+			set visual-spatial-field-empty-square-placement-time 5
+			set visual-spatial-field-object-movement-time 25
+			set visual-spatial-field-object-placement-time 10
+			set visual-spatial-field-recognised-object-lifespan 100000
+			set visual-spatial-field-unrecognised-object-lifespan 90000
 		]
+		setup (true)
+
+		create-tiles 1 [setxy ([pxcor] of turtle 0) (([pycor] of turtle 0) + 1)]
+		create-tiles 1 [setxy (([pxcor] of turtle 0) + 1) (([pycor] of turtle 0) + 1)]
+		create-tiles 1 [setxy (([pxcor] of turtle 0) + 1) ([pycor] of turtle 0)]
+		create-tiles 1 [setxy (([pxcor] of turtle 0) + 1) (([pycor] of turtle 0) - 1)]
+		create-tiles 1 [setxy ([pxcor] of turtle 0) (([pycor] of turtle 0) - 1)]
+		create-tiles 1 [setxy (([pxcor] of turtle 0) - 1) (([pycor] of turtle 0) - 1)]
+		create-tiles 1 [setxy (([pxcor] of turtle 0) - 1) ([pycor] of turtle 0)]
+		create-tiles 1 [setxy (([pxcor] of turtle 0) - 1) (([pycor] of turtle 0) + 1)]
+
+		ask turtle 0 [
+
+			let deliberation-result ( deliberate (chrest:Scene.new (get-observable-environment) ("test")) )
+			let expected-actions (list
+				chrest:ItemSquarePattern.get-as-string (chrest:ItemSquarePattern.new (move-around-tile-token) (0) (1))
+				chrest:ItemSquarePattern.get-as-string (chrest:ItemSquarePattern.new (move-around-tile-token) (90) (1))
+				chrest:ItemSquarePattern.get-as-string (chrest:ItemSquarePattern.new (move-around-tile-token) (180) (1))
+				chrest:ItemSquarePattern.get-as-string (chrest:ItemSquarePattern.new (move-around-tile-token) (270) (1))
+				chrest:ItemSquarePattern.get-as-string (chrest:ItemSquarePattern.new (move-to-tile-token) (0) (1))
+				chrest:ItemSquarePattern.get-as-string (chrest:ItemSquarePattern.new (move-to-tile-token) (90) (1))
+				chrest:ItemSquarePattern.get-as-string (chrest:ItemSquarePattern.new (move-to-tile-token) (180) (1))
+				chrest:ItemSquarePattern.get-as-string (chrest:ItemSquarePattern.new (move-to-tile-token) (270) (1))
+				chrest:ItemSquarePattern.get-as-string (chrest:ItemSquarePattern.new (push-tile-token) (0) (1))
+				chrest:ItemSquarePattern.get-as-string (chrest:ItemSquarePattern.new (push-tile-token) (90) (1))
+				chrest:ItemSquarePattern.get-as-string (chrest:ItemSquarePattern.new (push-tile-token) (180) (1))
+				chrest:ItemSquarePattern.get-as-string (chrest:ItemSquarePattern.new (push-tile-token) (270) (1))
+			)
+
+			check-test-output (chrest:ItemSquarePattern.get-as-string (item (0) (deliberation-result))) (expected-actions) ("when checking action reported")
+			check-equal (item (1) (deliberation-result)) (time-taken-to-problem-solve) ("when checking time taken to deliberate")
+			check-equal item (2) (deliberation-result) (false) ("when checking if pattern recognition used")
+		]
+		reset (true)
 	]
 </test>

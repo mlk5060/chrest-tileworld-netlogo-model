@@ -1,156 +1,197 @@
-;Determines if pattern-recognition is implemented correctly.  A CHREST turtle learns a visual and action chunk, associates and reinforces 
-;them, then proceeds to deliberate about what to do when the visual pattern learned is encountered.  Note that the action pattern created 
-;is nonsense given the scene.  This allows for an unambiguous check to be made for pattern-recognition? being used rather than problem 
-;solving (which the CHREST turtle is capable of using).
-
-<run>create-chrest-turtles 1</run>
-
-reward-value
-1.0
-
-action-performance-time
-0:10000
-
-action-selection-procedure
-0:roulette-selection
-
-add-link-time
-0:10000
-
-discount-rate
-0:0.5
-
-discrimination-time
-0:10000
-
-familiarisation-time
-0:2000
-
-visual-spatial-field-access-time
-0:100
-
-visual-spatial-field-empty-square-placement-time
-0:10
-
-visual-spatial-field-object-movement-time
-0:50
-
-visual-spatial-field-object-placement-time
-0:25
-
-visual-spatial-field-recognised-object-lifespan
-0:10000
-
-visual-spatial-field-unrecognised-object-lifespan
-0:50000
-
-number-fixations
-0:4
-
-pattern-recognition?
-0:true
-
-play-time
-0:14400000.0
-
-reinforce-actions?
-0:true
-
-reinforce-problem-solving?
-0:true
-
-reinforcement-learning-theory
-0:profit_sharing_with_discount_rate
-
-sight-radius
-0:2
-
-time-taken-to-use-pattern-recognition
-0:200
-
-time-taken-to-problem-solve
-0:1000
-
-
+;==============================
+;========== TEST AIM ==========
+;==============================
+;
+; 1) To determine if deliberation produces an expected action when the calling turtle can use pattern recognition and the environment 
+;    matches the visual part of a learned production.
+;
+;======================================
+;========== TEST DESCRIPTION ==========
+;======================================
+;
+; 1) A CHREST turtle creates a production from its current environment and a defined action (entails the CHREST turtle committing the current 
+;    environment state and defined action to its long-term memory).
+; 2) The production is reinforced so that it is viable for selection using the "roulette-selection" algorithm.
+; 3) Since the "deliberate" procedure makes use of CHREST's perceptual mechanisms to scan a Scene to decide upon what action to perform, it is not
+; 	 guaranteed to generate a ListPattern representing what it can see that will cause the relevant production and defined action to be retrieved.
+; 	 Therefore, the "deliberate" procedure is called until pattern-recognition is used to select an action (the defined action will be selected 
+;    since the CHREST turtle hasn't committed any other productions to long-term memory).
+; 4) The test itself is repeated 50 times to ensure that all "deliberation" output is handled correctly.
+;
+; The obserssvable environment state of the CHREST turtle is depicted visually below.  Each object is denoted by its "who" number followed by the 
+; class of the object in parenthesis.
+;
+; LEGEND
+; ======
+;
+; - H: hole
+; - O: opponent
+; - T: tile
+; - S: self
+;        
+; |------|------|------|
+; |      | 1(T) |      |
+; |------|------|------|
+; |      | 0(S) |      |
+; |------|------|------|
+; |      |      |      |
+; |------|------|------|
+;                                        
+;=====================================
+;========== TESTS PERFORMED ==========
+;=====================================
+;
+; When the "deliberate" procedure uses pattern-recognition to generate an action, the variables reported are checked to see if they are as expected:
+; 
+; - The first item should be the defined action.
+; - The second item should be the time taken to deliberate, i.e. the time defined for the CHREST turtle to use pattern-recognition.
+; - The third item should be equal to true, i.e. the turtle used pattern-recognition to generate the action reported.
+;
 <test>
-	ask turtle 0 [
-
-		let time 0
-
-		let vision []
-		let xcoord -2
-		let ycoord -2
-
-		while[ycoord <= 2][
-			while[xcoord <= 2][
-				let item-identifier (chrest:get-empty-square-identifier-in-scene)
-				if(xcoord = 0 and ycoord = 0)[
-					set item-identifier (chrest:get-self-identifier-in-scene)
-				]
-
-				if(xcoord = 0 and ycoord = 1)[
-					set item-identifier (tile-token)
-				]
-				set vision (lput (chrest:create-item-square-pattern (item-identifier) (xcoord) (ycoord)) (vision))
-				set xcoord (xcoord + 1)
-			]
-			set xcoord (-2)
-			set ycoord (ycoord + 1)
-		]
-
-		let visual-chunk ( chrest:create-list-pattern ("visual") (vision) )
-		let action-chunk ( chrest:create-list-pattern ("action") (list chrest:create-item-square-pattern (push-tile-token) (180) (1)) )
-
-		let result-of-chrest-recognising-visual-chunk ( 
-			chrest:get-list-pattern-as-string (
-				chrest:get-node-image (
-					chrest:recognise-and-learn-list-pattern (chrest:normalise-list-pattern-using-domain-specifics(visual-chunk)) (time)
-				)
-			)
-		)
-		while[ result-of-chrest-recognising-visual-chunk != (chrest:get-list-pattern-as-string (chrest:normalise-list-pattern-using-domain-specifics (visual-chunk)) ) ][
-			set time (time + 1000)
-			set result-of-chrest-recognising-visual-chunk ( 
-				chrest:get-list-pattern-as-string (
-					chrest:get-node-image (
-						chrest:recognise-and-learn-list-pattern (chrest:normalise-list-pattern-using-domain-specifics(visual-chunk)) (time)
-					)
-				)
-			)
-		]
-
-		let result-of-chrest-recognising-action-chunk ( 
-			chrest:get-list-pattern-as-string (
-				chrest:get-node-image (
-					chrest:recognise-and-learn-list-pattern (action-chunk) (time)
-				)
-			)
-		)
-		while[ result-of-chrest-recognising-action-chunk != ( chrest:get-list-pattern-as-string (action-chunk) ) ][
-			set time (time + 1000)
-			set result-of-chrest-recognising-action-chunk ( 
-				chrest:get-list-pattern-as-string (
-					chrest:get-node-image (
-						chrest:recognise-and-learn-list-pattern (action-chunk) (time)
-					)
-				)
-			)
-		]
-
-		while[ (chrest:get-ltm-modality-num-action-links ("visual")) = 0 ][
-			chrest:associate-list-patterns (chrest:normalise-list-pattern-using-domain-specifics(visual-chunk)) (action-chunk) (time)
-			set time (time + 1000)
-		]
-
-		chrest:reinforce-action-link (chrest:normalise-list-pattern-using-domain-specifics(visual-chunk)) (action-chunk) (list (reward-value) (discount-rate) (time) (time)) (time)
-
-		let deliberation-result (deliberate (chrest:create-scene(visual-chunk) ("")))
-		let action-decided-on ( item (0) (deliberation-result) )
-		let time-taken-to-deliberate ( item (1) (deliberation-result) )
-		let pattern-recognition-used? ( item (2) (deliberation-result) )
+	repeat 50 [
 		
-		check-equal (chrest:get-item-square-pattern-as-string (action-decided-on)) (chrest:get-item-square-pattern-as-string (item (0) ((chrest:get-list-pattern-as-netlogo-list(action-chunk)))))
-		check-equal (time-taken-to-deliberate) (time-taken-to-use-pattern-recognition)
-		check-equal (pattern-recognition-used?) (true)
+		create-chrest-turtles 1[
+			set action-performance-time 10000
+			set action-selection-procedure "roulette-selection"
+			set add-link-time 10000
+			set discount-rate 0.5
+			set discrimination-time 10000
+			set familiarisation-time 2000
+			set max-search-iteration 5
+			set number-fixations 4
+			set pattern-recognition? true
+			set play-time 14400000.0
+			set reinforce-actions? true
+			set reinforce-problem-solving? true
+			set reinforcement-learning-theory "profit_sharing_with_discount_rate" 
+			set sight-radius 1
+			set time-taken-to-use-pattern-recognition 200
+			set time-taken-to-problem-solve 1000
+			set visual-spatial-field-access-time 50
+			set visual-spatial-field-empty-square-placement-time 5
+			set visual-spatial-field-object-movement-time 25
+			set visual-spatial-field-object-placement-time 10
+			set visual-spatial-field-recognised-object-lifespan 100000
+			set visual-spatial-field-unrecognised-object-lifespan 90000
+		]
+		setup (true)
+
+		create-tiles 1 [setxy ([pxcor] of turtle 0) (([pycor] of turtle 0) + 1)]
+
+		ask turtle 0 [
+
+			;==================================================;
+			;== CREATE VISUAL AND ACTION DATA TO USE IN TEST ==;
+			;==================================================;
+
+			let observable-environment-as-scene (chrest:Scene.new (get-observable-environment) ("test"))
+
+			;When the ListPattern representing the observable environment as a Scene is learned, CHREST will normalise the ListPattern according to 
+			;the DomainSpecifics class set as its current domain.  So, to control learning, it is necessary to check if what is recognised is equal
+			;to what should be learned.  So, to do this correctly, the ListPattern should be normalised here.
+			let visual-list-pattern ( chrest:DomainSpecifics.normalise-list-pattern 
+				( chrest:Scene.get-as-list-pattern 
+					(observable-environment-as-scene) (true) (true) 
+				)
+			)
+			let action-pattern (chrest:ItemSquarePattern.new (push-tile-token) (180) (1))
+			let action-list-pattern ( chrest:ListPattern.new ("action") (list action-pattern) )
+
+			;=====================================;
+			;== LEARN CURRENT ENVIRONMENT STATE ==;
+			;=====================================;
+
+			let result-of-chrest-recognising-visual-list-pattern ( 
+				chrest:ListPattern.get-as-string (
+					chrest:Node.get-image (
+						chrest:recognise-and-learn-list-pattern (visual-list-pattern) (report-current-time)
+					)
+				)
+			)
+
+			while[ result-of-chrest-recognising-visual-list-pattern != (chrest:ListPattern.get-as-string (visual-list-pattern) ) ][
+				set result-of-chrest-recognising-visual-list-pattern ( 
+					chrest:ListPattern.get-as-string (
+						chrest:Node.get-image (
+							chrest:recognise-and-learn-list-pattern (visual-list-pattern) (report-current-time)
+						)
+					)
+				)
+				set current-training-time (chrest:get-learning-clock)
+			]
+
+			;==========================;
+			;== LEARN DEFINED ACTION ==;
+			;==========================;
+
+			let result-of-chrest-recognising-action-list-pattern ( 
+				chrest:ListPattern.get-as-string (
+					chrest:Node.get-image (
+						chrest:recognise-and-learn-list-pattern (action-list-pattern) (report-current-time)
+					)
+				)
+			)
+
+			while[ result-of-chrest-recognising-action-list-pattern != ( chrest:ListPattern.get-as-string (action-list-pattern) ) ][
+				set result-of-chrest-recognising-action-list-pattern ( 
+					chrest:ListPattern.get-as-string (
+						chrest:Node.get-image (
+							chrest:recognise-and-learn-list-pattern (action-list-pattern) (report-current-time)
+						)
+					)
+				)
+				set current-training-time (chrest:get-learning-clock)
+			]
+
+			;============================================================================;
+			;== CREATE PRODUCTION BETWEEN CURRENT ENVIRONMENT STATE AND DEFINED ACTION ==;
+			;============================================================================;
+
+			while[ (chrest:get-ltm-modality-num-action-links ("visual")) = 0 ][
+				chrest:associate-list-patterns (chrest:DomainSpecifics.normalise-list-pattern (visual-list-pattern)) (action-list-pattern) (report-current-time)
+				set current-training-time (chrest:get-learning-clock)
+			]
+
+			;==========================;
+			;== REINFORCE PRODUCTION ==;
+			;==========================;
+
+			;Note that the values int the list passed ensures that the production rating is > 0 so that the action will be selected using "roulette-selection"
+			;during the "deliberate" procedure execution (if a rating is not > 0 it will not be selected).
+			chrest:reinforce-action-link 
+				(visual-list-pattern) 
+				(action-list-pattern) 
+				(list (1) (0.9) (report-current-time) (report-current-time - 1))
+				(report-current-time)
+
+			;===============================================;
+			;== DELIBERATE UNTIL PATTERN-RECOGNITION USED ==;
+			;===============================================;
+
+			let deliberation-result (deliberate (observable-environment-as-scene))
+			while [not item (2) (deliberation-result)][
+				set deliberation-result (deliberate (observable-environment-as-scene))
+			]
+			
+			;===========;
+			;== TESTS ==;
+			;===========;
+
+			check-equal 
+				(chrest:ItemSquarePattern.get-as-string (item (0) (deliberation-result))) 
+				(chrest:ItemSquarePattern.get-as-string (action-pattern)) 
+				("when checking action returned")
+
+			check-equal 
+				(item (1) (deliberation-result))
+				(time-taken-to-use-pattern-recognition)
+				("when checking time taken to deliberate")
+
+			check-equal 
+				(item (2) (deliberation-result))
+				(true)
+				("when checking if pattern-recognition was used to deliberate")
+		]
+		reset (true)
 	]
 </test>
