@@ -2,9 +2,8 @@
 ;========== TEST AIM ==========
 ;==============================
 ;
-; 1) To determine if plan generation correctly ends when a CHREST turtle's avatar moves out of its visual-spatial field.
-; 2) To determine if salient variables are altered correctly when plan generation is requested after 1 is true.
-; 3) To determine if the main body of "generate-plan" where a plan is generated proceeds correctly (implicitly tested).
+; 1) To determine if plan generation correctly proceeds until a CHREST turtle moves its avatar out of its visual-spatial field.
+; 2) To determine if variables are reset correctly following this end condition being recognised.
 ;
 ;======================================
 ;========== TEST DESCRIPTION ==========
@@ -12,39 +11,28 @@
 ;
 ; 1) A CHREST turtle repeatedly invokes "generate-plan" when its attention is free and it is located in an environment where plan generation will 
 ;    only result in the CHREST turtle moving its visual-spatial avatar out of its visual-spatial field.
-; 2) After the CHREST turtle has moved its visual-spatial avatar out of its visual-spatial field and when its attention is free, the "generate-plan" 
-;    procedure is invoked again.
+; 2) After the CHREST turtle has moved its avatar out of its visual-spatial field and when its attention is free, the "generate-plan" procedure
+;    is invoked again.
 ;
-;To fully test the "generate-plan" procedure with respect to ending plan generation when a CHREST turtle's avatar has moved out of its visual-spatial 
-;field, four initial states are created with each one only allowing the CHREST turtle's avatar to be moved in one cardinal compass direction.
+; To fully test the "generate-plan" procedure with respect to ending plan generation when the planning turtle's avatar is moved out of the 
+; visual-spatial field, four initial states are created with each one only allowing a turtle's avatar to be moved in one cardinal compass direction.
 ;
-;Due to the mechanism of the "deliberate" procedure that is used when plan generation actually occurs, the CHREST turtle may not always move its 
-;visual-spatial avatar "correctly" when it is planning.  Instead, it may move onto squares occupied by other mind's eye objects in which 
-;case, the action previously planned will be reversed.  So, to accurately determine how long the CHREST turtle spends on deliberating, it is 
-;necessary to determine when it reverses a mind's eye move and when it doesn't.  To explain: when a mind's eye move is reversed, there is no 
-;deliberation time cost, only the time taken to "reverse" the previous move in the mind's eye, i.e. the time taken to move the mind's eye objects 
-;just moved back to their previous positions.
+; NOTE: the CHREST turtle's maximum search iteration is set to a very high (unreachable) value so that plan generation doesn't end due to the search
+;       iteration number check.
 ;
-;To determine how long the CHREST turtle spends deliberating, the test code checks whether the CHREST turtle's visual-spatial field state is equal to 
-;one of a number of valid states for each compass direction after each call to "generate-plan" in the main test loop.  If the visual-spatial field 
-;state is not equal to one of these valid intermediates then the last action performed will be reversed and no deliberation time cost will be
-;incurred for this mind's eye move.  So, by multiplying the time taken for the CHREST turtle to problem-solve (no learning can occur in this test
-;so deliberation by pattern-recognition is impossible) by the product of counting the total number of non-reversal mind's eye moves performed, the 
-;time taken by the CHREST turtle to deliberate can be accurately determined and tested.
+; Since the CHREST turtle continues to call the "generate-plan" procedure until its avatar has been moved out of its visual-spatial field, this means 
+; that, if the test runs ad infinitum, there is most likely an error in the "generate-plan" procedure code.  However, this condition will not be 
+; picked up by the test code since the non-determinism of the "deliberate" procedure means that it is impossible to enforce a strict boundary on 
+; when the test should complete, if at all (the CHREST turtle may repeatedly generate a valid visual spatial state, V, then an invalid state, V', 
+; forever).  It is therefore the responsibility of the tester to investigate why an infinite loop occurs when this test is run.  Note that the test 
+; for each initial state is repeated 50 times to ensure that most output variation from the "deliberation" procedure is handled correctly (the 
+; "deliberate" procedure's output is variable).
 ;
-;Since the CHREST turtle continues to call the "generate-plan" procedure until its visual-spatial avatar has been moved out of its visual-spatial 
-;field, this means that, if the test runs ad infinitum, there is most likely an error in the "generate-plan" procedure code.  However, this 
-;condition will not be picked up by the test code since the non-determinism of the "deliberate" procedure means that it is impossible to enforce 
-;a strict boundary on when the test should complete, if at all (the CHREST turtle may repeatedly generate a valid visual spatial state, V, then 
-;an invalid state, V', forever).  It is therefore the responsibility of the tester to investigate why an infinite loop occurs when this test is 
-;run.  Note that each initial state is repeatedly tested 100 times to ensure that most output variation from the "deliberation" is handled correctly.
+; Since planned moves are determined and applied in the CHREST turtle's visual-spatial field by other procedures that are called by "generate-plan", 
+; this test makes no attempt to determine if such procedures operate correctly.  Note also that it is not the responsibility of this test to determine 
+; if invalid visual-spatial field states are identified as being invalid.  This is left to the tests for the procedure that handles this functionality.
 ;
-;If the test starts and ends and the end state of the visual-spatial field is as expected then we can implicitly assume that the main body of
-;the "generate-plan" procedure works correctly.  However, since planned moves are determined and applied in the CHREST turtle's visual-spatial 
-;field by other procedures that are called by "generate-plan", this test makes no attempt to determine if such procedures operate correctly.
-;
-;The four initial visual-spatial field states, their valid intermediates and expected end states are depicted visually below.  Note: numbers indicate 
-;visual-spatial field coordinates relative to the agent's current location and are referenced in the test code.
+; The four initial visual-spatial field states and expected final states are depicted visually below.
 ;
 ;LEGEND
 ;------
@@ -57,107 +45,70 @@
 ;INITIAL VISUAL-SPATIAL FIELD STATES
 ;-----------------------------------
 ;
-;   EXIT TO NORTH             EXIT TO EAST              EXIT TO SOUTH             EXIT TO WEST
-;   |---|---|---|---|---|     |---|---|---|---|---|     |---|---|---|---|---|     |---|---|---|---|---|
-; 2 |   | H |   | H |   |   2 |   |   |   |   |   |   2 |   |   |   |   |   |   2 |   |   |   |   |   |
-;   |---|---|---|---|---|     |---|---|---|---|---|     |---|---|---|---|---|     |---|---|---|---|---|
-; 1 |   | O |   | O |   |   1 |   |   | H | O | H |   1 |   |   | H |   |   |   1 | H | O | H |   |   |
-;   |---|---|---|---|---|     |---|---|---|---|---|     |---|---|---|---|---|     |---|---|---|---|---|
-; 0 |   | H | A | H |   |   0 |   | H | A |   |   |   0 |   | H | A | H |   |   0 |   |   | A | H |   |
-;   |---|---|---|---|---|     |---|---|---|---|---|     |---|---|---|---|---|     |---|---|---|---|---|
-;-1 |   |   | H |   |   |  -1 |   |   | H | O | H |  -1 |   | O |   | O |   |  -1 | H | O | H |   |   |
-;   |---|---|---|---|---|     |---|---|---|---|---|     |---|---|---|---|---|     |---|---|---|---|---|
-;-2 |   |   |   |   |   |  -2 |   |   |   |   |   |  -2 |   | H |   | H |   |  -2 |   |   |   |   |   |
-;   |---|---|---|---|---|     |---|---|---|---|---|     |---|---|---|---|---|     |---|---|---|---|---|
-;     -2  -1  0   1   2         -2  -1  0   1   2         -2  -1  0   1   2         -2  -1  0   1   2
+; EXIT TO THE NORTH                      EXIT TO THE EAST                       EXIT TO THE SOUTH                      EXIT TO THE WEST
+; |------|------|------|------|------|   |------|------|------|------|------|   |------|------|------|------|------|   |------|------|------|------|------|
+; |      |10(O) |      | 1(H) |      |   |      |      | 8(O) |      |      |   |      |      | 6(T) |      |      |   |      |      | 4(O) |      |      |
+; |------|------|------|------|------|   |------|------|------|------|------|   |------|------|------|------|------|   |------|------|------|------|------|
+; |      | 9(O) |      | 2(H) |      |   |      |      | 7(T) | 9(O) |10(O) |   |      |      | 5(T) |      |      |   | 1(H) | 2(H) | 3(T) |      |      |
+; |------|------|------|------|------|   |------|------|------|------|------|   |------|------|------|------|------|   |------|------|------|------|------|
+; | 8(O) | 7(T) | 0(S) | 3(T) | 4(O) |   | 6(T) | 5(T) | 0(S) |      |      |   | 4(O) | 3(T) | 0(S) | 7(T) | 8(O) |   |      |      | 0(S) | 5(T) | 6(T) |
+; |------|------|------|------|------|   |------|------|------|------|------|   |------|------|------|------|------|   |------|------|------|------|------|
+; |      |      | 5(T) |      |      |   |      |      | 3(T) | 2(H) | 1(H) |   |      | 2(H) |      | 9(O) |      |   |10(O) | 9(O) | 7(T) |      |      |
+; |------|------|------|------|------|   |------|------|------|------|------|   |------|------|------|------|------|   |------|------|------|------|------|
+; |      |      | 6(T) |      |      |   |      |      | 4(O) |      |      |   |      | 1(H) |      | 10(O)|      |   |      |      | 8(O) |      |      |
+; |------|------|------|------|------|   |------|------|------|------|------|   |------|------|------|------|------|   |------|------|------|------|------|
 ;
-;VALID INTERMEDIATE VISUAL-SPATIAL FIELD STATES
-;----------------------------------------------
+; FINAL VISUAL-SPATIAL FIELD STATES
+; ---------------------------------
 ;
-;   EXIT TO NORTH             EXIT TO EAST              EXIT TO SOUTH             EXIT TO WEST
-;   |---|---|---|---|---|     |---|---|---|---|---|     |---|---|---|---|---|     |---|---|---|---|---|
-; 1 |   | H |   | H |   |   2 |   |   |   |   |   |   3 |   |   |   |   |   |   2 |   |   |   |   |   |
-;   |---|---|---|---|---|     |---|---|---|---|---|     |---|---|---|---|---|     |---|---|---|---|---|
-; 0 |   | O | A | O |   |   1 |   |   | H | O | H |   2 |   |   | H |   |   |   1 | H | O | H |   |   |
-;   |---|---|---|---|---|     |---|---|---|---|---|     |---|---|---|---|---|     |---|---|---|---|---|
-;-1 |   | H |   | H |   |   0 |   | H |   | A |   |   1 |   | H |   | H |   |   0 |   | A |   | H |   |
-;   |---|---|---|---|---|     |---|---|---|---|---|     |---|---|---|---|---|     |---|---|---|---|---|
-;-2 |   |   | H |   |   |  -1 |   |   | H | O | H |   0 |   | O | A | O |   |  -1 | H | O | H |   |   |
-;   |---|---|---|---|---|     |---|---|---|---|---|     |---|---|---|---|---|     |---|---|---|---|---|
-;-3 |   |   |   |   |   |  -2 |   |   |   |   |   |  -1 |   | H |   | H |   |  -2 |   |   |   |   |   |
-;   |---|---|---|---|---|     |---|---|---|---|---|     |---|---|---|---|---|     |---|---|---|---|---|
-;     -2  -1  0   1   2         -3  -2  -1   0   1        -2  -1  0   1   2         -1  0   1   2   3
-;
-;   |---|---|---|---|---|     |---|---|---|---|---|     |---|---|---|---|---|     |---|---|---|---|---|
-; 2 |   | H | A | H |   |   2 |   |   |   |   |   |   2 |   |   |   |   |   |   2 |   |   |   |   |   |
-;   |---|---|---|---|---|     |---|---|---|---|---|     |---|---|---|---|---|     |---|---|---|---|---|
-; 1 |   | O |   | O |   |   1 |   |   | H | O | H |   1 |   |   | H |   |   |   1 | H | O | H |   |   |
-;   |---|---|---|---|---|     |---|---|---|---|---|     |---|---|---|---|---|     |---|---|---|---|---|
-; 0 |   | H |   | H |   |   0 |   | H |   |   | A |   0 |   | H |   | H |   |   0 | A |   |   | H |   |
-;   |---|---|---|---|---|     |---|---|---|---|---|     |---|---|---|---|---|     |---|---|---|---|---|
-;-1 |   |   | H |   |   |  -1 |   |   | H | O | H |  -1 |   | O |   | O |   |  -1 | H | O | H |   |   |
-;   |---|---|---|---|---|     |---|---|---|---|---|     |---|---|---|---|---|     |---|---|---|---|---|
-;-2 |   |   |   |   |   |  -2 |   |   |   |   |   |  -2 |   | H | A | H |   |  -2 |   |   |   |   |   |
-;   |---|---|---|---|---|     |---|---|---|---|---|     |---|---|---|---|---|     |---|---|---|---|---|
-;     -2  -1  0   1   2         -2  -1  0   1   2         -2  -1  0   1   2         -2  -1  0   1   2
-;
-;FINAL VISUAL-SPATIAL FIELD STATES
-;---------------------------------
-;
-;   EXIT TO NORTH             EXIT TO EAST              EXIT TO SOUTH             EXIT TO WEST
-;   |---|---|---|---|---|     |---|---|---|---|---|     |---|---|---|---|---|     |---|---|---|---|---|
-; 4 |   | H |   | H |   |   4 |   |   |   |   |   |   4 |   |   |   |   |   |   4 |   |   |   |   |   |
-;   |---|---|---|---|---|     |---|---|---|---|---|     |---|---|---|---|---|     |---|---|---|---|---|
-; 3 |   | O |   | O |   |   3 |   |   | H | O | H |   3 |   |   | H |   |   |   3 | H | O | H |   |   |
-;   |---|---|---|---|---|     |---|---|---|---|---|     |---|---|---|---|---|     |---|---|---|---|---|
-; 2 |   | H |   | H |   |   2 |   | H |   |   |   |   2 |   | H |   | H |   |   2 |   |   |   | H |   |
-;   |---|---|---|---|---|     |---|---|---|---|---|     |---|---|---|---|---|     |---|---|---|---|---|
-; 1 |   |   | H |   |   |   1 |   |   | H | O | H |   1 |   | O |   | O |   |   1 | H | O | H |   |   |
-;   |---|---|---|---|---|     |---|---|---|---|---|     |---|---|---|---|---|     |---|---|---|---|---|
-; 0 |   |   |   |   |   |   0 |   |   |   |   |   |   0 |   | H |   | H |   |   0 |   |   |   |   |   |
-;   |---|---|---|---|---|     |---|---|---|---|---|     |---|---|---|---|---|     |---|---|---|---|---|
-;     0   1   2   3   4         0   1   2   3   4         0   1   2   3   4         0   1   2   3   4
+; EXIT TO THE NORTH                      EXIT TO THE EAST                       EXIT TO THE SOUTH                      EXIT TO THE WEST
+; |------|------|------|------|------|   |------|------|------|------|------|   |------|------|------|------|------|   |------|------|------|------|------|
+; |      |10(O) |      | 1(H) |      |   |      |      | 8(O) |      |      |   |      |      | 6(T) |      |      |   |      |      | 4(O) |      |      |
+; |------|------|------|------|------|   |------|------|------|------|------|   |------|------|------|------|------|   |------|------|------|------|------|
+; |      | 9(O) |      | 2(H) |      |   |      |      | 7(T) | 9(O) |10(O) |   |      |      | 5(T) |      |      |   | 1(H) | 2(H) | 3(T) |      |      |
+; |------|------|------|------|------|   |------|------|------|------|------|   |------|------|------|------|------|   |------|------|------|------|------|
+; | 8(O) | 7(T) |      | 3(T) | 4(O) |   | 6(T) | 5(T) |      |      |      |   | 4(O) | 3(T) |      | 7(T) | 8(O) |   |      |      |      | 5(T) | 6(T) |
+; |------|------|------|------|------|   |------|------|------|------|------|   |------|------|------|------|------|   |------|------|------|------|------|
+; |      |      | 5(T) |      |      |   |      |      | 3(T) | 2(H) | 1(H) |   |      | 2(H) |      | 9(O) |      |   |10(O) | 9(O) | 7(T) |      |      |
+; |------|------|------|------|------|   |------|------|------|------|------|   |------|------|------|------|------|   |------|------|------|------|------|
+; |      |      | 6(T) |      |      |   |      |      | 4(O) |      |      |   |      | 1(H) |      | 10(O)|      |   |      |      | 8(O) |      |      |
+; |------|------|------|------|------|   |------|------|------|------|------|   |------|------|------|------|------|   |------|------|------|------|------|
 ;
 ;=====================================
 ;========== TESTS PERFORMED ==========
 ;=====================================
 ;
-;After every "generate-plan" invocation, the test checks that the CHREST turtle's attention clock is incremented as expected.
-;	1) After the first invocation, the attention clock will be set to however long it takes to instantiate the mind's eye given the environment.
-;   2) Subsequent invocations will actually cause plan generation to be performed (domain time will always be advanced so that attention is free
-;      and therefore, the "generate-plan" procedure will not be blocked) so the attention clock will be set to however long it takes to move
-;      the CHREST turtle's visual-spatial avatar (since no other objects will be moved in the visual-spatial field).
-;   3) After the final invocation, the attention clock should be set to whatever it was set to the last time "generate-plan" was invoked in 2 since
-;      no further mind's eye object manipulation should occur given that an end planning condition should have been detected.
+; Whilst plan generation is occuring, this test checks the following variables:
+; 
+; - "generate-plan?": this should remain set to true until the final visual-spatial field state is generated.
+; - "time-spent-deliberating-on-plan": should increase by the value specified for the "time-taken-to-problem-solve" turtle variable after every 
+;   "generate-plan" invocation (the CHREST turtle never learns during this test so deliberation using pattern-recognition isn't possible).
+; - "current-search-iteration": should increase by 1 for every "generate-plan" invocation after the initial one that constructs the visual-spatial field.
+; - "plan" length: should increase by 1 if the visual-spatial field before and after the plan invocation is different (indicates that a visual-spatial
+;   move occurred that wasn't reversed, i.e. it was valid).
+; - "who-of-tile-last-pushed-in-plan": should always be set to "" since moving any tile in the visual-spatial field will result in an invalid 
+;   visual-spatial field state and thus a reversal of the previous visual-spatial object move sequence (this variable is always reset to "" if a 
+;   visual-spatial object move sequence is reversed).
 ;
-;When the CHREST turtle's avatar has been moved out of the CHREST turtle's visual-spatial field but before a subsequent "generate-plan" call is made, 
-;the following checks are performed:
+; After the CHREST turtle's avatar has been moved out of its visual-spatial field and after a subsequent "generate-plan" invocation, the following variables 
+; are checked:
 ;
-; - The "generate-plan?" turtle variable is set to 'true' since no end plan generation conditions have been detected yet.
-; - The "time-spent-deliberating-on-plan" turtle variable is set to the value expected.
-; - The length of the CHREST turtle's "plan" is set to some expected value.  No fixed value can be specified here since the CHREST turtle's moves may 
-;   not be linear, i.e. always north in scenario 1.  Note: the contents of the plan are not of interest here; such testing is performed elsewhere.
-; - The "deliberation-finished-time" turtle variable is set to 0 since this is only set when "generate-plan" is called and an end plan generation condition
-;   is detected.
-; - The final state of the CHREST turtle's visual-spatial field is as expected (see above).
-;
-;After the CHREST turtle's avatar has been moved out of the CHREST turtle's visual-spatial field and after a subsequent "generate-plan" call is made, the 
-;following checks are performed:
-;
-; - The "generate-plan?" turtle variable is set to 'false' since an end plan condition has been met.
-; - The "time-spent-deliberating-on-plan" turtle variable is reset to 0 for the next planning cycle.
-; - The length of the CHREST turtle's "plan" is still equal to its previous value since no further planning should occur and therefore no further actions planned.
-; - The "deliberation-finished-time" turtle variable is set to the current domain time plus the value of the "time-spent-deliberating-on-plan" before it is
-;   reset to 0.  This is used to simulate inactivity whilst deliberating in the main CHREST turtle control loop.
-; - Since an end planning condition has been detected, the state of the CHREST turtle's visual-spatial field should be as it was before the final 
-;   "generate-plan" call was made, i.e. it is equal to the expected end state.
+; - CHREST attention clock: should remain unchanged before and after the final "generate-plan" invocation is made since an "end-plan" condition should
+;   be detected and therefore no visual-spatial field interaction should occur.
+; - Visual-spatial field state: should remain unchanged (equal to the final expected state) since an "end-plan" condition should be detected and therefore 
+;   no visual-spatial field interaction should occur.
+; - "generate-plan?": this should be set to 'false' since an "end plan" condition has been met.
+; - "plan" length: should remain unchanged since an "end-plan" condition should be detected and therefore no further planning should occur (so no further 
+;   actions added to the plan).  Furthermore, no actions in the plan should have been executed yet.
+; - "time-spent-deliberating-on-plan": should be reset to 0 for the next planning cycle.
+; - "deliberation-finished-time": should be set to the current domain time plus the value of the "time-spent-deliberating-on-plan" before it was
+;   reset to 0.
+; - "who-of-tile-last-pushed-in-plan": should be set to "" since this value needs to be reset for the next planning cycle.
+; - "current-search-iteration": should be set to 0 since this value needs to be reset for the next planning cycle.
 ;
 <test>
-
-	let empty (chrest:get-empty-square-identifier-in-scene)
-
 	foreach ([0 1 2 3])[
-		repeat 100[
+		repeat 50[
 			create-chrest-turtles 1 [
 				set action-performance-time 10000
 				set action-selection-procedure "roulette-selection"
@@ -165,12 +116,7 @@
 				set discount-rate 0.5
 				set discrimination-time 10000
 				set familiarisation-time 2000
-				set minds-eye-access-time 100
-				set minds-eye-empty-square-placement-time 10
-				set minds-eye-object-movement-time 50
-				set minds-eye-object-placement-time 25
-				set minds-eye-recognised-object-lifespan 10000
-				set minds-eye-unrecognised-object-lifespan 50000
+				set max-search-iteration 99999
 				set number-fixations 4
 				set pattern-recognition? true
 				set play-time 14400000.0
@@ -180,623 +126,439 @@
 				set sight-radius 2
 				set time-taken-to-use-pattern-recognition 200
 				set time-taken-to-problem-solve 1000
+				set visual-spatial-field-access-time 50
+				set visual-spatial-field-empty-square-placement-time 5
+				set visual-spatial-field-object-movement-time 25
+				set visual-spatial-field-object-placement-time 10
+				set visual-spatial-field-recognised-object-lifespan 100000
+				set visual-spatial-field-unrecognised-object-lifespan 90000
 			]
 			setup (true)
 
-			let initial-visual-spatial-field-state []
-			let valid-intermediate-visual-spatial-fields []
-			let expected-visual-spatial-field-state-after-plan-generation-ends []
-			let valid-visual-spatial-fields []
+			let expected-initial-visual-spatial-field []
+			let expected-final-visual-spatial-field []
 
 			if(? = 0)[
-				create-holes 1 [ setxy ([pxcor] of turtle 0) ( ([pycor] of turtle 0) - 1 ) ]
-				create-holes 1 [ setxy ( ([pxcor] of turtle 0) - 1 ) ([pycor] of turtle 0) ]
-				create-holes 1 [ setxy ( ([pxcor] of turtle 0) + 1 ) ([pycor] of turtle 0) ]
-				create-chrest-turtles 1 [ setxy ( ([pxcor] of turtle 0) - 1 ) ( ([pycor] of turtle 0) + 1 ) ]
-				create-chrest-turtles 1 [ setxy ( ([pxcor] of turtle 0) + 1 ) ( ([pycor] of turtle 0) + 1 ) ]
-				create-holes 1 [ setxy ( ([pxcor] of turtle 0) - 1 ) ( ([pycor] of turtle 0) + 2 ) ]
-				create-holes 1 [ setxy ( ([pxcor] of turtle 0) + 1 ) ( ([pycor] of turtle 0) + 2 ) ]
+				create-holes 1 [ setxy (([pxcor] of turtle 0) + 1) ( ([pycor] of turtle 0) + 2 ) ]
+				create-holes 1 [ setxy (([pxcor] of turtle 0) + 1) ( ([pycor] of turtle 0) + 1 ) ]
+				create-tiles 1 [ setxy ( ([pxcor] of turtle 0) + 1 ) ([pycor] of turtle 0) ]
+				create-chrest-turtles 1 [ setxy ( ([pxcor] of turtle 0) + 2 ) ([pycor] of turtle 0) ]
+				create-tiles 1 [ setxy ([pxcor] of turtle 0) (([pycor] of turtle 0) - 1) ]
+				create-tiles 1 [ setxy ([pxcor] of turtle 0) (([pycor] of turtle 0) - 2) ]
+				create-tiles 1 [ setxy ( ([pxcor] of turtle 0) - 1 ) ([pycor] of turtle 0) ]
+				create-chrest-turtles 1 [ setxy ( ([pxcor] of turtle 0) - 2 ) ([pycor] of turtle 0) ]
+				create-chrest-turtles 1 [ setxy (([pxcor] of turtle 0) - 1) ( ([pycor] of turtle 0) + 1 ) ]
+				create-chrest-turtles 1 [ setxy (([pxcor] of turtle 0) - 1) ( ([pycor] of turtle 0) + 2 ) ]
 
-				set initial-visual-spatial-field-state (list
-					(chrest:create-item-square-pattern (empty) (-2) (-2))
-					(chrest:create-item-square-pattern (empty) (-1) (-2))
-					(chrest:create-item-square-pattern (empty) (0) (-2))
-					(chrest:create-item-square-pattern (empty) (1) (-2))
-					(chrest:create-item-square-pattern (empty) (2) (-2))
-					(chrest:create-item-square-pattern (empty) (-2) (-1))
-					(chrest:create-item-square-pattern (empty) (-1) (-1))
-					(chrest:create-item-square-pattern (hole-token) (0) (-1))
-					(chrest:create-item-square-pattern (empty) (1) (-1))
-					(chrest:create-item-square-pattern (empty) (2) (-1))
-					(chrest:create-item-square-pattern (empty) (-2) (0))
-					(chrest:create-item-square-pattern (hole-token) (-1) (0))
-					(chrest:create-item-square-pattern (chrest:get-self-identifier-in-scene) (0) (0))
-					(chrest:create-item-square-pattern (hole-token) (1) (0))
-					(chrest:create-item-square-pattern (empty) (2) (0))
-					(chrest:create-item-square-pattern (empty) (-2) (1))
-					(chrest:create-item-square-pattern (opponent-token) (-1) (1))
-					(chrest:create-item-square-pattern (empty) (0) (1))
-					(chrest:create-item-square-pattern (opponent-token) (1) (1))
-					(chrest:create-item-square-pattern (empty) (2) (1))
-					(chrest:create-item-square-pattern (empty) (-2) (2))
-					(chrest:create-item-square-pattern (hole-token) (-1) (2))
-					(chrest:create-item-square-pattern (empty) (0) (2))
-					(chrest:create-item-square-pattern (hole-token) (1) (2))
-					(chrest:create-item-square-pattern (empty) (2) (2))
-				)
-
-				set valid-intermediate-visual-spatial-fields (list
+				set expected-initial-visual-spatial-field (list 
 					( list
-						(chrest:create-item-square-pattern (empty) (-2) (-3))
-						(chrest:create-item-square-pattern (empty) (-1) (-3))
-						(chrest:create-item-square-pattern (empty) (0) (-3))
-						(chrest:create-item-square-pattern (empty) (1) (-3))
-						(chrest:create-item-square-pattern (empty) (2) (-3))
-						(chrest:create-item-square-pattern (empty) (-2) (-2))
-						(chrest:create-item-square-pattern (empty) (-1) (-2))
-						(chrest:create-item-square-pattern (hole-token) (0) (-2))
-						(chrest:create-item-square-pattern (empty) (1) (-2))
-						(chrest:create-item-square-pattern (empty) (2) (-2))
-						(chrest:create-item-square-pattern (empty) (-2) (-1))
-						(chrest:create-item-square-pattern (hole-token) (-1) (-1))
-						(chrest:create-item-square-pattern (empty) (0) (-1))
-						(chrest:create-item-square-pattern (hole-token) (1) (-1))
-						(chrest:create-item-square-pattern (empty) (2) (-1))
-						(chrest:create-item-square-pattern (empty) (-2) (0))
-						(chrest:create-item-square-pattern (opponent-token) (-1) (0))
-						(chrest:create-item-square-pattern (chrest:get-self-identifier-in-scene) (0) (0))
-						(chrest:create-item-square-pattern (opponent-token) (1) (0))
-						(chrest:create-item-square-pattern (empty) (2) (0))
-						(chrest:create-item-square-pattern (empty) (-2) (1))
-						(chrest:create-item-square-pattern (hole-token) (-1) (1))
-						(chrest:create-item-square-pattern (empty) (0) (1))
-						(chrest:create-item-square-pattern (hole-token) (1) (1))
-						(chrest:create-item-square-pattern (empty) (2) (1))
+						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list ("8") (opponent-token)))
+						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list (empty-patch-token) (empty-patch-token)))
 					)
 					( list
-						(chrest:create-item-square-pattern (empty) (-2) (-4))
-						(chrest:create-item-square-pattern (empty) (-1) (-4))
-						(chrest:create-item-square-pattern (empty) (0) (-4))
-						(chrest:create-item-square-pattern (empty) (1) (-4))
-						(chrest:create-item-square-pattern (empty) (2) (-4))
-						(chrest:create-item-square-pattern (empty) (-2) (-3))
-						(chrest:create-item-square-pattern (empty) (-1) (-3))
-						(chrest:create-item-square-pattern (hole-token) (0) (-3))
-						(chrest:create-item-square-pattern (empty) (1) (-3))
-						(chrest:create-item-square-pattern (empty) (2) (-3))
-						(chrest:create-item-square-pattern (empty) (-2) (-2))
-						(chrest:create-item-square-pattern (hole-token) (-1) (-2))
-						(chrest:create-item-square-pattern (empty) (0) (-2))
-						(chrest:create-item-square-pattern (hole-token) (1) (-2))
-						(chrest:create-item-square-pattern (empty) (2) (-2))
-						(chrest:create-item-square-pattern (empty) (-2) (-1))
-						(chrest:create-item-square-pattern (opponent-token) (-1) (-1))
-						(chrest:create-item-square-pattern (empty) (0) (-1))
-						(chrest:create-item-square-pattern (opponent-token) (1) (-1))
-						(chrest:create-item-square-pattern (empty) (2) (-1))
-						(chrest:create-item-square-pattern (empty) (-2) (0))
-						(chrest:create-item-square-pattern (hole-token) (-1) (0))
-						(chrest:create-item-square-pattern (chrest:get-self-identifier-in-scene) (0) (0))
-						(chrest:create-item-square-pattern (hole-token) (1) (0))
-						(chrest:create-item-square-pattern (empty) (2) (0))
+						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list ("7") (tile-token)))
+						(list (list ("9") (opponent-token)))
+						(list (list ("10") (opponent-token)))
+					)
+					(list
+						(list (list ("6") (tile-token)))
+						(list (list ("5") (tile-token)))
+						(list (list ("0") (self-token)))
+						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list (empty-patch-token) (empty-patch-token)))
+					)
+					(list
+						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list ("3") (tile-token)))
+						(list (list ("2") (hole-token)))
+						(list (list ("1") (hole-token)))
+					)
+					(list
+						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list ("4") (opponent-token)))
+						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list (empty-patch-token) (empty-patch-token)))
 					)
 				)
 
-				set expected-visual-spatial-field-state-after-plan-generation-ends (list
-					(chrest:create-item-square-pattern (empty) (0) (0))
-					(chrest:create-item-square-pattern (empty) (1) (0))
-					(chrest:create-item-square-pattern (empty) (2) (0))
-					(chrest:create-item-square-pattern (empty) (3) (0))
-					(chrest:create-item-square-pattern (empty) (4) (0))
-					(chrest:create-item-square-pattern (empty) (0) (1))
-					(chrest:create-item-square-pattern (empty) (1) (1))
-					(chrest:create-item-square-pattern (hole-token) (2) (1))
-					(chrest:create-item-square-pattern (empty) (3) (1))
-					(chrest:create-item-square-pattern (empty) (4) (1))
-					(chrest:create-item-square-pattern (empty) (0) (2))
-					(chrest:create-item-square-pattern (hole-token) (1) (2))
-					(chrest:create-item-square-pattern (empty) (2) (2))
-					(chrest:create-item-square-pattern (hole-token) (3) (2))
-					(chrest:create-item-square-pattern (empty) (4) (2))
-					(chrest:create-item-square-pattern (empty) (0) (3))
-					(chrest:create-item-square-pattern (opponent-token) (1) (3))
-					(chrest:create-item-square-pattern (empty) (2) (3))
-					(chrest:create-item-square-pattern (opponent-token) (3) (3))
-					(chrest:create-item-square-pattern (empty) (4) (3))
-					(chrest:create-item-square-pattern (empty) (0) (4))
-					(chrest:create-item-square-pattern (hole-token) (1) (4))
-					(chrest:create-item-square-pattern (empty) (2) (4))
-					(chrest:create-item-square-pattern (hole-token) (3) (4))
-					(chrest:create-item-square-pattern (empty) (4) (4))
+				set expected-final-visual-spatial-field (list
+					( list
+						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list ("8") (opponent-token)))
+						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list (empty-patch-token) (empty-patch-token)))
+					)
+					( list
+						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list ("7") (tile-token)))
+						(list (list ("9") (opponent-token)))
+						(list (list ("10") (opponent-token)))
+					)
+					(list
+						(list (list ("6") (tile-token)))
+						(list (list ("5") (tile-token)))
+						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list (empty-patch-token) (empty-patch-token)))
+					)
+					(list
+						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list ("3") (tile-token)))
+						(list (list ("2") (hole-token)))
+						(list (list ("1") (hole-token)))
+					)
+					(list
+						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list ("4") (opponent-token)))
+						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list (empty-patch-token) (empty-patch-token)))
+					)
 				)
 			]
 
 			if(? = 1)[
-				create-holes 1 [ setxy ( ([pxcor] of turtle 0) - 1 ) ([pycor] of turtle 0) ]
-				create-holes 1 [ setxy ([pxcor] of turtle 0) ( ([pycor] of turtle 0) - 1 ) ]
-				create-holes 1 [ setxy ([pxcor] of turtle 0) ( ([pycor] of turtle 0) + 1 ) ]
-				create-chrest-turtles 1 [ setxy ( ([pxcor] of turtle 0) + 1 ) ( ([pycor] of turtle 0) + 1 ) ]
-				create-chrest-turtles 1 [ setxy ( ([pxcor] of turtle 0) + 1 ) ( ([pycor] of turtle 0) - 1 ) ]
-				create-holes 1 [ setxy ( [pxcor] of turtle 0 + 2 ) ( ([pycor] of turtle 0) + 1 ) ]
-				create-holes 1 [ setxy ( [pxcor] of turtle 0 + 2 ) ( ([pycor] of turtle 0) - 1 ) ]
+				create-holes 1 [ setxy (([pxcor] of turtle 0) + 2) ( ([pycor] of turtle 0) - 1 ) ]
+				create-holes 1 [ setxy (([pxcor] of turtle 0) + 1) ( ([pycor] of turtle 0) - 1 ) ]
+				create-tiles 1 [ setxy ([pxcor] of turtle 0) (([pycor] of turtle 0) - 1) ]
+				create-chrest-turtles 1 [ setxy ([pxcor] of turtle 0) (([pycor] of turtle 0) - 2) ]
+				create-tiles 1 [ setxy (([pxcor] of turtle 0) - 1) ([pycor] of turtle 0) ]
+				create-tiles 1 [ setxy (([pxcor] of turtle 0) - 2) ([pycor] of turtle 0) ]
+				create-tiles 1 [ setxy ([pxcor] of turtle 0) (([pycor] of turtle 0) + 1) ]
+				create-chrest-turtles 1 [ setxy ([pxcor] of turtle 0) (([pycor] of turtle 0) + 2) ]
+				create-chrest-turtles 1 [ setxy (([pxcor] of turtle 0) + 1) ( ([pycor] of turtle 0) + 1 ) ]
+				create-chrest-turtles 1 [ setxy (([pxcor] of turtle 0) + 2) ( ([pycor] of turtle 0) + 1 ) ]
 
-				set initial-visual-spatial-field-state (list
-					(chrest:create-item-square-pattern (empty) (-2) (-2))
-					(chrest:create-item-square-pattern (empty) (-1) (-2))
-					(chrest:create-item-square-pattern (empty) (0) (-2))
-					(chrest:create-item-square-pattern (empty) (1) (-2))
-					(chrest:create-item-square-pattern (empty) (2) (-2))
-					(chrest:create-item-square-pattern (empty) (-2) (-1))
-					(chrest:create-item-square-pattern (empty) (-1) (-1))
-					(chrest:create-item-square-pattern (hole-token) (0) (-1))
-					(chrest:create-item-square-pattern (opponent-token) (1) (-1))
-					(chrest:create-item-square-pattern (hole-token) (2) (-1))
-					(chrest:create-item-square-pattern (empty) (-2) (0))
-					(chrest:create-item-square-pattern (hole-token) (-1) (0))
-					(chrest:create-item-square-pattern (chrest:get-self-identifier-in-scene) (0) (0))
-					(chrest:create-item-square-pattern (empty) (1) (0))
-					(chrest:create-item-square-pattern (empty) (2) (0))
-					(chrest:create-item-square-pattern (empty) (-2) (1))
-					(chrest:create-item-square-pattern (empty) (-1) (1))
-					(chrest:create-item-square-pattern (hole-token) (0) (1))
-					(chrest:create-item-square-pattern (opponent-token) (1) (1))
-					(chrest:create-item-square-pattern (hole-token) (2) (1))
-					(chrest:create-item-square-pattern (empty) (-2) (2))
-					(chrest:create-item-square-pattern (empty) (-1) (2))
-					(chrest:create-item-square-pattern (empty) (0) (2))
-					(chrest:create-item-square-pattern (empty) (1) (2))
-					(chrest:create-item-square-pattern (empty) (2) (2))
-				)
-
-				set valid-intermediate-visual-spatial-fields (list
+				set expected-initial-visual-spatial-field (list
 					( list
-						(chrest:create-item-square-pattern (empty) (-3) (-2))
-						(chrest:create-item-square-pattern (empty) (-2) (-2))
-						(chrest:create-item-square-pattern (empty) (-1) (-2))
-						(chrest:create-item-square-pattern (empty) (0) (-2))
-						(chrest:create-item-square-pattern (empty) (1) (-2))
-						(chrest:create-item-square-pattern (empty) (-3) (-1))
-						(chrest:create-item-square-pattern (empty) (-2) (-1))
-						(chrest:create-item-square-pattern (hole-token) (-1) (-1))
-						(chrest:create-item-square-pattern (opponent-token) (0) (-1))
-						(chrest:create-item-square-pattern (hole-token) (1) (-1))
-						(chrest:create-item-square-pattern (empty) (-3) (0))
-						(chrest:create-item-square-pattern (hole-token) (-2) (0))
-						(chrest:create-item-square-pattern (empty) (-1) (0))
-						(chrest:create-item-square-pattern (chrest:get-self-identifier-in-scene) (0) (0))
-						(chrest:create-item-square-pattern (empty) (1) (0))
-						(chrest:create-item-square-pattern (empty) (-3) (1))
-						(chrest:create-item-square-pattern (empty) (-2) (1))
-						(chrest:create-item-square-pattern (hole-token) (-1) (1))
-						(chrest:create-item-square-pattern (opponent-token) (0) (1))
-						(chrest:create-item-square-pattern (hole-token) (1) (1))
-						(chrest:create-item-square-pattern (empty) (-3) (2))
-						(chrest:create-item-square-pattern (empty) (-2) (2))
-						(chrest:create-item-square-pattern (empty) (-1) (2))
-						(chrest:create-item-square-pattern (empty) (0) (2))
-						(chrest:create-item-square-pattern (empty) (1) (2))
+						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list ("6") (tile-token)))
+						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list (empty-patch-token) (empty-patch-token)))
 					)
 					( list
-						(chrest:create-item-square-pattern (empty) (-4) (-2))
-						(chrest:create-item-square-pattern (empty) (-3) (-2))
-						(chrest:create-item-square-pattern (empty) (-2) (-2))
-						(chrest:create-item-square-pattern (empty) (-1) (-2))
-						(chrest:create-item-square-pattern (empty) (0) (-2))
-						(chrest:create-item-square-pattern (empty) (-4) (-1))
-						(chrest:create-item-square-pattern (empty) (-3) (-1))
-						(chrest:create-item-square-pattern (hole-token) (-2) (-1))
-						(chrest:create-item-square-pattern (opponent-token) (-1) (-1))
-						(chrest:create-item-square-pattern (hole-token) (0) (-1))
-						(chrest:create-item-square-pattern (empty) (-4) (0))
-						(chrest:create-item-square-pattern (hole-token) (-3) (0))
-						(chrest:create-item-square-pattern (empty) (-2) (0))
-						(chrest:create-item-square-pattern (empty) (-1) (0))
-						(chrest:create-item-square-pattern (chrest:get-self-identifier-in-scene) (0) (0))
-						(chrest:create-item-square-pattern (empty) (-4) (1))
-						(chrest:create-item-square-pattern (empty) (-3) (1))
-						(chrest:create-item-square-pattern (hole-token) (-2) (1))
-						(chrest:create-item-square-pattern (opponent-token) (-1) (1))
-						(chrest:create-item-square-pattern (hole-token) (0) (1))
-						(chrest:create-item-square-pattern (empty) (-4) (2))
-						(chrest:create-item-square-pattern (empty) (-3) (2))
-						(chrest:create-item-square-pattern (empty) (-2) (2))
-						(chrest:create-item-square-pattern (empty) (-1) (2))
-						(chrest:create-item-square-pattern (empty) (0) (2))
-					)	
+						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list ("5") (tile-token)))
+						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list (empty-patch-token) (empty-patch-token)))
+					)
+					(list
+						(list (list ("4") (opponent-token)))
+						(list (list ("3") (tile-token)))
+						(list (list ("0") (self-token)))
+						(list (list ("7") (tile-token)))
+						(list (list ("8") (opponent-token)))
+					)
+					(list
+						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list ("2") (hole-token)))
+						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list ("9") (opponent-token)))
+						(list (list (empty-patch-token) (empty-patch-token)))
+					)
+					(list
+						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list ("1") (hole-token)))
+						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list ("10") (opponent-token)))
+						(list (list (empty-patch-token) (empty-patch-token)))
+					)
 				)
 
-				set expected-visual-spatial-field-state-after-plan-generation-ends (list
-					(chrest:create-item-square-pattern (empty) (0) (0))
-					(chrest:create-item-square-pattern (empty) (1) (0))
-					(chrest:create-item-square-pattern (empty) (2) (0))
-					(chrest:create-item-square-pattern (empty) (3) (0))
-					(chrest:create-item-square-pattern (empty) (4) (0))
-					(chrest:create-item-square-pattern (empty) (0) (1))
-					(chrest:create-item-square-pattern (empty) (1) (1))
-					(chrest:create-item-square-pattern (hole-token) (2) (1))
-					(chrest:create-item-square-pattern (opponent-token) (3) (1))
-					(chrest:create-item-square-pattern (hole-token) (4) (1))
-					(chrest:create-item-square-pattern (empty) (0) (2))
-					(chrest:create-item-square-pattern (hole-token) (1) (2))
-					(chrest:create-item-square-pattern (empty) (2) (2))
-					(chrest:create-item-square-pattern (empty) (3) (2))
-					(chrest:create-item-square-pattern (empty) (4) (2))
-					(chrest:create-item-square-pattern (empty) (0) (3))
-					(chrest:create-item-square-pattern (empty) (1) (3))
-					(chrest:create-item-square-pattern (hole-token) (2) (3))
-					(chrest:create-item-square-pattern (opponent-token) (3) (3))
-					(chrest:create-item-square-pattern (hole-token) (4) (3))
-					(chrest:create-item-square-pattern (empty) (0) (4))
-					(chrest:create-item-square-pattern (empty) (1) (4))
-					(chrest:create-item-square-pattern (empty) (2) (4))
-					(chrest:create-item-square-pattern (empty) (3) (4))
-					(chrest:create-item-square-pattern (empty) (4) (4))
+				set expected-final-visual-spatial-field (list
+					( list
+						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list ("6") (tile-token)))
+						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list (empty-patch-token) (empty-patch-token)))
+					)
+					( list
+						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list ("5") (tile-token)))
+						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list (empty-patch-token) (empty-patch-token)))
+					)
+					(list
+						(list (list ("4") (opponent-token)))
+						(list (list ("3") (tile-token)))
+						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list ("7") (tile-token)))
+						(list (list ("8") (opponent-token)))
+					)
+					(list
+						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list ("2") (hole-token)))
+						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list ("9") (opponent-token)))
+						(list (list (empty-patch-token) (empty-patch-token)))
+					)
+					(list
+						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list ("1") (hole-token)))
+						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list ("10") (opponent-token)))
+						(list (list (empty-patch-token) (empty-patch-token)))
+					)
 				)
 			]
 
 			if(? = 2)[
-				create-holes 1 [ setxy ([pxcor] of turtle 0) ( ([pycor] of turtle 0) + 1 ) ]
-				create-holes 1 [ setxy ( ([pxcor] of turtle 0) - 1 ) ([pycor] of turtle 0) ]
-				create-holes 1 [ setxy ( ([pxcor] of turtle 0) + 1 ) ([pycor] of turtle 0) ]
-				create-chrest-turtles 1 [ setxy ( ([pxcor] of turtle 0) - 1 ) ( ([pycor] of turtle 0) - 1 ) ]
-				create-chrest-turtles 1 [ setxy ( ([pxcor] of turtle 0) + 1 ) ( ([pycor] of turtle 0) - 1 ) ]
-				create-holes 1 [ setxy ( ([pxcor] of turtle 0) - 1 ) ( ([pycor] of turtle 0) - 2 ) ]
-				create-holes 1 [ setxy ( ([pxcor] of turtle 0) + 1 ) ( ([pycor] of turtle 0) - 2 ) ]
+				create-holes 1 [ setxy (([pxcor] of turtle 0) - 1) ( ([pycor] of turtle 0) - 2 ) ]
+				create-holes 1 [ setxy (([pxcor] of turtle 0) - 1) ( ([pycor] of turtle 0) - 1 ) ]
+				create-tiles 1 [ setxy ( ([pxcor] of turtle 0) - 1 ) ([pycor] of turtle 0) ]
+				create-chrest-turtles 1 [ setxy ( ([pxcor] of turtle 0) - 2 ) ([pycor] of turtle 0) ]
+				create-tiles 1 [ setxy ([pxcor] of turtle 0) (([pycor] of turtle 0) + 1) ]
+				create-tiles 1 [ setxy ([pxcor] of turtle 0) (([pycor] of turtle 0) + 2) ]
+				create-tiles 1 [ setxy ( ([pxcor] of turtle 0) + 1 ) ([pycor] of turtle 0) ]
+				create-chrest-turtles 1 [ setxy ( ([pxcor] of turtle 0) + 2 ) ([pycor] of turtle 0) ]
+				create-chrest-turtles 1 [ setxy (([pxcor] of turtle 0) + 1) ( ([pycor] of turtle 0) - 1 ) ]
+				create-chrest-turtles 1 [ setxy (([pxcor] of turtle 0) + 1) ( ([pycor] of turtle 0) - 2 ) ] 
 
-				set initial-visual-spatial-field-state (list
-					(chrest:create-item-square-pattern (empty) (-2) (-2))
-					(chrest:create-item-square-pattern (hole-token) (-1) (-2))
-					(chrest:create-item-square-pattern (empty) (0) (-2))
-					(chrest:create-item-square-pattern (hole-token) (1) (-2))
-					(chrest:create-item-square-pattern (empty) (2) (-2))
-					(chrest:create-item-square-pattern (empty) (-2) (-1))
-					(chrest:create-item-square-pattern (opponent-token) (-1) (-1))
-					(chrest:create-item-square-pattern (empty) (0) (-1))
-					(chrest:create-item-square-pattern (opponent-token) (1) (-1))
-					(chrest:create-item-square-pattern (empty) (2) (-1))
-					(chrest:create-item-square-pattern (empty) (-2) (0))
-					(chrest:create-item-square-pattern (hole-token) (-1) (0))
-					(chrest:create-item-square-pattern (chrest:get-self-identifier-in-scene) (0) (0))
-					(chrest:create-item-square-pattern (hole-token) (1) (0))
-					(chrest:create-item-square-pattern (empty) (2) (0))
-					(chrest:create-item-square-pattern (empty) (-2) (1))
-					(chrest:create-item-square-pattern (empty) (-1) (1))
-					(chrest:create-item-square-pattern (hole-token) (0) (1))
-					(chrest:create-item-square-pattern (empty) (1) (1))
-					(chrest:create-item-square-pattern (empty) (2) (1))
-					(chrest:create-item-square-pattern (empty) (-2) (2))
-					(chrest:create-item-square-pattern (empty) (-1) (2))
-					(chrest:create-item-square-pattern (empty) (0) (2))
-					(chrest:create-item-square-pattern (empty) (1) (2))
-					(chrest:create-item-square-pattern (empty) (2) (2))
-				)
-
-				set valid-intermediate-visual-spatial-fields (list
+				set expected-initial-visual-spatial-field (list 
 					( list
-						(chrest:create-item-square-pattern (empty) (-2) (-1))
-						(chrest:create-item-square-pattern (hole-token) (-1) (-1))
-						(chrest:create-item-square-pattern (empty) (0) (-1))
-						(chrest:create-item-square-pattern (hole-token) (1) (-1))
-						(chrest:create-item-square-pattern (empty) (2) (-1))
-						(chrest:create-item-square-pattern (empty) (-2) (0))
-						(chrest:create-item-square-pattern (opponent-token) (-1) (0))
-						(chrest:create-item-square-pattern (chrest:get-self-identifier-in-scene) (0) (0))
-						(chrest:create-item-square-pattern (opponent-token) (1) (0))
-						(chrest:create-item-square-pattern (empty) (2) (0))
-						(chrest:create-item-square-pattern (empty) (-2) (1))
-						(chrest:create-item-square-pattern (hole-token) (-1) (1))
-						(chrest:create-item-square-pattern (empty) (0) (1))
-						(chrest:create-item-square-pattern (hole-token) (1) (1))
-						(chrest:create-item-square-pattern (empty) (2) (1))
-						(chrest:create-item-square-pattern (empty) (-2) (2))
-						(chrest:create-item-square-pattern (empty) (-1) (2))
-						(chrest:create-item-square-pattern (hole-token) (0) (2))
-						(chrest:create-item-square-pattern (empty) (1) (2))
-						(chrest:create-item-square-pattern (empty) (2) (2))
-						(chrest:create-item-square-pattern (empty) (-2) (3))
-						(chrest:create-item-square-pattern (empty) (-1) (3))
-						(chrest:create-item-square-pattern (empty) (0) (3))
-						(chrest:create-item-square-pattern (empty) (1) (3))
-						(chrest:create-item-square-pattern (empty) (2) (3))
+						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list ("4") (opponent-token)))
+						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list (empty-patch-token) (empty-patch-token)))
 					)
 					( list
-						(chrest:create-item-square-pattern (empty) (-2) (0))
-						(chrest:create-item-square-pattern (hole-token) (-1) (0))
-						(chrest:create-item-square-pattern (chrest:get-self-identifier-in-scene) (0) (0))
-						(chrest:create-item-square-pattern (hole-token) (1) (0))
-						(chrest:create-item-square-pattern (empty) (2) (0))
-						(chrest:create-item-square-pattern (empty) (-2) (1))
-						(chrest:create-item-square-pattern (opponent-token) (-1) (1))
-						(chrest:create-item-square-pattern (empty) (0) (1))
-						(chrest:create-item-square-pattern (opponent-token) (1) (1))
-						(chrest:create-item-square-pattern (empty) (2) (1))
-						(chrest:create-item-square-pattern (empty) (-2) (2))
-						(chrest:create-item-square-pattern (hole-token) (-1) (2))
-						(chrest:create-item-square-pattern (empty) (0) (2))
-						(chrest:create-item-square-pattern (hole-token) (1) (2))
-						(chrest:create-item-square-pattern (empty) (2) (2))
-						(chrest:create-item-square-pattern (empty) (-2) (3))
-						(chrest:create-item-square-pattern (empty) (-1) (3))
-						(chrest:create-item-square-pattern (hole-token) (0) (3))
-						(chrest:create-item-square-pattern (empty) (1) (3))
-						(chrest:create-item-square-pattern (empty) (2) (3))
-						(chrest:create-item-square-pattern (empty) (-2) (4))
-						(chrest:create-item-square-pattern (empty) (-1) (4))
-						(chrest:create-item-square-pattern (empty) (0) (4))
-						(chrest:create-item-square-pattern (empty) (1) (4))
-						(chrest:create-item-square-pattern (empty) (2) (4))
+						(list (list ("1") (hole-token)))
+						(list (list ("2") (hole-token)))
+						(list (list ("3") (tile-token)))
+						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list (empty-patch-token) (empty-patch-token)))		            
+					)
+					( list
+						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list ("0") (self-token)))
+						(list (list ("5") (tile-token)))
+						(list (list ("6") (tile-token)))
+					)
+					( list
+						(list (list ("10") (opponent-token)))
+						(list (list ("9") (opponent-token)))
+						(list (list ("7") (tile-token)))
+						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list (empty-patch-token) (empty-patch-token)))
+					)
+					( list
+						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list ("8") (opponent-token)))
+						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list (empty-patch-token) (empty-patch-token)))
 					)
 				)
 
-				set expected-visual-spatial-field-state-after-plan-generation-ends (list
-					(chrest:create-item-square-pattern (empty) (0) (0))
-					(chrest:create-item-square-pattern (hole-token) (1) (0))
-					(chrest:create-item-square-pattern (empty) (2) (0))
-					(chrest:create-item-square-pattern (hole-token) (3) (0))
-					(chrest:create-item-square-pattern (empty) (4) (0))
-					(chrest:create-item-square-pattern (empty) (0) (1))
-					(chrest:create-item-square-pattern (opponent-token) (1) (1))
-					(chrest:create-item-square-pattern (empty) (2) (1))
-					(chrest:create-item-square-pattern (opponent-token) (3) (1))
-					(chrest:create-item-square-pattern (empty) (4) (1))
-					(chrest:create-item-square-pattern (empty) (0) (2))
-					(chrest:create-item-square-pattern (hole-token) (1) (2))
-					(chrest:create-item-square-pattern (empty) (2) (2))
-					(chrest:create-item-square-pattern (hole-token) (3) (2))
-					(chrest:create-item-square-pattern (empty) (4) (2))
-					(chrest:create-item-square-pattern (empty) (0) (3))
-					(chrest:create-item-square-pattern (empty) (1) (3))
-					(chrest:create-item-square-pattern (hole-token) (2) (3))
-					(chrest:create-item-square-pattern (empty) (3) (3))
-					(chrest:create-item-square-pattern (empty) (4) (3))
-					(chrest:create-item-square-pattern (empty) (0) (4))
-					(chrest:create-item-square-pattern (empty) (1) (4))
-					(chrest:create-item-square-pattern (empty) (2) (4))
-					(chrest:create-item-square-pattern (empty) (3) (4))
-					(chrest:create-item-square-pattern (empty) (4) (4))
+				set expected-final-visual-spatial-field (list
+					( list
+						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list ("4") (opponent-token)))
+						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list (empty-patch-token) (empty-patch-token)))
+					)
+					( list
+						(list (list ("1") (hole-token)))
+						(list (list ("2") (hole-token)))
+						(list (list ("3") (tile-token)))
+						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list (empty-patch-token) (empty-patch-token)))
+					)
+						( list
+						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list ("5") (tile-token)))
+						(list (list ("6") (tile-token)))
+					)
+					( list
+						(list (list ("10") (opponent-token)))
+						(list (list ("9") (opponent-token)))
+						(list (list ("7") (tile-token)))
+						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list (empty-patch-token) (empty-patch-token)))
+					)
+					( list
+						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list ("8") (opponent-token)))
+						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list (empty-patch-token) (empty-patch-token)))
+					)
 				)
 			]
 
 			if(? = 3)[
-				create-holes 1 [ setxy ( ([pxcor] of turtle 0) + 1) ([pycor] of turtle 0) ]
-				create-holes 1 [ setxy ([pxcor] of turtle 0) ( ([pycor] of turtle 0) + 1 ) ]
-				create-holes 1 [ setxy ([pxcor] of turtle 0) ( ([pycor] of turtle 0) - 1 ) ]
-				create-chrest-turtles 1 [ setxy ( ([pxcor] of turtle 0) - 1 ) ( ([pycor] of turtle 0) + 1 ) ]
-				create-chrest-turtles 1 [ setxy ( ([pxcor] of turtle 0 )- 1 ) ( ([pycor] of turtle 0) - 1 ) ]
-				create-holes 1 [ setxy ( ([pxcor] of turtle 0) - 2 ) ( ([pycor] of turtle 0) + 1 ) ]
-				create-holes 1 [ setxy ( ([pxcor] of turtle 0) - 2 ) ( ([pycor] of turtle 0) - 1 ) ]
+				create-holes 1 [ setxy (([pxcor] of turtle 0) - 2) ( ([pycor] of turtle 0) + 1 ) ]
+				create-holes 1 [ setxy (([pxcor] of turtle 0) - 1) ( ([pycor] of turtle 0) + 1 ) ]
+				create-tiles 1 [ setxy ([pxcor] of turtle 0) (([pycor] of turtle 0) + 1) ]
+				create-chrest-turtles 1 [ setxy ([pxcor] of turtle 0) (([pycor] of turtle 0) + 2) ]
+				create-tiles 1 [ setxy (([pxcor] of turtle 0) + 1) ([pycor] of turtle 0) ]
+				create-tiles 1 [ setxy (([pxcor] of turtle 0) + 2) ([pycor] of turtle 0) ]
+				create-tiles 1 [ setxy ([pxcor] of turtle 0) (([pycor] of turtle 0) - 1) ]
+				create-chrest-turtles 1 [ setxy ([pxcor] of turtle 0) (([pycor] of turtle 0) - 2) ]
+				create-chrest-turtles 1 [ setxy (([pxcor] of turtle 0) - 1) ( ([pycor] of turtle 0) - 1 ) ]
+				create-chrest-turtles 1 [ setxy (([pxcor] of turtle 0) - 2) ( ([pycor] of turtle 0) - 1 ) ]
 
-				set initial-visual-spatial-field-state (list
-					(chrest:create-item-square-pattern (empty) (-2) (-2))
-					(chrest:create-item-square-pattern (empty) (-1) (-2))
-					(chrest:create-item-square-pattern (empty) (0) (-2))
-					(chrest:create-item-square-pattern (empty) (1) (-2))
-					(chrest:create-item-square-pattern (empty) (2) (-2))
-					(chrest:create-item-square-pattern (hole-token) (-2) (-1))
-					(chrest:create-item-square-pattern (opponent-token) (-1) (-1))
-					(chrest:create-item-square-pattern (hole-token) (0) (-1))
-					(chrest:create-item-square-pattern (empty) (1) (-1))
-					(chrest:create-item-square-pattern (empty) (2) (-1))
-					(chrest:create-item-square-pattern (empty) (-2) (0))
-					(chrest:create-item-square-pattern (empty) (-1) (0))
-					(chrest:create-item-square-pattern (chrest:get-self-identifier-in-scene) (0) (0))
-					(chrest:create-item-square-pattern (hole-token) (1) (0))
-					(chrest:create-item-square-pattern (empty) (2) (0))
-					(chrest:create-item-square-pattern (hole-token) (-2) (1))
-					(chrest:create-item-square-pattern (opponent-token) (-1) (1))
-					(chrest:create-item-square-pattern (hole-token) (0) (1))
-					(chrest:create-item-square-pattern (empty) (1) (1))
-					(chrest:create-item-square-pattern (empty) (2) (1))
-					(chrest:create-item-square-pattern (empty) (-2) (2))
-					(chrest:create-item-square-pattern (empty) (-1) (2))
-					(chrest:create-item-square-pattern (empty) (0) (2))
-					(chrest:create-item-square-pattern (empty) (1) (2))
-					(chrest:create-item-square-pattern (empty) (2) (2))
-				)
-
-				set valid-intermediate-visual-spatial-fields (list
-					( list
-						(chrest:create-item-square-pattern (empty) (-1) (-2))
-						(chrest:create-item-square-pattern (empty) (0) (-2))
-						(chrest:create-item-square-pattern (empty) (1) (-2))
-						(chrest:create-item-square-pattern (empty) (2) (-2))
-						(chrest:create-item-square-pattern (empty) (3) (-2))
-						(chrest:create-item-square-pattern (hole-token) (-1) (-1))
-						(chrest:create-item-square-pattern (opponent-token) (0) (-1))
-						(chrest:create-item-square-pattern (hole-token) (1) (-1))
-						(chrest:create-item-square-pattern (empty) (2) (-1))
-						(chrest:create-item-square-pattern (empty) (3) (-1))
-						(chrest:create-item-square-pattern (empty) (-1) (0))
-						(chrest:create-item-square-pattern (chrest:get-self-identifier-in-scene) (0) (0))
-						(chrest:create-item-square-pattern (empty) (1) (0))
-						(chrest:create-item-square-pattern (hole-token) (2) (0))
-						(chrest:create-item-square-pattern (empty) (3) (0))
-						(chrest:create-item-square-pattern (hole-token) (-1) (1))
-						(chrest:create-item-square-pattern (opponent-token) (0) (1))
-						(chrest:create-item-square-pattern (hole-token) (1) (1))
-						(chrest:create-item-square-pattern (empty) (2) (1))
-						(chrest:create-item-square-pattern (empty) (3) (1))
-						(chrest:create-item-square-pattern (empty) (-1) (2))
-						(chrest:create-item-square-pattern (empty) (0) (2))
-						(chrest:create-item-square-pattern (empty) (1) (2))
-						(chrest:create-item-square-pattern (empty) (2) (2))
-						(chrest:create-item-square-pattern (empty) (3) (2))
+				set expected-initial-visual-spatial-field (list
+					(list
+						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list ("10") (opponent-token)))
+						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list ("1") (hole-token)))
+						(list (list (empty-patch-token) (empty-patch-token)))
+					)
+					(list
+						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list ("9") (opponent-token)))
+						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list ("2") (hole-token)))
+						(list (list (empty-patch-token) (empty-patch-token)))
+					)
+					(list
+						(list (list ("8") (opponent-token)))
+						(list (list ("7") (tile-token)))
+						(list (list ("0") (self-token)))
+						(list (list ("3") (tile-token)))
+						(list (list ("4") (opponent-token)))
 					)
 					( list
-						(chrest:create-item-square-pattern (empty) (0) (-2))
-						(chrest:create-item-square-pattern (empty) (1) (-2))
-						(chrest:create-item-square-pattern (empty) (2) (-2))
-						(chrest:create-item-square-pattern (empty) (3) (-2))
-						(chrest:create-item-square-pattern (empty) (4) (-2))
-						(chrest:create-item-square-pattern (hole-token) (0) (-1))
-						(chrest:create-item-square-pattern (opponent-token) (1) (-1))
-						(chrest:create-item-square-pattern (hole-token) (2) (-1))
-						(chrest:create-item-square-pattern (empty) (3) (-1))
-						(chrest:create-item-square-pattern (empty) (4) (-1))
-						(chrest:create-item-square-pattern (chrest:get-self-identifier-in-scene) (0) (0))
-						(chrest:create-item-square-pattern (empty) (1) (0))
-						(chrest:create-item-square-pattern (empty) (2) (0))
-						(chrest:create-item-square-pattern (hole-token) (3) (0))
-						(chrest:create-item-square-pattern (empty) (4) (0))
-						(chrest:create-item-square-pattern (hole-token) (0) (1))
-						(chrest:create-item-square-pattern (opponent-token) (1) (1))
-						(chrest:create-item-square-pattern (hole-token) (2) (1))
-						(chrest:create-item-square-pattern (empty) (3) (1))
-						(chrest:create-item-square-pattern (empty) (4) (1))
-						(chrest:create-item-square-pattern (empty) (0) (2))
-						(chrest:create-item-square-pattern (empty) (1) (2))
-						(chrest:create-item-square-pattern (empty) (2) (2))
-						(chrest:create-item-square-pattern (empty) (3) (2))
-						(chrest:create-item-square-pattern (empty) (4) (2))
+						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list ("5") (tile-token)))
+						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list (empty-patch-token) (empty-patch-token)))
+					)
+					( list
+						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list ("6") (tile-token)))
+						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list (empty-patch-token) (empty-patch-token)))
 					)
 				)
 
-				set expected-visual-spatial-field-state-after-plan-generation-ends (list
-					(chrest:create-item-square-pattern (empty) (0) (0))
-					(chrest:create-item-square-pattern (empty) (1) (0))
-					(chrest:create-item-square-pattern (empty) (2) (0))
-					(chrest:create-item-square-pattern (empty) (3) (0))
-					(chrest:create-item-square-pattern (empty) (4) (0))
-					(chrest:create-item-square-pattern (hole-token) (0) (1))
-					(chrest:create-item-square-pattern (opponent-token) (1) (1))
-					(chrest:create-item-square-pattern (hole-token) (2) (1))
-					(chrest:create-item-square-pattern (empty) (3) (1))
-					(chrest:create-item-square-pattern (empty) (4) (1))
-					(chrest:create-item-square-pattern (empty) (0) (2))
-					(chrest:create-item-square-pattern (empty) (1) (2))
-					(chrest:create-item-square-pattern (empty) (2) (2))
-					(chrest:create-item-square-pattern (hole-token) (3) (2))
-					(chrest:create-item-square-pattern (empty) (4) (2))
-					(chrest:create-item-square-pattern (hole-token) (0) (3))
-					(chrest:create-item-square-pattern (opponent-token) (1) (3))
-					(chrest:create-item-square-pattern (hole-token) (2) (3))
-					(chrest:create-item-square-pattern (empty) (3) (3))
-					(chrest:create-item-square-pattern (empty) (4) (3))
-					(chrest:create-item-square-pattern (empty) (0) (4))
-					(chrest:create-item-square-pattern (empty) (1) (4))
-					(chrest:create-item-square-pattern (empty) (2) (4))
-					(chrest:create-item-square-pattern (empty) (3) (4))
-					(chrest:create-item-square-pattern (empty) (4) (4))
+				set expected-final-visual-spatial-field (list
+					(list
+						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list ("10") (opponent-token)))
+						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list ("1") (hole-token)))
+						(list (list (empty-patch-token) (empty-patch-token)))
+					)
+						(list
+						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list ("9") (opponent-token)))
+						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list ("2") (hole-token)))
+						(list (list (empty-patch-token) (empty-patch-token)))
+					)
+					(list
+						(list (list ("8") (opponent-token)))
+						(list (list ("7") (tile-token)))
+						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list ("3") (tile-token)))
+						(list (list ("4") (opponent-token)))
+					)
+					( list
+						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list ("5") (tile-token)))
+						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list (empty-patch-token) (empty-patch-token)))
+					)
+					( list
+						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list ("6") (tile-token)))
+						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list (empty-patch-token) (empty-patch-token)))
+					)
 				)
 			]
 
-			set initial-visual-spatial-field-state ( chrest:get-list-pattern-as-string (chrest:create-list-pattern ("visual") (initial-visual-spatial-field-state)) )
-
-			set expected-visual-spatial-field-state-after-plan-generation-ends (
-				chrest:get-list-pattern-as-string (
-					chrest:create-list-pattern ("visual") (expected-visual-spatial-field-state-after-plan-generation-ends)
-				)
-			)
-
-			set valid-visual-spatial-fields ( map ([ chrest:get-list-pattern-as-string (chrest:create-list-pattern ("visual") (?)) ]) (valid-intermediate-visual-spatial-fields) )
-			set valid-visual-spatial-fields (lput (initial-visual-spatial-field-state) (valid-visual-spatial-fields)) 
-			set valid-visual-spatial-fields (lput (expected-visual-spatial-field-state-after-plan-generation-ends) (valid-visual-spatial-fields)) 
-
 			ask turtle 0 [
 
-				generate-plan
+				;======================================;
+				;== FIRST "GENERATE-PLAN" INVOCATION ==;
+				;======================================;
 
-				let total-number-patches-visible ( ((sight-radius * 2) + 1) ^ 2 )
-				let number-non-empty-patches (count turtles)
-				let number-empty-patches (total-number-patches-visible - number-non-empty-patches)
-				let expected-time-attention-free 
-				(
-					minds-eye-access-time +
-					(minds-eye-empty-square-placement-time * number-empty-patches) +
-					(minds-eye-object-placement-time * number-non-empty-patches)
-				)
-				check-equal (chrest:get-attention-clock) (expected-time-attention-free)
+				generate-plan
 
 				;Increment domain time so that the next invocation of "generate-plan" will not be blocked due to the CHREST turtle's attention
 				;not being free.
 				set current-training-time (chrest:get-attention-clock)
-				
-				let current-visual-spatial-field ( 
-					chrest:get-scene-contents (
-						chrest:get-minds-eye-scene (report-current-time)
-					) 
-					(false) 
-				)
 
-				let reversal-count (0)
-				let number-minds-eye-moves-applied (0)
-				let reverse? false
-				let plan-length (0)
+				let expected-deliberation-time 0
+				let expected-plan-length 0
+				let expected-current-search-iteration 0
+				let expected-who-of-tile-last-pushed-in-plan ""
 
-				while[not empty? (get-locations-of-object-in-scene (chrest:get-self-identifier-in-scene) (current-visual-spatial-field))][
+				;=============================================;
+				;== INTERMEDIATE "GENERATE-PLAN INVOCATION" ==;
+				;=============================================;
+				let test-description (" during the planning cycle")
+
+				while[ ( chrest:VisualSpatialField.get-as-netlogo-list (report-current-time) (false) ) != expected-final-visual-spatial-field ][
+
+					let visual-spatial-field-state-before-plan-generation ( chrest:VisualSpatialField.get-as-netlogo-list (report-current-time) (false) )
 
 					generate-plan
 
-					check-equal (chrest:get-attention-clock) (report-current-time + minds-eye-access-time + minds-eye-object-movement-time )
+					let visual-spatial-field-state-after-plan-generation ( chrest:VisualSpatialField.get-as-netlogo-list (chrest:get-attention-clock) (false) )
 
-					;Increment domain time so that the next invocation of "generate-plan" will not be blocked due to the CHREST turtle's attention
-					;not being free.
-				 	set current-training-time (chrest:get-attention-clock)
+					if(visual-spatial-field-state-before-plan-generation != visual-spatial-field-state-after-plan-generation)[
+						
+						;Reversal didn't occur.
+						set expected-plan-length (expected-plan-length + 1)
+					]
 
-				 	;Determine if a mind's eye move reversal will be performed next or if one was just performed and set relevant counters so that
-				 	;deliberation time can be calculated when plan generation ends.
-					set number-minds-eye-moves-applied (number-minds-eye-moves-applied + 1)
-				 	set current-visual-spatial-field ( 
-				 		chrest:get-scene-contents (
-			 				chrest:get-minds-eye-scene (report-current-time)
-			 			) 
-			 			(false) 
-				 	)
+					set expected-current-search-iteration (expected-current-search-iteration + 1)
+					set expected-deliberation-time (expected-deliberation-time + time-taken-to-problem-solve)
 
-				 	ifelse( not member? (chrest:get-list-pattern-as-string (current-visual-spatial-field)) (valid-visual-spatial-fields) )[
+					check-equal (generate-plan?) (true) (word "when checking 'generate-plan?'" test-description)
+					check-equal (length(plan)) (expected-plan-length) (word "when checking plan length" test-description)
+					check-equal (time-spent-deliberating-on-plan) (expected-deliberation-time) (word "when checking 'time-spent-deliberating-on-plan'" test-description)
+					check-equal (deliberation-finished-time) (0) (word "when checking 'deliberation-finished-time'" test-description)
+					check-equal (who-of-tile-last-pushed-in-plan) (expected-who-of-tile-last-pushed-in-plan) (word "when checking 'who-of-tile-last-pushed-in-plan'" test-description)
+					check-equal (current-search-iteration) (expected-current-search-iteration) (word "when checking 'current-search-iteration'" test-description)
 
-				 		;Move resulted in invalid state so the next move will be a reversal.
-				 		set reverse? true
-				 	]
-				 	[
-
-				 		;Move resulted in valid state but this may be because of a reversal.  If it was, increment reversal counter by 1 and set
-				 		;reverse? to be true since the next action will not be a reversal.  If it wasn't, the action will be added to the plan
-				 		;so increment the relevant counter by 1.
-				 		ifelse(reverse?)[
-				 			set reversal-count (reversal-count + 1)
-				 			set reverse? (false)
-				 		]
-				 		[
-				 			set plan-length (plan-length + 1)
-				 		]
-				 	]
+					set current-training-time (chrest:get-attention-clock)
 				]
 
-				let number-non-reversed-moves (number-minds-eye-moves-applied - reversal-count)
+				;======================================;
+				;== FINAL "GENERATE-PLAN" INVOCATION ==;
+				;======================================;
 
-				let visual-spatial-field-state-after-plan-generation-ends (
-					chrest:get-list-pattern-as-string ( 
-						chrest:get-scene-contents (
-							chrest:get-minds-eye-scene (report-current-time)
-						) 
-						(false)
-					) 
-				)
-
-				check-equal (generate-plan?) (true)
-				check-equal (time-spent-deliberating-on-plan) ( number-non-reversed-moves * time-taken-to-problem-solve )
-				check-equal (length (plan)) (plan-length)
-				check-equal (deliberation-finished-time) (0)
-				check-equal (visual-spatial-field-state-after-plan-generation-ends) (expected-visual-spatial-field-state-after-plan-generation-ends)
-
-				let time-attention-free-before-final-generate-plan-invocation (chrest:get-attention-clock)
 				generate-plan
-				let visual-spatial-field-state-after-final-generate-plan-invocation (
-					chrest:get-list-pattern-as-string ( 
-						chrest:get-scene-contents (
-							chrest:get-minds-eye-scene (report-current-time)
-						) 
-						(false)
-					) 
-				)
+				
+				set test-description (" after invoking 'generate-plan' when the end-plan condition has been met")
 
-				check-equal (chrest:get-attention-clock) (time-attention-free-before-final-generate-plan-invocation)
-				check-equal (generate-plan?) (false)
-				check-equal (time-spent-deliberating-on-plan) (0)
-				check-equal (length (plan)) (plan-length)
-				check-equal (deliberation-finished-time) (report-current-time + (number-non-reversed-moves * time-taken-to-problem-solve))
-				check-equal (visual-spatial-field-state-after-final-generate-plan-invocation) (expected-visual-spatial-field-state-after-plan-generation-ends)
+				check-equal (chrest:get-attention-clock) (report-current-time) (word "when checking CHREST's attention clock" test-description)
+				check-equal (chrest:VisualSpatialField.get-as-netlogo-list (chrest:get-attention-clock) (false)) (expected-final-visual-spatial-field) (word "when checking the visual-spatial field state" test-description)
+				check-equal (generate-plan?) (false) (word "when checking 'generate-plan?'" test-description)
+				check-equal (length (plan)) (expected-plan-length) (word "when checking 'plan' length" test-description)
+				check-equal (time-spent-deliberating-on-plan) (0) (word "when checking 'time-spent-deliberating-on-plan'" test-description)
+				check-equal (deliberation-finished-time) (report-current-time + expected-deliberation-time) (word "when checking 'deliberation-finished-time'" test-description)
+				check-equal (who-of-tile-last-pushed-in-plan) ("") (word "when checking 'who-of-tile-last-pushed-in-plan'" test-description)
+				check-equal (current-search-iteration) (0) (word "when checking 'current-search-iteration'" test-description)
 			]
 
 			reset (true)

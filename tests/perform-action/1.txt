@@ -29,7 +29,7 @@
 			set episodic-memory ([])
 			set familiarisation-time (2000)
 			set max-length-of-episodic-memory (30000)
-			set minds-eye-object-movement-time (25)
+			set visual-spatial-field-object-movement-time (25)
 			set number-fixations (4)
 			set play-time (14400000.0)
 			set reinforce-actions? (true)

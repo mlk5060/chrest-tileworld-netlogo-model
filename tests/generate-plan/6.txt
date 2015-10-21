@@ -1,132 +1,207 @@
-;Given the following situation:
+;==============================
+;========== TEST AIM ==========
+;==============================
 ;
-; - A turtle continues to generate a plan given a scene where it can only move west from its initial location and then west or east afterwards
-;   since there are immoveable tiles blocking the tile to the north and south (turtle is also blocked to the east by immovable tiles from
-;   its initial location) forming a channel.
+; 1) To determine if plan generation correctly proceeds and ends when the number of search iterations exceeds the maximum number specified.
+; 2) To determine if variables are reset correctly following this end condition being recognised.
 ;
-;This test ensures that the following conditions are true:
+;======================================
+;========== TEST DESCRIPTION ==========
+;======================================
 ;
-; - The 'generate-plan' turtle variable is set to 'false' since an end plan generation condition has been met (due to the configuration
-;   of tiles, the turtle will eventually no longer be able to see itself in its mind's eye).
-; - The length of the 'plan' turtle variable is equal to the number of 'generate-plan' calls made that result in an action being added
-;   to 'plan'.  When the turtle can no longer be seen in its mind's eye, the following call to 'generate-plan' should not result in an 
-;   action being added to 'plan'.
-; - The 'time-spent-deliberating-on-plan' turtle variable is set to 0 since an end plan condition has been met and this value will be reset
-;   for the next plan generation cycle.
-; - The 'deliberation-finished-time' is set to the sum of the current time and the value of 'time-taken-to-problem-solve' multiplied by the 
-;   number of 'generate-plan' calls made that result in an action being added to 'plan'.  This is because an end plan generation condition 
-;   has been met, multiple 'generate-plan' calls have been made that result in deliberation occurring and the turtle can not take advantage 
-;   of pattern-recognition? in its deliberation process since it hasn't committed any patterns to its LTM.
-; - The mind's eye of the turtle no longer exists since an end plan generation condition has been met.
-; - Following the final 'generate-plan' call that results in an action being added to 'plan', the mind's eye content of the turtle is as 
-;   expected (all tiles present but calling turtle not present).
-
-<run>create-chrest-turtles 1</run>
-
-reward-value
-1.0
-
-action-performance-time
-0:10000
-
-action-selection-procedure
-0:roulette-selection
-
-add-link-time
-0:10000
-
-discount-rate
-0:0.5
-
-discrimination-time
-0:10000
-
-familiarisation-time
-0:2000
-
-minds-eye-access-time
-0:250
-
-minds-eye-lifespan
-0:10000
-
-minds-eye-object-movement-time
-0:25
-
-minds-eye-object-placement-time
-0:50
-
-pattern-recognition?
-0:true
-
-play-time
-0:14400000.0
-
-problem-solving?
-0:true
-
-reinforce-actions?
-0:true
-
-reinforce-problem-solving?
-0:true
-
-reinforcement-learning-theory
-0:profit_sharing_with_discount_rate
-
-sight-radius
-0:2
-
-time-taken-to-use-pattern-recognition
-0:200
-
-time-taken-to-problem-solve
-0:1000
-
-
+; 1) A CHREST turtle repeatedly invokes "generate-plan" when its attention is free and it is located in an environment where it is completely
+;    surrounded by immoveable objects.  Due to the mechanism of the "deliberate" procedure that is used when plan generation actually occurs, 
+;    the CHREST turtle will continue to plan, ad infinitum, unless plan generation is terminated by a check performed on the number of search
+;    iterations performed.
+; 2) After the CHREST turtle has exceeded the maximum number of search iterations and when its attention is free, the "generate-plan" procedure 
+;    is invoked again.
+;
+; Since planned moves are determined and applied in the CHREST turtle's visual-spatial field by other procedures that are called by "generate-plan", 
+; this test makes no attempt to determine if such procedures operate correctly.  Note also that it is not the responsibility of this test to determine 
+; if invalid visual-spatial field states are identified as being invalid.  This is left to the tests for the procedure that handles this functionality.
+;
+; The only valid visual-spatial field state is depicted visually below.
+;
+; LEGEND
+; ======
+;
+; - H: hole
+; - O: opponent
+; - T: tile
+; - S: self
+;        
+; |------|------|------|------|------|
+; |      |      | 2(T) |      |      |
+; |------|------|------|------|------|
+; |      |      | 1(T) |      |      |
+; |------|------|------|------|------|
+; |      | 5(H) | 0(S) | 3(H) |      |
+; |------|------|------|------|------|
+; |      |      | 4(O) |      |      |
+; |------|------|------|------|------|
+; |      |      |      |      |      |
+; |------|------|------|------|------|
+;                                        
+;=====================================
+;========== TESTS PERFORMED ==========
+;=====================================
+;
+; Whilst plan generation is occuring, this test checks the following variables:
+; 
+; - "generate-plan?": this should remain set to true until the final visual-spatial field state is generated.
+; - "plan" length: should always be set to 0 since any visual-spatial move sequence generated and performed in the visual-spatial field will result
+;   in an invalid visual-spatial field state and will be reversed.  Consequently, the action used to generate the visual-spatial move sequence 
+;   is not added to the turtle's plan.
+; - "time-spent-deliberating-on-plan": should increase by the value specified for the "time-taken-to-problem-solve" turtle variable after every 
+;   "generate-plan" invocation (the CHREST turtle never learns during this test so deliberation using pattern-recognition isn't possible).
+; - "who-of-tile-last-pushed-in-plan": should always be set to "" since moving any tile in the visual-spatial field will result in an invalid 
+;   visual-spatial field state and thus a reversal of the previous visual-spatial object move sequence (this variable is always reset to "" if a 
+;   visual-spatial object move sequence is reversed.
+; - "current-search-iteration": should increase by 1 for every "generate-plan" invocation after the initial one that constructs the visual-spatial field.
+;
+; After the maximum search iteration has been exceeded and a subsequent "generate-plan" invocation, the following variables are checked:
+;
+; - CHREST attention clock: should remain unchanged before and after the final "generate-plan" invocation is made since an "end-plan" condition should
+;   be detected and therefore no visual-spatial field interaction should occur.
+; - Visual-spatial field state: should remain unchanged (equal to the initial expected state) since an "end-plan" condition should be detected and therefore 
+;   no visual-spatial field interaction should occur.
+; - "generate-plan?": this should be set to 'false' since an "end plan" condition has been met.
+; - "plan" length: should remain unchanged at 0 since an "end-plan" condition should be detected.
+; - "time-spent-deliberating-on-plan": should be reset to 0 for the next planning cycle.
+; - "deliberation-finished-time": should be set to the current domain time plus the value of the "time-spent-deliberating-on-plan" before it was
+;   reset to 0.
+; - "who-of-tile-last-pushed-in-plan": should be set to "" since this value needs to be reset for the next planning cycle.
+; - "current-search-iteration": should be set to 0 since this value needs to be reset for the next planning cycle.
+;
 <test>
-	create-tiles 1 [ setxy ( ([pxcor] of turtle 0) ) ( ([pycor] of turtle 0) + 1 ) ]
-	create-tiles 1 [ setxy ( ([pxcor] of turtle 0) ) ( ([pycor] of turtle 0) + 2 ) ]
-	create-tiles 1 [ setxy ( ([pxcor] of turtle 0) + 1 ) ( ([pycor] of turtle 0) ) ]
-	create-tiles 1 [ setxy ( ([pxcor] of turtle 0) + 2 ) ( ([pycor] of turtle 0) ) ]
-	create-tiles 1 [ setxy ( ([pxcor] of turtle 0) ) ( ([pycor] of turtle 0) - 1 ) ]
-	create-tiles 1 [ setxy ( ([pxcor] of turtle 0) ) ( ([pycor] of turtle 0) - 2 ) ]
+		repeat 50[
+			create-chrest-turtles 1 [
+				set action-performance-time 10000
+				set action-selection-procedure "roulette-selection"
+				set add-link-time 10000
+				set discount-rate 0.5
+				set discrimination-time 10000
+				set familiarisation-time 2000
+				set max-search-iteration 5
+				set number-fixations 4
+				set pattern-recognition? true
+				set play-time 14400000.0
+				set reinforce-actions? true
+				set reinforce-problem-solving? true
+				set reinforcement-learning-theory "profit_sharing_with_discount_rate" 
+				set sight-radius 2
+				set time-taken-to-use-pattern-recognition 200
+				set time-taken-to-problem-solve 1000
+				set visual-spatial-field-access-time 50
+				set visual-spatial-field-empty-square-placement-time 5
+				set visual-spatial-field-object-movement-time 25
+				set visual-spatial-field-object-placement-time 10
+				set visual-spatial-field-recognised-object-lifespan 100000
+				set visual-spatial-field-unrecognised-object-lifespan 90000
+			]
+			setup (true)
 
-	create-tiles 1 [ setxy ( ([pxcor] of turtle 0) - 1 ) ( ([pycor] of turtle 0) + 1 ) ]
-	create-tiles 1 [ setxy ( ([pxcor] of turtle 0) - 1 ) ( ([pycor] of turtle 0) + 2 ) ]
-	create-tiles 1 [ setxy ( ([pxcor] of turtle 0) - 1 ) ( ([pycor] of turtle 0) - 1 ) ]
-	create-tiles 1 [ setxy ( ([pxcor] of turtle 0) - 1 ) ( ([pycor] of turtle 0) - 2 ) ]
-	create-tiles 1 [ setxy ( ([pxcor] of turtle 0) - 2 ) ( ([pycor] of turtle 0) + 1 ) ]
-	create-tiles 1 [ setxy ( ([pxcor] of turtle 0) - 2 ) ( ([pycor] of turtle 0) + 2 ) ]
-	create-tiles 1 [ setxy ( ([pxcor] of turtle 0) - 2 ) ( ([pycor] of turtle 0) - 1 ) ]
-	create-tiles 1 [ setxy ( ([pxcor] of turtle 0) - 2 ) ( ([pycor] of turtle 0) - 2 ) ]
+			let expected-visual-spatial-field []
+			
+			create-tiles 1 [ setxy ([pxcor] of turtle 0) (([pycor] of turtle 0) + 1) ]
+			create-tiles 1 [ setxy ([pxcor] of turtle 0) (([pycor] of turtle 0) + 2) ]
+			create-holes 1 [ setxy (([pxcor] of turtle 0) + 1) ([pycor] of turtle 0) ]
+			create-chrest-turtles 1 [ setxy ([pxcor] of turtle 0) (([pycor] of turtle 0) - 1) ]
+			create-holes 1 [ setxy (([pxcor] of turtle 0) - 1) ([pycor] of turtle 0) ]
 
-	ask turtle 0 [
-		generate-plan
-	 	set current-training-time (current-training-time + minds-eye-object-placement-time * 15)
+			set expected-visual-spatial-field (list
+				(list
+					(list (list (empty-patch-token) (empty-patch-token)))
+					(list (list (empty-patch-token) (empty-patch-token)))
+					(list (list (empty-patch-token) (empty-patch-token)))
+					(list (list (empty-patch-token) (empty-patch-token)))
+					(list (list (empty-patch-token) (empty-patch-token)))
+				)
+				(list
+					(list (list (empty-patch-token) (empty-patch-token)))
+					(list (list (empty-patch-token) (empty-patch-token)))
+					(list (list ("5") (hole-token)))
+					(list (list (empty-patch-token) (empty-patch-token)))
+					(list (list (empty-patch-token) (empty-patch-token)))
+				)
+				(list
+					(list (list (empty-patch-token) (empty-patch-token)))
+					(list (list ("4") (opponent-token)))
+					(list (list ("0") (self-token)))
+					(list (list ("1") (tile-token)))
+					(list (list ("2") (tile-token)))
+				)
+				( list
+					(list (list (empty-patch-token) (empty-patch-token)))
+					(list (list (empty-patch-token) (empty-patch-token)))
+					(list (list ("3") (hole-token)))
+					(list (list (empty-patch-token) (empty-patch-token)))
+					(list (list (empty-patch-token) (empty-patch-token)))
+				)
+				( list
+					(list (list (empty-patch-token) (empty-patch-token)))
+					(list (list (empty-patch-token) (empty-patch-token)))
+					(list (list (empty-patch-token) (empty-patch-token)))
+					(list (list (empty-patch-token) (empty-patch-token)))
+					(list (list (empty-patch-token) (empty-patch-token)))
+				)
+			)
 
-	 	let number-generate-plan-calls-resulting-in-action 0
-	 	while[ ( get-location-of-self-in-scene(chrest:get-all-minds-eye-content(report-current-time)) ) != "" ][
-	 		generate-plan
-	 		set number-generate-plan-calls-resulting-in-action (number-generate-plan-calls-resulting-in-action + 1)
-			set current-training-time (current-training-time + minds-eye-access-time + minds-eye-object-movement-time)
-	 	]
+			ask turtle 0 [
 
-	 	let expected-minds-eye-content (list
-			(word tile-token ";-2;-2") (word tile-token ";-2;-1") (";-2;0") (word tile-token ";-2;1") (word tile-token ";-2;2")
-			(word tile-token ";-1;-2") (word tile-token ";-1;-1") (";-1;0") (word tile-token ";-1;1") (word tile-token ";-1;2")
-			(word tile-token ";0;-2") (word tile-token ";0;-1") (";0;0") (word tile-token ";0;1") (word tile-token ";0;2")
-			(";1;-2") (";1;-1") (word tile-token ";1;0") (";1;1") (";1;2")
-			(";2;-2") (";2;-1") (word tile-token ";2;0") (";2;1") (";2;2")
-		)
-		check-equal (chrest:get-all-minds-eye-content (report-current-time )) (expected-minds-eye-content)
+				;======================================;
+				;== FIRST "GENERATE-PLAN" INVOCATION ==;
+				;======================================;
 
-	 	generate-plan
+				generate-plan
 
-		check-equal (generate-plan?) (false)
-		check-equal (length (plan)) (number-generate-plan-calls-resulting-in-action)
-		check-equal (time-spent-deliberating-on-plan) (0)
-		check-equal (deliberation-finished-time) (report-current-time + (time-taken-to-problem-solve * number-generate-plan-calls-resulting-in-action))
-		check-equal (chrest:minds-eye-exist? (report-current-time)) (false)
-	]
+				;Increment domain time so that the next invocation of "generate-plan" will not be blocked due to the CHREST turtle's attention
+				;not being free.
+				set current-training-time (chrest:get-attention-clock)
+
+				let expected-deliberation-time 0
+				let expected-current-search-iteration 0
+
+				;=============================================;
+				;== INTERMEDIATE "GENERATE-PLAN INVOCATION" ==;
+				;=============================================;
+				let test-description (" during the planning cycle")
+
+				while[ expected-current-search-iteration <= max-search-iteration ][
+
+					generate-plan
+
+					set expected-current-search-iteration (expected-current-search-iteration + 1)
+					set expected-deliberation-time (expected-deliberation-time + time-taken-to-problem-solve)
+
+					check-equal (generate-plan?) (true) (word "when checking 'generate-plan?'" test-description)
+					check-equal (length(plan)) (0) (word "when checking plan length" test-description)
+					check-equal (time-spent-deliberating-on-plan) (expected-deliberation-time) (word "when checking 'time-spent-deliberating-on-plan'" test-description)
+					check-equal (deliberation-finished-time) (0) (word "when checking 'deliberation-finished-time'" test-description)
+					check-equal (who-of-tile-last-pushed-in-plan) ("") (word "when checking 'who-of-tile-last-pushed-in-plan'" test-description)
+					check-equal (current-search-iteration) (expected-current-search-iteration) (word "when checking 'current-search-iteration'" test-description)
+
+					set current-training-time (chrest:get-attention-clock)
+				]
+
+				;======================================;
+				;== FINAL "GENERATE-PLAN" INVOCATION ==;
+				;======================================;
+
+				generate-plan
+				
+				set test-description (" after invoking 'generate-plan' when the end-plan condition has been met")
+
+				check-equal (chrest:get-attention-clock) (report-current-time) (word "when checking CHREST's attention clock" test-description)
+				check-equal (chrest:VisualSpatialField.get-as-netlogo-list (chrest:get-attention-clock) (false)) (expected-visual-spatial-field) (word "when checking the visual-spatial field state" test-description)
+				check-equal (generate-plan?) (false) (word "when checking 'generate-plan?'" test-description)
+				check-equal (length (plan)) (0) (word "when checking 'plan' length" test-description)
+				check-equal (time-spent-deliberating-on-plan) (0) (word "when checking 'time-spent-deliberating-on-plan'" test-description)
+				check-equal (deliberation-finished-time) (report-current-time + expected-deliberation-time) (word "when checking 'deliberation-finished-time'" test-description)
+				check-equal (who-of-tile-last-pushed-in-plan) ("") (word "when checking 'who-of-tile-last-pushed-in-plan'" test-description)
+				check-equal (current-search-iteration) (0) (word "when checking 'current-search-iteration'" test-description)
+			]
+
+			reset (true)
+		]
 </test>

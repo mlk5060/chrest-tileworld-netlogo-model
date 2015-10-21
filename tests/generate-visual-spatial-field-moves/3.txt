@@ -1,0 +1,95 @@
+;Tests that the correct mind's eye moves are generated when a CHREST turtle intends 
+;to move its visual-spatial avatar directly south by 1 square from its initial location 
+;in a 5 * 5 visual-spatial scene.
+;
+;In following ASCII visualitions of the visual-spatial scene used in the test, numbers 
+;are coordinates of the squares relative to the scene creator whose avatar is denoted
+;by the string "SELF".  All other squares in the visual-spatial scene are empty (not 
+;blind).
+;
+;Note that the values compared in the test are string representations of CHREST-compatible 
+;"ItemSquarePattern" instances.  This ensures that, if the test fails, the user can actually
+;tell what differs between the variables compared in the test.  Otherwise, Netlogo will simply 
+;output the class name of the variables, i.e. "ItemSquarePattern" (which isn't very informative).
+;
+; =========================
+; === SCENE START STATE ===
+; =========================
+;
+;    |------|------|------|------|------|
+; 2  |      |      |      |      |      |
+;    |------|------|------|------|------|
+; 1  |      |      |      |      |      |
+;    |------|------|------|------|------|
+; 0  |      |      | SELF |      |      |
+;    |------|------|------|------|------|
+; -1 |      |      |      |      |      |
+;    |------|------|------|------|------|
+; -2 |      |      |      |      |      |
+;    |------|------|------|------|------|
+;       -2     -1     0       1      2 
+;
+; =======================
+; === SCENE END STATE ===
+; =======================
+;
+;    |------|------|------|------|------|
+; 2  |      |      |      |      |      |
+;    |------|------|------|------|------|
+; 1  |      |      |      |      |      |
+;    |------|------|------|------|------|
+; 0  |      |      |      |      |      |
+;    |------|------|------|------|------|
+; -1 |      |      | SELF |      |      |
+;    |------|------|------|------|------|
+; -2 |      |      |      |      |      |
+;    |------|------|------|------|------|
+;       -2     -1     0       1      2 
+
+<test>
+	create-chrest-turtles 1 [
+
+		let visual-spatial-scene []
+		let xcoord (-2)
+		let ycoord (-2)
+
+		while[ycoord <= 2][
+			while[xcoord <= 2][
+				let item-identifier (chrest:get-empty-square-identifier-in-scene)
+
+				if(xcoord = 0 and ycoord = 0)[
+					set item-identifier (chrest:get-self-identifier-in-scene)
+				]
+				
+				set visual-spatial-scene (lput (chrest:create-item-square-pattern (item-identifier) (xcoord) (ycoord)) (visual-spatial-scene))
+				set xcoord (xcoord + 1)
+			]
+
+			set xcoord (-2)
+			set ycoord (ycoord + 1)
+		]
+
+		set visual-spatial-scene (chrest:create-list-pattern ("visual") (visual-spatial-scene))
+		set visual-spatial-scene (chrest:create-scene (visual-spatial-scene) (""))
+
+		foreach(possible-actions)[
+			if( (?) != push-tile-token )[
+				let move-south (chrest:create-item-square-pattern (?) (180) (1))
+
+				let expected (
+					(list 
+						(list 
+							( chrest:get-item-square-pattern-as-string (chrest:create-item-square-pattern (self-token) (0) (0)) )
+							( chrest:get-item-square-pattern-as-string (chrest:create-item-square-pattern (self-token) (0) (-1)) )
+						)
+					)
+				)
+
+				let computed (generate-minds-eye-moves (visual-spatial-scene) (move-south))
+				set computed (map ([map ([chrest:get-item-square-pattern-as-string (?)]) (?)]) (computed))
+
+				check-equal (computed) (expected)
+			]
+		]
+	]
+</test>

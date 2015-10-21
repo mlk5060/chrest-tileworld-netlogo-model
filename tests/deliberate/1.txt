@@ -26,22 +26,22 @@ discrimination-time
 familiarisation-time
 0:2000
 
-minds-eye-access-time
+visual-spatial-field-access-time
 0:100
 
-minds-eye-empty-square-placement-time
+visual-spatial-field-empty-square-placement-time
 0:10
 
-minds-eye-object-movement-time
+visual-spatial-field-object-movement-time
 0:50
 
-minds-eye-object-placement-time
+visual-spatial-field-object-placement-time
 0:25
 
-minds-eye-recognised-object-lifespan
+visual-spatial-field-recognised-object-lifespan
 0:10000
 
-minds-eye-unrecognised-object-lifespan
+visual-spatial-field-unrecognised-object-lifespan
 0:50000
 
 number-fixations
