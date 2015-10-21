@@ -12,9 +12,11 @@
 ;
 ; A CHREST turtle is created and its sight-radius is set to 2 so that it can see 25 patches
 ; in total.  All other object types that exist in the model are then created around the
-; original CHREST turtle whilst some squares remain empty.  An illustration of the original
-; turtle's observable environment is provided below.  Each object is denoted by its "who"
-; number followed by the type of the object in parenthesis except for empty patches.
+; original CHREST turtle whilst some squares remain empty. 
+;
+; An illustration of the original turtle's observable environment is provided below.  Each object 
+; is denoted by its "who" number followed by the type of the object in parenthesis except for empty 
+; patches.
 ;
 ; LEGEND
 ; ======

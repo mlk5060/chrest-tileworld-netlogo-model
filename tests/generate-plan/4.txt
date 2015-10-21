@@ -32,7 +32,9 @@
 ; this test makes no attempt to determine if such procedures operate correctly.  Note also that it is not the responsibility of this test to determine 
 ; if invalid visual-spatial field states are identified as being invalid.  This is left to the tests for the procedure that handles this functionality.
 ;
-; The four initial visual-spatial field states and expected final states are depicted visually below.
+; The four initial visual-spatial field states and expected final states are depicted visually below.  Each object is denoted by its "who" number followed 
+; by the class of the object in parenthesis.
+;
 ;
 ;LEGEND
 ;------

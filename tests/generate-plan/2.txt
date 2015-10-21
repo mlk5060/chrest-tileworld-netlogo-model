@@ -13,7 +13,7 @@
 ; At time 0 in the domain, a CHREST turtle invokes "generate-plan" when a tile is north of its current location by 1 patch.  This should result
 ; in the CHREST turtle constructing a visual-spatial field *only* (no actual planning should occur).
 ;
-; The visual-spatial field should therefore look like the following when constructed.  Each object is denoted by its "who" number followed by the 
+; The visual-spatial field constructed should look like the following when constructed.  Each object is denoted by its "who" number followed by the 
 ; class of the object in parenthesis.
 ;
 ; LEGEND
