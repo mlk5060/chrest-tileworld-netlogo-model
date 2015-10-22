@@ -89,9 +89,7 @@
 ;   "generate-plan" invocation (the CHREST turtle never learns during this test so deliberation using pattern-recognition isn't possible).
 ; - "who-of-tile-last-pushed-in-plan": should be set to "1" if the visual-spatial field before and after the plan invocation is different (indicates that
 ;   a visual-spatial object move sequence occurred that wasn't reversed, i.e. it was valid) and if the location of tile 1 has changed.  Otherwise, it should 
-;   be set to "" since moving any other tile in the visual-spatial field will result in an invalid visual-spatial field state and thus an object move sequence 
-;   reversal (resulting in the visual-spatial field state remaining unchanged before and after the "generate-plan" invocation) and this variable is always 
-;	reset to "" if a visual-spatial object move sequence is reversed.
+;   be set to "" since no other tiles exist in the visual-spatial fields generated.
 ; - "current-search-iteration": should increase by 1 for every "generate-plan" invocation after the initial one that constructs the visual-spatial field.
 ;
 ; After the specific tile has been pushed into the specific hole in the CHREST turtle's visual-spatial field and after a subsequent "generate-plan" invocation, 

@@ -1,0 +1,179 @@
+;==============================
+;========== TEST AIM ==========
+;==============================
+;
+; 1) To determine if setting of the "who-of-tile-last-pushed-in-plan" turtle variable is set correctly when multiple tiles can
+;    be pushed without the visual-spatial field state being invalid.
+;
+;======================================
+;========== TEST DESCRIPTION ==========
+;======================================
+;
+; In previous 'generate-plan' tests, only 1 tile can be moved in a CHREST turtle's visual-spatial field without producing an invalid visual-spatial field
+; state.  Thus, unless this tile is moved, the "who-of-tile-last-pushed-in-plan" turtle variable is always set to "".  This test is designed to check for
+; correct setting of the "who-of-tile-last-pushed-in-plan" turtle variable when multiple tiles can be pushed without producing an invalid visual-spatial 
+; field state.
+;
+; Essentially, a CHREST turtle should not remain fixated on a tile after it has been moved and a valid visual-spatial field state is produced.  In this
+; case, the "who-of-tile-last-pushed-in-plan" turtle variable should remain set until checks for the tile last pushed existing in the visual-spatial field
+; or on the same coordinates as a hole are performed following a subsequent 'generate-plan' invocation.  After these checks, but before the next planned 
+; move is decided upon, the "who-of-tile-last-pushed-in-plan" turtle variable should be reset to "" so that, when the visual-spatial field moves are generated,
+; the CHREST turtle doesn't try to move the tile last pushed in its plan again since this may result in a jchrest.lib.VisualSpatialFieldException being thrown
+; (the new planned action may say to push a tile to the east but specify the who of the tile that is to the north that was pushed in the last planned action).
+; 
+; The test proceeds as follows:
+;
+; 1) A CHREST turtle is created and its observable environment is populated with moveable tiles.
+; 2) The CHREST turtle invokes 'generate-plan' to construct its visual-spatial field.
+; 3) The CHREST turtle continues to invoke 'generate-plan' until its "generate-plan?" turtle variable is set to false.  A check is performed on the value
+;    of the "who-of-tile-last-pushed-in-plan" before each 'generate-plan' invocation in this loop to ensure that a previously pushed tile is remembered.
+; 4) After the "generate-plan?" turtle variable is set to false, a check is again performed on the "who-of-tile-last-pushed-in-plan" turtle variable to 
+;    ensure that it is set to false.
+;
+; NOTE: the CHREST turtle's maximum search iteration is set to a very high (unreachable) value so that plan generation doesn't end due to the search
+;       iteration number check.
+;
+; The test is repeated 50 times to ensure enough variation in the CHREST turtle's planning to reassue users that the "who-of-tile-last-pushed-in-plan" turtle 
+; variable setting works correctly.
+;
+; The observable environment state of the CHREST turtle is depicted visually below.  Each object is denoted by its "who" number followed by the 
+; class of the object in parenthesis.
+;
+; LEGEND
+; ======
+;
+; - H: hole
+; - O: opponent
+; - T: tile
+; - S: self
+; 
+;    
+; |------|------|------|------|------|------|------|
+; |      | 9(T) |      |      |      | 10(T)|      |
+; |------|------|------|------|------|------|------|
+; |      |      | 5(T) |      | 6(T) |      |      |
+; |------|------|------|------|------|------|------|
+; |      | 16(T)|      | 1(T) |      | 11(T)|      |
+; |------|------|------|------|------|------|------|
+; |      |      | 4(T) | 0(S) | 2(T) |      |      |
+; |------|------|------|------|------|------|------|
+; |      | 15(T)|      | 3(T) |      | 12(T)|      |
+; |------|------|------|------|------|------|------|
+; |      |      | 8(T) |      | 7(T) |      |      |
+; |------|------|------|------|------|------|------|
+; |      | 14(T)|      |      |      | 13(T)|      |
+; |------|------|------|------|------|------|------|
+;                                        
+;=====================================
+;========== TESTS PERFORMED ==========
+;=====================================
+;
+; - Before every 'generate-plan' invocation the turtle's "who-of-tile-last-pushed-in-plan" turtle variable is checked.  If this is checked before the second 'generate-plan'
+;   invocation (the first constructs the CHREST turtle's visual-spatial field) then this value is expected to be "" since no tiles should have been pushed yet.  Following
+;   this, this value is expected to be what it was set to after the previous 'generate-plan' invocation.
+; - After every 'generate-plan' invocation the turtle's "who-of-tile-last-pushed-in-plan" turtle variable is checked.  This should only be set to a tile's "who" value if
+;   a tile was pushed in the CHREST turtle's visual-spatial field and the resulting visual-spatial field state was valid.  Otherwise, it should be set to "".
+;
+<test>
+	repeat 50 [
+		create-chrest-turtles 1[
+			set action-performance-time 10000
+			set action-selection-procedure "roulette-selection"
+			set add-link-time 10000
+			set discount-rate 0.5
+			set discrimination-time 10000
+			set familiarisation-time 2000
+			set max-search-iteration 99999999
+			set number-fixations 4
+			set pattern-recognition? true
+			set play-time 14400000.0
+			set reinforce-actions? true
+			set reinforce-problem-solving? true
+			set reinforcement-learning-theory "profit_sharing_with_discount_rate" 
+			set sight-radius 3
+			set time-taken-to-use-pattern-recognition 200
+			set time-taken-to-problem-solve 1000
+			set visual-spatial-field-access-time 50
+			set visual-spatial-field-empty-square-placement-time 5
+			set visual-spatial-field-object-movement-time 25
+			set visual-spatial-field-object-placement-time 10
+			set visual-spatial-field-recognised-object-lifespan 100000
+			set visual-spatial-field-unrecognised-object-lifespan 10000
+		]
+		setup (true)
+
+		create-tiles 1 [setxy ([pxcor] of turtle 0) (([pycor] of turtle 0) + 1)]
+		create-tiles 1 [setxy (([pxcor] of turtle 0) + 1) ([pycor] of turtle 0)]
+		create-tiles 1 [setxy ([pxcor] of turtle 0) (([pycor] of turtle 0) - 1)]
+		create-tiles 1 [setxy (([pxcor] of turtle 0) - 1) ([pycor] of turtle 0)]
+		create-tiles 1 [setxy (([pxcor] of turtle 0) - 1) (([pycor] of turtle 0) + 2) ]
+		create-tiles 1 [setxy (([pxcor] of turtle 0) + 1) (([pycor] of turtle 0) + 2) ]
+		create-tiles 1 [setxy (([pxcor] of turtle 0) + 1) (([pycor] of turtle 0) - 2) ]
+		create-tiles 1 [setxy (([pxcor] of turtle 0) - 1) (([pycor] of turtle 0) - 2) ]
+		create-tiles 1 [setxy (([pxcor] of turtle 0) - 2) (([pycor] of turtle 0) + 3) ]
+		create-tiles 1 [setxy (([pxcor] of turtle 0) + 2) (([pycor] of turtle 0) + 3) ]
+		create-tiles 1 [setxy (([pxcor] of turtle 0) + 2) (([pycor] of turtle 0) + 1) ]
+		create-tiles 1 [setxy (([pxcor] of turtle 0) + 2) (([pycor] of turtle 0) - 1) ]
+		create-tiles 1 [setxy (([pxcor] of turtle 0) + 2) (([pycor] of turtle 0) - 3) ]
+		create-tiles 1 [setxy (([pxcor] of turtle 0) - 2) (([pycor] of turtle 0) - 3) ]
+		create-tiles 1 [setxy (([pxcor] of turtle 0) - 2) (([pycor] of turtle 0) - 1) ]
+		create-tiles 1 [setxy (([pxcor] of turtle 0) - 2) (([pycor] of turtle 0) + 1) ]
+
+		ask turtle 0 [
+
+			;======================================;
+			;== FIRST "GENERATE-PLAN" INVOCATION ==;
+			;======================================;
+
+			generate-plan
+
+			;Increment domain time so that the next invocation of "generate-plan" will not be blocked due to the CHREST turtle's attention
+			;not being free.
+			set current-training-time (chrest:get-attention-clock)
+
+			let expected-who-of-tile-last-pushed-in-plan ("")
+
+			;=============================================;
+			;== INTERMEDIATE "GENERATE-PLAN INVOCATION" ==;
+			;=============================================;
+
+			while[ generate-plan? ][
+
+				check-equal (who-of-tile-last-pushed-in-plan) (expected-who-of-tile-last-pushed-in-plan) ("when checking 'who-of-tile-last-pushed-in-plan' in main loop")
+
+				generate-plan
+
+				; Reset the value of "expected-who-of-tile-last-pushed-in-plan" since it should only be set if a tile has been pushed and a valid visual-spatial 
+				; field resulted (a tile will be in a different location than it was).
+				set expected-who-of-tile-last-pushed-in-plan ("")
+
+				foreach ([1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16])[
+
+					let tile-who (word ?)
+
+					; First, check to see if the tile exists in the visual-spatial field since it may have decayed.  In this case, don't check to see if its location has
+					; changed since it will have but not because of a push from the CHREST turtle.
+					let tile-location-before (chrest:VisualSpatialField.get-object-locations (report-current-time) (tile-who) (true))
+
+					if(not empty? tile-location-before)[
+						set tile-location-before ( item 0 (tile-location-before) )
+
+						let tile-location-after ( chrest:VisualSpatialField.get-object-locations (chrest:get-attention-clock) (tile-who) (true) )
+						if (not empty? tile-location-after)[
+							set tile-location-after (item (0) (tile-location-after))
+						]
+
+						if(tile-location-before != tile-location-after)[
+							set expected-who-of-tile-last-pushed-in-plan (tile-who)
+						]
+					]
+				]
+
+				set current-training-time (chrest:get-attention-clock)
+			]
+
+			check-equal (who-of-tile-last-pushed-in-plan) ("") ("when checking 'who-of-tile-last-pushed-in-plan' after 'generate-plan?' is set to false")
+		]
+		reset (true)
+	]
+</test>

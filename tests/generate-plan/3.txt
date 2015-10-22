@@ -80,18 +80,24 @@
 ;========== TESTS PERFORMED ==========
 ;=====================================
 ;
-; Whilst plan generation is occuring, this test checks the following variables:
+; Whilst plan generation is occuring, this test checks the following variables after the "generate-plan" procedure is invoked:
 ; 
 ; - "generate-plan?": this should remain set to true until the final visual-spatial field state is generated.
 ; - "plan" length: should increase by 1 if the visual-spatial field before and after the plan invocation is different (indicates that a visual-spatial
 ;   move occurred that wasn't reversed, i.e. it was valid).
 ; - "time-spent-deliberating-on-plan": should increase by the value specified for the "time-taken-to-problem-solve" turtle variable after every 
 ;   "generate-plan" invocation (the CHREST turtle never learns during this test so deliberation using pattern-recognition isn't possible).
-; - "who-of-tile-last-pushed-in-plan": should be set to "1" if the visual-spatial field before and after the plan invocation is different (indicates that
-;   a visual-spatial object move sequence occurred that wasn't reversed, i.e. it was valid) and if the location of tile 1 has changed.  Otherwise, it should 
-;   be set to "" since moving any other tile in the visual-spatial field will result in an invalid visual-spatial field state and thus an object move sequence 
-;   reversal (resulting in the visual-spatial field state remaining unchanged before and after the "generate-plan" invocation) and this variable is always 
-;	reset to "" if a visual-spatial object move sequence is reversed.
+; - "who-of-tile-last-pushed-in-plan": checked before and after a 'generate-plan' invocation.  To explain, consider two consecutive 'generate-plan' invocations:
+;	(i) and (i + 1).
+;   ~ If the CHREST turtle's visual-spatial field before and after (i) is the same (indicates that a visual-spatial object move sequence occurred that was
+;     reversed, i.e. it was invalid) then the value of "who-of-tile-last-pushed-in-plan" will be set to "" since there is no need to check whether a tile
+;     that may have been moved is out of the visual-spatial field range or on the same coordinates as a hole on (i + 1).  This is because the state of the
+;     visual-spatial field before (i + 1)s visual-spatial field object move application will be the same as it was before (i)s visual-spatial field object 
+;     move application.  Consequently, plan generation would have ended during (i), before any object move sequence is carried out.
+;   ~ If the CHREST turtle's visual-spatial field before and after (i) is different (indicates that a visual-spatial object move sequence occurred that wasn't 
+;     reversed, i.e. it was valid) and if the location of tile 1 has changed then, the value of "who-of-tile-last-pushed-in-plan" should be set to "1" both 
+;     immediately after (i) and before (i + 1).  Only the location of tile 1 is checked since movement of any other tile will result in an invalid visual-spatial
+;     field state and a reversal of the move (resulting in the situation described above).
 ; - "current-search-iteration": should increase by 1 for every "generate-plan" invocation after the initial one that constructs the visual-spatial field.
 ;
 ; After the tile has been pushed out of the CHREST turtle's visual-spatial field and after a subsequent "generate-plan" invocation, the following
@@ -519,6 +525,10 @@
 
 				while[ ( chrest:VisualSpatialField.get-as-netlogo-list (report-current-time) (false) ) != expected-final-visual-spatial-field ][
 
+					check-equal (who-of-tile-last-pushed-in-plan) (expected-who-of-tile-last-pushed-in-plan) (word "when checking 'who-of-tile-last-pushed-in-plan' before 'generate-plan' invocation" test-description)
+
+					set expected-who-of-tile-last-pushed-in-plan ""
+
 					let visual-spatial-field-state-before-plan-generation ( chrest:VisualSpatialField.get-as-netlogo-list (report-current-time) (false) )
 					let location-of-tile-1-before-plan-generation (chrest:VisualSpatialField.get-object-locations 
 						(report-current-time) 
@@ -535,7 +545,7 @@
 						(true)
 					)
 
-					ifelse(visual-spatial-field-state-before-plan-generation != visual-spatial-field-state-after-plan-generation)[
+					if(visual-spatial-field-state-before-plan-generation != visual-spatial-field-state-after-plan-generation)[
 						
 						;Reversal didn't occur.
 						set expected-plan-length (expected-plan-length + 1)
@@ -544,10 +554,7 @@
 							set expected-who-of-tile-last-pushed-in-plan "1"
 						]
 					]
-					[
-						;Reversal occurred
-						set expected-who-of-tile-last-pushed-in-plan ""
-					]
+					
 
 					set expected-current-search-iteration (expected-current-search-iteration + 1)
 					set expected-deliberation-time (expected-deliberation-time + time-taken-to-problem-solve)
@@ -556,7 +563,7 @@
 					check-equal (length(plan)) (expected-plan-length) (word "when checking plan length" test-description)
 					check-equal (time-spent-deliberating-on-plan) (expected-deliberation-time) (word "when checking 'time-spent-deliberating-on-plan'" test-description)
 					check-equal (deliberation-finished-time) (0) (word "when checking 'deliberation-finished-time'" test-description)
-					check-equal (who-of-tile-last-pushed-in-plan) (expected-who-of-tile-last-pushed-in-plan) (word "when checking 'who-of-tile-last-pushed-in-plan'" test-description)
+					check-equal (who-of-tile-last-pushed-in-plan) (expected-who-of-tile-last-pushed-in-plan) (word "when checking 'who-of-tile-last-pushed-in-plan' after 'generate-plan' invocation" test-description)
 					check-equal (current-search-iteration) (expected-current-search-iteration) (word "when checking 'current-search-iteration'" test-description)
 
 					set current-training-time (chrest:get-attention-clock)

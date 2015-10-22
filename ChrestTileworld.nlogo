@@ -1553,15 +1553,16 @@ to generate-plan
           if( last-action-in-plan-identifier = push-tile-token )[
             output-debug-message (word "My last planned action was to push a tile. I'll check to see if the pushed tile (who = " who-of-tile-last-pushed-in-plan ") still exists in my visual-spatial field") (who)
             
-            let tile-locations (chrest:VisualSpatialField.get-object-locations (report-current-time) (who-of-tile-last-pushed-in-plan) (true))
-            ifelse(empty? tile-locations)[
-              output-debug-message (word "There is no tile with who " who-of-tile-last-pushed-in-plan " in my visual-spatial field so the 'end-plan-generation?' turtle variable should be set to true") (who)
+            let locations-of-tile-last-pushed (chrest:VisualSpatialField.get-object-locations (report-current-time) (who-of-tile-last-pushed-in-plan) (true))
+            ifelse(empty? locations-of-tile-last-pushed)[
+              output-debug-message (word "There is no tile with a 'who' value of " who-of-tile-last-pushed-in-plan " in my visual-spatial field so the 'end-plan-generation?' turtle variable should be set to true") (who)
               set end-plan-generation? (true)
             ]
             [
-              output-debug-message (word "There is a tile with who " who-of-tile-last-pushed-in-plan " so I'll check to see if there is also a hole on its location...")  (who)
-              let tile-location ( item (0) (tile-locations) )
-              if(chrest:VisualSpatialField.is-object-on-square? (report-current-time) (hole-token) (item (0) (tile-location)) (item (1) (tile-location)) (false))[
+              let location-of-tile-last-pushed ( item (0) (locations-of-tile-last-pushed) )
+              output-debug-message (word "There is a tile with a 'who' value of " who-of-tile-last-pushed-in-plan " on coordinates " location-of-tile-last-pushed " in my visual-spatial field so I'll check to see if there is also a hole on this location...")  (who)
+              
+              if(chrest:VisualSpatialField.is-object-on-square? (report-current-time) (hole-token) (item (0) (location-of-tile-last-pushed)) (item (1) (location-of-tile-last-pushed)) (false))[
                 output-debug-message (word "There is a hole on the same coordinates as the tile so the local 'end-plan-generation?' variable will be set to true...")  (who)
                 set end-plan-generation? (true)
               ]  
@@ -1580,6 +1581,9 @@ to generate-plan
         let action-to-perform ""
         let visual-spatial-field-moves ""
         let reverse-visual-spatial-field-move? (false)
+        
+        output-debug-message ("Resetting 'who-of-tile-last-pushed-in-plan'") (who)
+        set who-of-tile-last-pushed-in-plan ("")
         
         ;Generate a new move and add it to the plan (at this point, the visual-spatial field will be OK to generate as a Scene since there will not be two objects on any visual-spatial coordinate)
         let action-to-perform-time-taken-to-deliberate-and-used-pattern-recognition (deliberate (chrest:VisualSpatialField.get-as-scene (report-current-time) (false) ))
@@ -2299,16 +2303,16 @@ to-report generate-visual-spatial-field-moves [ action-pattern reverse? ]
     output-debug-message (word "The location of the tile to move (if necessary) is set to: " tile-location) (who)
     ifelse(action-identifier = push-tile-token)[
       output-debug-message (word "The action identifier indicates that I should push/pull a tile so a tile's location in scene should also be modified.") (who)
-        
+
+      
+
       output-debug-message (word "If this is a reversal of a 'push-tile' move, I need to see if the specific tile to be pulled still exists (its object representation may have decayed in my visual-spatial field") (who)
       let search-using-id? (false)
       let object (tile-token)
       if(not empty? who-of-tile-last-pushed-in-plan)[
         set search-using-id? (true)
         set object (who-of-tile-last-pushed-in-plan)
-      ]
-      
-      output-debug-message (word "Checking to see if " object " is on coordinates " tile-location " in my visual-spatial field...") (who)
+      ]      output-debug-message (word "Checking to see if " object " is on coordinates " tile-location " in my visual-spatial field...") (who)
       if( chrest:VisualSpatialField.is-object-on-square? (time-to-get-visual-spatial-field-at) (object) (item (0) (tile-location)) (item (1) (tile-location)) (search-using-id?) )[
         
         output-debug-message ( word "Object " object " is on coordinates " tile-location " in my visual-spatial field so I'll continue to generate a push/pull move...") (who)
@@ -2935,6 +2939,7 @@ to-report is-visual-spatial-field-state-valid-at-time? [state-at-time]
   set debug-indent-level (debug-indent-level + 1) 
   
   let columns (chrest:VisualSpatialField.get-as-netlogo-list (state-at-time) (false))
+  output-debug-message (word "Visual-spatial field at time " state-at-time ": " columns) (who)
   let col 0
   
   while[col < length columns][
