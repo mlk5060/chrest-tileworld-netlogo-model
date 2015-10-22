@@ -33,8 +33,8 @@
 ; NOTE: the CHREST turtle's maximum search iteration is set to a very high (unreachable) value so that plan generation doesn't end due to the search
 ;       iteration number check.
 ;
-; The test is repeated 50 times to ensure enough variation in the CHREST turtle's planning to reassue users that the "who-of-tile-last-pushed-in-plan" turtle 
-; variable setting works correctly.
+; The test is repeated until 4 tiles have been pushed in one test cycle to ensure that the "who-of-tile-last-pushed-in-plan" turtle variable setting works 
+; correctly.
 ;
 ; The observable environment state of the CHREST turtle is depicted visually below.  Each object is denoted by its "who" number followed by the 
 ; class of the object in parenthesis.
@@ -75,7 +75,9 @@
 ;   a tile was pushed in the CHREST turtle's visual-spatial field and the resulting visual-spatial field state was valid.  Otherwise, it should be set to "".
 ;
 <test>
-	repeat 50 [
+	let tiles-pushed []
+
+	while [length (tiles-pushed) < 4][
 		create-chrest-turtles 1[
 			set action-performance-time 10000
 			set action-selection-procedure "roulette-selection"
@@ -132,6 +134,7 @@
 			set current-training-time (chrest:get-attention-clock)
 
 			let expected-who-of-tile-last-pushed-in-plan ("")
+			set tiles-pushed []
 
 			;=============================================;
 			;== INTERMEDIATE "GENERATE-PLAN INVOCATION" ==;
@@ -165,6 +168,7 @@
 
 						if(tile-location-before != tile-location-after)[
 							set expected-who-of-tile-last-pushed-in-plan (tile-who)
+							set tiles-pushed (lput (tile-who) (tiles-pushed))
 						]
 					]
 				]
