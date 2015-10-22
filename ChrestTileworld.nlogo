@@ -2909,7 +2909,7 @@ end
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;Determines whether the calling turtle's visual-spatial field state is valid at a particular time.
-;For a visual-spatial field's state to be valid, none of the following must be true:
+;For a visual-spatial field's state to be valid, all of the following must be f:
 ;
 ; 1) A tile:
 ;   a. Exists on the same patch as another tile

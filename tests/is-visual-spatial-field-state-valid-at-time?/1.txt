@@ -1,0 +1,258 @@
+;==============================
+;========== TEST AIM ==========
+;==============================
+;
+; 1) To determine if the "is-visual-spatial-field-state-valid-at-time?" variable generates correct output.
+;
+;======================================
+;========== TEST DESCRIPTION ==========
+;====================================== 
+; 
+; A CHREST turtle is situated in an environment consisting of two tiles, a hole and an object (all objects that can exist in Tileworld) and asked to construct
+; a visual-spatial field representing its observable environment.  After this an object is moved in the visual-spatial field and the resulting visual-spatial 
+; field state is checked to see if it is valid or not.
+; 
+; Only particular scenarios are tested since only the CHREST turtle's avatar (the self) and tiles can be moved in a CHREST turtle's visual-spatial field so 
+; only these objects are moved in this test.  Consequently, any scenario imagined outside of those tested here will be evaluated as being valid.
+;
+; The table below displays all possible combinations of objects that exist on the same visual-spatial coordinate and the scenario in which this configuration
+; is tested.  Note that some combinations are impossible:
+;
+; - No two "Self" objects will exist in the same visual-spatial field concurrently.
+; - "Hole" and "Opponent" objects are never moved in the visual-spatial field. 
+;
+;            |-------------------------------|
+;            |            ITEM 2             |
+; |----------|-------------------------------|
+; | ITEM 1   | Self | Tile | Hole | Opponent |
+; |----------|------|------|------|----------|
+; | Self     |  -   |  3   |  4   |    5     |
+; | Tile     |  3   |  1   |  6   |    2     |
+; | Hole     |  4   |  6   |  -   |    -     |
+; | Opponent |  5   |  2   |  -   |    -     |
+; |----------|------|------|------|----------|
+;
+; In total there are 6 scenarios to be tested.  Scenarios 1-5 are invalid whilst 6 is valid.
+;
+; The initial visual-spatial field state and the states created for each scenario are illustrated below.  Each object is denoted by its "who" number followed 
+; by the class of the object in parenthesis.
+;
+; LEGEND
+; ======
+;
+; - H: hole
+; - O: opponent
+; - T: tile
+; - S: self
+;
+; INITIAL VISUAL-SPATIAL FIELD STATE
+; ----------------------------------
+;
+;   |------|------|------|
+; 2 |      | 1(T) |      |
+;   |------|------|------|
+; 1 | 4(T) | 0(S) | 2(H) |
+;   |------|------|------|
+; 0 |      | 3(O) |      |
+;   |------|------|------|
+;      0      1      2      VISUAL-SPATIAL FIELD COORDINATES
+;
+; SCENARIO 1
+; ----------
+; 
+;   |------|------|------|
+; 2 |      |      |      |
+;   |------|------|------|
+; 1 | 1(T) | 0(S) | 2(H) |
+;   | 4(T) |      |      |
+;   |------|------|------|
+; 0 |      | 3(O) |      |
+;   |------|------|------|
+;      0      1      2      VISUAL-SPATIAL FIELD COORDINATES
+;
+; SCENARIO 2
+; ----------
+;
+;   |------|------|------|
+; 2 |      |      |      |
+;   |------|------|------|
+; 1 | 4(T) | 0(S) | 2(H) |
+;   |------|------|------|
+; 0 |      | 1(T) |      |
+;   |      | 3(O) |      |
+;   |------|------|------|
+;      0      1      2      VISUAL-SPATIAL FIELD COORDINATES
+;
+; SCENARIO 3
+; ----------
+;
+;   |------|------|------|
+; 2 |      | 0(S) |      |
+;   |      | 1(T) |      |
+;   |------|------|------|
+; 1 | 4(T) |      | 2(H) |
+;   |------|------|------|
+; 0 |      | 3(O) |      |
+;   |------|------|------|
+;      0      1      2      VISUAL-SPATIAL FIELD COORDINATES
+;
+; SCENARIO 4
+; ----------
+;
+;   |------|------|------|
+; 2 |      | 1(T) |      |
+;   |------|------|------|
+; 1 | 4(T) |      | 0(S) |
+;   |      |      | 2(H) |
+;   |------|------|------|
+; 0 |      | 3(O) |      |
+;   |------|------|------|
+;      0      1      2      VISUAL-SPATIAL FIELD COORDINATES
+;
+; SCENARIO 5
+; ----------
+;
+;   |------|------|------|
+; 2 |      | 1(T) |      |
+;   |------|------|------|
+; 1 | 4(T) |      | 2(H) |
+;   |------|------|------|
+; 0 |      | 0(S) |      |
+;   |      | 3(O) |      |
+;   |------|------|------|
+;      0      1      2      VISUAL-SPATIAL FIELD COORDINATES
+;
+; SCENARIO 6
+; ----------
+; 
+;   |------|------|------|
+; 2 |      |      |      |
+;   |------|------|------|
+; 1 | 4(T) | 0(S) | 1(T) |
+;   |      |      | 2(H) |
+;   |------|------|------|
+; 0 |      | 3(O) |      |
+;   |------|------|------|
+;      0      1      2      VISUAL-SPATIAL FIELD COORDINATES
+;
+;=====================================
+;========== TESTS PERFORMED ==========
+;=====================================
+; 
+; - The initial visual-spatial field state is checked to ensure that it is valid.
+; - For each scenario, the final visual-spatial field state after object movement is checked to see if it is valid or not.
+;
+<test>
+	let scenarios [1 2 3 4 5]
+
+	foreach(scenarios)[
+		let scenario (?)
+
+		create-chrest-turtles 1[
+			set action-performance-time 10000
+			set action-selection-procedure "roulette-selection"
+			set add-link-time 10000
+			set discount-rate 0.5
+			set discrimination-time 10000
+			set familiarisation-time 2000
+			set max-search-iteration 5
+			set number-fixations 4
+			set pattern-recognition? true
+			set play-time 14400000.0
+			set reinforce-actions? true
+			set reinforce-problem-solving? true
+			set reinforcement-learning-theory "profit_sharing_with_discount_rate" 
+			set sight-radius 1
+			set time-taken-to-use-pattern-recognition 200
+			set time-taken-to-problem-solve 1000
+			set visual-spatial-field-access-time 50
+			set visual-spatial-field-empty-square-placement-time 5
+			set visual-spatial-field-object-movement-time 25
+			set visual-spatial-field-object-placement-time 10
+			set visual-spatial-field-recognised-object-lifespan 100000
+			set visual-spatial-field-unrecognised-object-lifespan 90000
+		]
+		setup (true)
+
+		create-tiles 1 [setxy ([pxcor] of turtle 0) (([pycor] of turtle 0) + 1)]
+		create-holes 1 [setxy (([pxcor] of turtle 0) + 1) ([pycor] of turtle 0)]
+		create-chrest-turtles 1 [setxy ([pxcor] of turtle 0) (([pycor] of turtle 0) - 1)]
+		create-tiles 1 [setxy (([pxcor] of turtle 0) - 1) ([pycor] of turtle 0)]
+
+		ask turtle 0 [
+			
+			construct-visual-spatial-field
+			check-equal 
+				(is-visual-spatial-field-state-valid-at-time? (chrest:get-attention-clock)) 
+				(true) 
+				(word "when checking initial visual-spatial scene in scenario " scenario)
+
+			let object-moves []
+			let expected-output (false)
+
+			if (scenario = 1)[
+				set object-moves (list
+					(list
+						(chrest:ItemSquarePattern.new ("1") (1) (2))
+						(chrest:ItemSquarePattern.new ("1") (0) (1))
+					)
+				)
+			]
+
+			if (scenario = 2)[
+				set object-moves (list
+					(list
+						(chrest:ItemSquarePattern.new ("1") (1) (2))
+						(chrest:ItemSquarePattern.new ("1") (1) (0))
+					)
+				)
+			]
+
+			if (scenario = 3)[
+				set object-moves (list
+					(list
+						(chrest:ItemSquarePattern.new ("0") (1) (1))
+						(chrest:ItemSquarePattern.new ("0") (1) (2))
+					)
+				)
+			]
+
+			if (scenario = 4)[
+				set object-moves (list
+					(list
+						(chrest:ItemSquarePattern.new ("0") (1) (1))
+						(chrest:ItemSquarePattern.new ("0") (2) (1))
+					)
+				)
+			]
+
+			if (scenario = 5)[
+				set object-moves (list
+					(list
+						(chrest:ItemSquarePattern.new ("0") (1) (1))
+						(chrest:ItemSquarePattern.new ("0") (1) (0))
+					)
+				)
+			]
+
+			if (scenario = 6)[
+				set object-moves (list
+					(list
+						(chrest:ItemSquarePattern.new ("0") (1) (2))
+						(chrest:ItemSquarePattern.new ("0") (2) (1))
+					)
+				)
+
+				set expected-output (true)
+			]
+
+			chrest:VisualSpatialField.move-objects (object-moves) (chrest:get-attention-clock) (false)
+			check-equal 
+				(is-visual-spatial-field-state-valid-at-time? (chrest:get-attention-clock)) 
+				(expected-output) 
+				(word "when checking visual-spatial scene in scenario " scenario " after objects have been moved")
+		]
+
+		reset (true)
+	]
+</test>
