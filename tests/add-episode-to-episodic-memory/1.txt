@@ -1,30 +1,193 @@
-; Tests for correct operation by overloading a turtle's episodic memory.
+;==============================
+;========== TEST AIM ==========
+;==============================
+;
+; To determine if episodes are added correctly to a CHREST turtle's "episodic-memory" when it is full and further episodes are added.
+;
+;======================================
+;========== TEST DESCRIPTION ==========
+;====================================== 
+; 
+; 1) A CHREST turtle is created and its "max-length-of-episodic-memory" variable is set to 6.  
+; 2) 10 episodes are then added to its episodic memory by invoking the 'add-episode-to-episodic-memory' procedure.  These are split into two batches of 5 episodes:
+;	 - The first batch consists of a visual ListPattern containing a hole, an action ListPattern containing a "move" action and the action is (ostensibly) generated using
+;      problem-solving.  These will be called the "hole-move" episodes.
+;	 - The last 5 consist of a visual ListPattern containing a tile and an action ListPattern containing a "push-tile" action and the action is (ostensibly) generated 
+;      using pattern-recognition.  These will be called the "push-tile" episodes.
+;	 - The coordinates for objects described by the visual ListPatterns are unique for each episode allowing for precise determination of where each episode occurs
+;	   in the CHREST turtle's episodic memory.
+; 	 - The time that each episode is added to episodic memory is unique for each episode allowing for precise determination of where each episode occurs
+;	   in the CHREST turtle's episodic memory.
+; 3) Two episodes from episodic memory are retrieved.  The first should be the last of the "hole-move" episodes and second should be the first of the "push-tile"
+;    episodes added
+; 4) The contents of these episodes are tested to see if they are indeed the episodes expected.
+; 
+; The CHREST turtle's episodic memory state after adding each episode is illustrated below for ease of comprehension.  The number of the episode in its batch follows the 
+; batch type of episode (denoted by a two letter code).
+;
+; LEGEND
+; ======
+; 
+; - HM: "hole-move" episode
+; - PT: "push-tile" episode
+;
+; |-----|-----|-----|-----|-----|-----|
+; |     |     |     |     |     |     | - Initial state
+; |-----|-----|-----|-----|-----|-----|
+;
+; |-----|-----|-----|-----|-----|-----|
+; | HM1 |     |     |     |     |     | - After adding episode 1
+; |-----|-----|-----|-----|-----|-----|
+;    
+; |-----|-----|-----|-----|-----|-----|
+; | HM1 | HM2 |     |     |     |     | - After adding episode 2
+; |-----|-----|-----|-----|-----|-----|
+;
+; |-----|-----|-----|-----|-----|-----|
+; | HM1 | HM2 | HM3 |     |     |     | - After adding episode 3
+; |-----|-----|-----|-----|-----|-----|
+;
+; |-----|-----|-----|-----|-----|-----|
+; | HM1 | HM2 | HM3 | HM4 |     |     | - After adding episode 4
+; |-----|-----|-----|-----|-----|-----|
+;
+; |-----|-----|-----|-----|-----|-----|
+; | HM1 | HM2 | HM3 | HM4 | HM5 |     | - After adding episode 5
+; |-----|-----|-----|-----|-----|-----|
+;
+; |-----|-----|-----|-----|-----|-----|
+; | HM1 | HM2 | HM3 | HM4 | HM5 | PT1 | - After adding episode 6
+; |-----|-----|-----|-----|-----|-----|
+;
+; |-----|-----|-----|-----|-----|-----|
+; | HM2 | HM3 | HM4 | HM5 | PT1 | PT2 | - After adding episode 7
+; |-----|-----|-----|-----|-----|-----|
+; 
+; |-----|-----|-----|-----|-----|-----|
+; | HM3 | HM4 | HM5 | PT1 | PT2 | PT3 | - After adding episode 8
+; |-----|-----|-----|-----|-----|-----|
+; 
+; |-----|-----|-----|-----|-----|-----|
+; | HM4 | HM5 | PT1 | PT2 | PT3 | PT4 | - After adding episode 9
+; |-----|-----|-----|-----|-----|-----|
+; 
+; |-----|-----|-----|-----|-----|-----|
+; | HM5 | PT1 | PT2 | PT3 | PT4 | PT5 | - After adding episode 10
+; |-----|-----|-----|-----|-----|-----|
+;
+;=====================================
+;========== TESTS PERFORMED ==========
+;=====================================
+;
+; After retrieving what is expected to be the last "hole-move" and the first "push-tile" episodes, the test checks that:
+; 
+; - The visual ListPattern fragment of the episode is as expected:
+;   ~ <[H 5 6]> for "hole-move" episode.
+;   ~ <[T 6 7]> for "push-tile" episode.
+;
+; - The action ListPattern fragment of the episode is as expected:
+;   ~ <[MV 180 1]> for "hole-move" episode.
+;   ~ <[PT 0 1]> for "push-tile" episode.
+;
+; - The episode fragment denoting the time that the action in the episode was performed is as expected:
+;  	~ 5 for "hole-move" episode.
+;   ~ 6 for "push-tile" episode.
+; 
+; - The episode fragment stipulating whether the action in the episode was generated using pattern-recognition is as expected:
+;   ~ 'false' for "hole-move" episode.
+;   ~ 'true' for "push-tile" episode.
+;
 <test>
 	create-chrest-turtles 1 [
+
+		;==============================;
+		;== POPULATE EPISODIC MEMORY ==;
+		;==============================;
+
 		set episodic-memory []
 		set max-length-of-episodic-memory 6
-		let i 0
-		while[i < 10][
-			ifelse(i <= 4)[
-				add-entry-to-episodic-memory (chrest:create-item-square-pattern (hole-token) (i) (i + 1)) (chrest:create-item-square-pattern (move-randomly-token) (180) (1)) (false)
+		let episode 1
+		while [episode <= 10][
+			set current-training-time (episode)
+
+			ifelse(episode <= 5)[
+				add-episode-to-episodic-memory 
+					chrest:ListPattern.new ("visual") (list (chrest:ItemSquarePattern.new (hole-token) (episode) (episode + 1)))
+					chrest:ListPattern.new ("action") (list (chrest:ItemSquarePattern.new (move-token) (180) (1)))
+					(false)
 			]
 			[
-				add-entry-to-episodic-memory (chrest:create-item-square-pattern (tile-token) (i) (i + 1)) (chrest:create-item-square-pattern (push-tile-token) (0) (1)) (true)
+				add-episode-to-episodic-memory 
+					chrest:ListPattern.new ("visual") (list (chrest:ItemSquarePattern.new (tile-token) (episode) (episode + 1))) 
+					chrest:ListPattern.new ("action") (list (chrest:ItemSquarePattern.new (push-tile-token) (0) (1))) 
+					(true)
 			]
 
-			set i (i + 1)
+			set episode (episode + 1)
 		]
 
-		let last-hole-move-randomly-episode (item (0) (episodic-memory))
-		let first-tile-push-tile-episode (item (1) (episodic-memory))
+		;========================================================================================================;
+		;== GET EPISODES THAT SHOULD BE THE LAST "HOLE-MOVE" AND FIRST "PUSH-TILE" EPISODES IN EPISODIC MEMORY ==;
+		;========================================================================================================;
 
-		check-equal (item (0) (last-hole-move-randomly-episode)) (chrest:create-item-square-pattern (hole-token) (4) (5))
-		check-equal (item (0) (first-tile-push-tile-episode)) (chrest:create-item-square-pattern (tile-token) (5) (6))
+		let last-hole-move-episode (item (0) (episodic-memory))
+		let first-push-tile-episode (item (1) (episodic-memory))
 
-		check-equal (item (1) (last-hole-move-randomly-episode)) (chrest:create-item-square-pattern (move-randomly-token) (180) (1))
-		check-equal (item (1) (first-tile-push-tile-episode)) (chrest:create-item-square-pattern (push-tile-token) (0) (1))
+		;============================================;
+		;== CHECK VISUAL LIST PATTERNS IN EPISODES ==;
+		;============================================;
+
+		check-equal 
+			( chrest:ListPattern.get-as-string (item (0) (last-hole-move-episode)) )
+			( chrest:ListPattern.get-as-string (chrest:ListPattern.new ("visual") (list (chrest:ItemSquarePattern.new (hole-token) (5) (6)))) )
+			("when checking vision in last 'hole-move' episode")
+
+		check-equal 
+			( chrest:ListPattern.get-as-string (item (0) (first-push-tile-episode)) )
+			( chrest:ListPattern.get-as-string (chrest:ListPattern.new ("visual") (list (chrest:ItemSquarePattern.new (tile-token) (6) (7)))) )
+			("when checking vision in first 'push-tile' episode")
+
+		;============================================;
+		;== CHECK ACTION LIST PATTERNS IN EPISODES ==;
+		;============================================;
+
+		check-equal 
+			( chrest:ListPattern.get-as-string (item (1) (last-hole-move-episode)) )
+			( chrest:ListPattern.get-as-string (chrest:ListPattern.new ("action") (list (chrest:ItemSquarePattern.new (move-token) (180) (1)))) )
+			("when checking action in last 'hole-move' episode")
 		
-		check-equal (item (3) (last-hole-move-randomly-episode)) (false)
-		check-equal (item (3) (first-tile-push-tile-episode)) (true)
+		check-equal 
+			( chrest:ListPattern.get-as-string (item (1) (first-push-tile-episode)) )
+			( chrest:ListPattern.get-as-string (chrest:ListPattern.new ("action") (list (chrest:ItemSquarePattern.new (push-tile-token) (0) (1)))) )
+			("when checking action in first 'push-tile' episode")
+
+		;=========================================================;
+		;== CHECK EPISODE'S TIME OF ADDITION TO EPISODIC MEMORY ==;
+		;=========================================================;
+
+		check-equal 
+			(item (2) (last-hole-move-episode)) 
+			(5)
+			("when checking the time that the last 'hole-move' episode was added to episodic memory")
+
+		check-equal 
+			(item (2) (first-push-tile-episode)) 
+			(6)
+			("when checking the time that the first 'push-tile' episode was added to episodic memory")
+		
+		;==========================================================================;
+		;== CHECK WHETHER ACTION IN EPISODES GENERATED USING PATTERN-RECOGNITION ==;
+		;==========================================================================;
+
+		check-equal 
+			(item (3) (last-hole-move-episode)) 
+			(false) 
+			("when checking if the last 'hole-move' episode was generated using pattern-recognition")
+
+		check-equal 
+			(item (3) (first-push-tile-episode)) 
+			(true) 
+			("when checking if the first 'push-tile' episode was generated using pattern-recognition")
 	]
 </test>
+
