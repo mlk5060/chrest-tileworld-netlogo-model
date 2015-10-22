@@ -3098,51 +3098,6 @@ to-report move [heading-to-move-along patches-to-move]
   report move-successful
 end
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;; "OCCURRENCES-OF-OBJECT-IN-SCENE" PROCEDURE ;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;Reports the number of specified objects there are in a scene.
-;
-;         Name              Data Type     Description
-;         ----              ---------     -----------
-;@param   object-identifier String        The object to be searched for.
-;@param   scene             List          The scene to be searched.
-;@return  -                 Number        The number of instances of the object specified 
-;                                         in the scene passed. 
-;
-;@author  Martyn Lloyd-Kelly <martynlk@liverpool.ac.uk>  
-to-report occurrences-of-object-in-scene [object-identifier scene]
-  set debug-indent-level (debug-indent-level + 1)
-  output-debug-message ("EXECUTING THE 'occurrences-of-object-in-scene' PROCEDURE...") ("")
-  set debug-indent-level (debug-indent-level + 1)
-  output-debug-message (word "CHECKING '" scene "' FOR '" object-identifier "'...") ("")
-  
-  output-debug-message (word "SETTING A LOCAL 'number-of-occurrences' VARIABLE TO 0, THIS WILL BE USED TO STORE THE NUMBER OF TIMES '" object-identifier "' OCCURS IN " scene "...") ("")
-  let number-of-occurrences 0
-  
-  output-debug-message (word "PROCESSING THE ELEMENTS (PATCHES) IN " scene "...") ("")
-  foreach(scene)[
-    
-    output-debug-message (word "SPLITTING PATCH INFO (" ? ") ON SEMI-COLONS (;) AND THEN SPLITTING THE FIRST ELEMENT OF THE RETURNED LIST ON COMMAS (,) TO EXTRACT A LIST OF ALL OBJECT IDENTIFIERS FOR THIS PATCH..." ) ("")
-    let object-identifiers ( string:rex-split (item (0) (string:rex-split (?) (";"))) (",") )
-    
-    output-debug-message (word "CHECKING TO SEE IF THE OBJECT IDENTIFIER SPECIFIED (" object-identifier ") IS EQUAL TO ANY OF THE OBJECT IDENTIFIERS ON THIS PATCH..." ) ("")
-    foreach(object-identifiers)[
-      
-      output-debug-message (word "CHECKING OBJECT ON PATCH (" ? ") TO SEE IF IT IS EQUAL TO THE OBJECT IDENTIFIER SPECIFIED (" object-identifier ")...") ("")
-      if( object-identifier = ? )[
-        output-debug-message (word "THE OBJECT ON THE PATCH (" ? ") IS EQUAL TO '" object-identifier "' SO THE LOCAL 'number-of-occurrences' VARIABLE WILL BE INCREMENTED BY 1..." ) ("")
-        set number-of-occurrences (number-of-occurrences + 1)
-      ]
-    ]
-  ]
-  
-  output-debug-message (word "THE NUMBER OF TIMES '" object-identifier "' OCCURS IN " scene " IS " number-of-occurrences ". REPORTING THIS NUMBER...") ("")
-  set debug-indent-level (debug-indent-level - 2)
-  report number-of-occurrences
-end
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; "OUTPUT-DEBUG-MESSAGE" PROCEDURE ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
