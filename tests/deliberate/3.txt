@@ -9,7 +9,8 @@
 ;========== TEST DESCRIPTION ==========
 ;======================================
 ;
-; 1) A CHREST turtle is created and its environment is populated with every other object but a tile.
+; 1) A CHREST turtle is created and its environment is populated with empty squares and every other object in the model except a tile (will ensure that
+;    no object causes a false positive with regards to "seeing" a tile).
 ; 2) The CHREST turtle passes its observable environment as a Scene to the "deliberate" function and stores the result.
 ;
 ; The observable environment state of the CHREST turtle is depicted visually below.  Each object is denoted by its "who" number followed by the 
@@ -26,7 +27,7 @@
 ; |------|------|------|
 ; | 8(O) | 1(H) | 2(O) |
 ; |------|------|------|
-; | 7(H) | 0(S) | 3(H) |
+; |      | 0(S) |      |
 ; |------|------|------|
 ; | 6(O) | 5(H) | 4(O) |
 ; |------|------|------|
@@ -70,11 +71,9 @@
 
 		create-holes 1 [setxy ([pxcor] of turtle 0) (([pycor] of turtle 0) + 1)]
 		create-chrest-turtles 1 [setxy (([pxcor] of turtle 0) + 1) (([pycor] of turtle 0) + 1)]
-		create-holes 1 [setxy (([pxcor] of turtle 0) + 1) ([pycor] of turtle 0)]
 		create-chrest-turtles 1 [setxy (([pxcor] of turtle 0) + 1) (([pycor] of turtle 0) - 1)]
 		create-holes 1 [setxy ([pxcor] of turtle 0) (([pycor] of turtle 0) - 1)]
 		create-chrest-turtles 1 [setxy (([pxcor] of turtle 0) - 1) (([pycor] of turtle 0) - 1)]
-		create-holes 1 [setxy (([pxcor] of turtle 0) - 1) ([pycor] of turtle 0)]
 		create-chrest-turtles 1 [setxy (([pxcor] of turtle 0) - 1) (([pycor] of turtle 0) + 1)]
 
 		ask turtle 0 [
