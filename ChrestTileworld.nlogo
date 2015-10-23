@@ -2411,60 +2411,6 @@ to-report generate-visual-spatial-field-moves [ action-pattern reverse? ]
   report object-moves
 end
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;; "GET-LOCATIONS-OF-OBJECT-IN-SCENE" PROCEDURE ;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;Returns the locations of the object specified in the string passed.
-;
-;         Name                    Data Type                 Description
-;         ----                    ---------                 -----------
-;@param   scene                   jchrest.lib.Scene         The scene to be searched.
-;@param   object                  String                    The object to be searched for.  Specify either its
-;                                                           'who' or class.
-;@param   identify-object-by-who  Boolean                   Set to true to indicate that objects in the scene
-;                                                           should have their 'who' 
-;@return  -                       List                      A list of lists that contains column and row pairs
-;                                                           where the object specified is located in the scene.
-;
-;@author  Martyn Lloyd-Kelly <martynlk@liverpool.ac.uk>
-to-report get-locations-of-object-in-scene [ scene object identify-object-by-who ]
-  set debug-indent-level (debug-indent-level + 1)
-  output-debug-message ("EXECUTING THE 'get-locations-of-object-in-scene' PROCEDURE...") ("")
-  set debug-indent-level (debug-indent-level + 1)
-  
-  output-debug-message (word "SETTING A LOCAL 'locations' VARIABLE TO AN EMPTY LIST, THIS WILL BE USED TO STORE THE LOCATIONS OF '" object "' IN THE SCENE PASSED...") ("")
-  let locations []
-  
-  let scene-as-list (chrest:Scene.get-as-netlogo-list (scene))
-  
-  foreach( scene-as-list )[
-    let col (?)
-    output-debug-message (word "COL CONTENTS: " col) ("")
-    
-    foreach(col)[ 
-      let row (?)
-      output-debug-message (word "ROW CONTENTS: " row) ("")
-      
-      let value-to-check (item (0) (row))
-      
-      if(not identify-object-by-who)[
-        set value-to-check (item (1) (row))
-      ]
-      
-      if( value-to-check = object)[
-        let location ( list (position (col) (scene-as-list) ) (position (row) (col)) )
-        output-debug-message (word "THE OBJECT IS LOCATED ON THESE COORDINATES SO '" location "' WILL BE APPENDED TO THE LOCAL 'locations' VARIABLE..." ) ("")
-        set locations (lput (location) (locations))
-      ]
-    ]
-  ]
-  
-  output-debug-message (word "THE LOCAL 'locations' VARIABLE IS NOW SET TO: '" locations "'.  REPORTING THIS LIST...") ("")
-  set debug-indent-level (debug-indent-level - 2)
-  report locations
-end
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; "GET-OBJECT-AND-PATCH-COORDINATES-AHEAD-OF-LOCATION-IN-SCENE" PROCEDURE ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
