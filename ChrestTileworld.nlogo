@@ -3094,7 +3094,7 @@ end
 ;end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;; "PATCH-AHEAD-EMPTY?" PROCEDURE ;;;
+;;; "PATCH-AHEAD-EMPTY?" PROCEDURE ;;; - MAY NO LONGER BE REQUIRED
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;Determines whether the patch immediately ahead of the calling turtle
@@ -3110,49 +3110,49 @@ end
 ;                                              that the patch ahead does contain turtles.
 ;
 ;@author  Martyn Lloyd-Kelly <martynlk@liverpool.ac.uk>  
-to-report patch-ahead-empty? [scene heading-of-self]
- set debug-indent-level (debug-indent-level + 1)
- output-debug-message ("EXECUTING THE 'patch-ahead-empty?' PROCEDURE...") ("")
- set debug-indent-level (debug-indent-level + 1)
- 
- let location-of-self ( chrest:Scene.get-location-of-creator (scene) )
- let location-of-self-xcor ( item (0) (location-of-self) )
- let location-of-self-ycor ( item (1) (location-of-self) )
- let pxcor-to-check 0
- let pycor-to-check 0
- 
- ifelse(heading-of-self = 0)[
-   set pxcor-to-check (location-of-self-xcor)
-   set pycor-to-check (location-of-self-ycor + 1)
- ]
- [
-   ifelse(heading-of-self = 90)[
-     set pxcor-to-check (location-of-self-xcor + 1)
-     set pycor-to-check (location-of-self-ycor)
-   ]
-   [
-     ifelse(heading-of-self = 180)[
-       set pxcor-to-check (location-of-self-xcor)
-       set pycor-to-check (location-of-self-ycor - 1)
-     ]
-     [
-       ifelse(heading-of-self = 270)[
-         set pxcor-to-check (location-of-self-xcor - 1)
-         set pycor-to-check (location-of-self-ycor)
-       ]
-       [
-         error (word "The 'heading-specified' value passed to the 'patch-ahead-empty?' procedure (" heading-of-self ") is not supported.")
-       ]
-     ]
-   ]
- ]
- 
- output-debug-message (word "The patch x/ycor to check is '" pxcor-to-check "' and '" pycor-to-check "', respectively...") (who)
- let class-of-object-on-patch-ahead ( item (1) (chrest:Scene.get-square-contents-as-netlogo-list (scene) (pxcor-to-check) (pycor-to-check)) )
- output-debug-message (word "The class of the object on these coordinates is: '" class-of-object-on-patch-ahead "'.  Reporting if this is equal to '" empty-patch-token "' or '" blind-patch-token "'") (who)
- set debug-indent-level (debug-indent-level - 2)
- report (class-of-object-on-patch-ahead) = empty-patch-token or (class-of-object-on-patch-ahead = blind-patch-token)
-end
+;to-report patch-ahead-empty? [scene heading-of-self]
+; set debug-indent-level (debug-indent-level + 1)
+; output-debug-message ("EXECUTING THE 'patch-ahead-empty?' PROCEDURE...") ("")
+; set debug-indent-level (debug-indent-level + 1)
+; 
+; let location-of-self ( chrest:Scene.get-location-of-creator (scene) )
+; let location-of-self-xcor ( item (0) (location-of-self) )
+; let location-of-self-ycor ( item (1) (location-of-self) )
+; let pxcor-to-check 0
+; let pycor-to-check 0
+; 
+; ifelse(heading-of-self = 0)[
+;   set pxcor-to-check (location-of-self-xcor)
+;   set pycor-to-check (location-of-self-ycor + 1)
+; ]
+; [
+;   ifelse(heading-of-self = 90)[
+;     set pxcor-to-check (location-of-self-xcor + 1)
+;     set pycor-to-check (location-of-self-ycor)
+;   ]
+;   [
+;     ifelse(heading-of-self = 180)[
+;       set pxcor-to-check (location-of-self-xcor)
+;       set pycor-to-check (location-of-self-ycor - 1)
+;     ]
+;     [
+;       ifelse(heading-of-self = 270)[
+;         set pxcor-to-check (location-of-self-xcor - 1)
+;         set pycor-to-check (location-of-self-ycor)
+;       ]
+;       [
+;         error (word "The 'heading-specified' value passed to the 'patch-ahead-empty?' procedure (" heading-of-self ") is not supported.")
+;       ]
+;     ]
+;   ]
+; ]
+; 
+; output-debug-message (word "The patch x/ycor to check is '" pxcor-to-check "' and '" pycor-to-check "', respectively...") (who)
+; let class-of-object-on-patch-ahead ( item (1) (chrest:Scene.get-square-contents-as-netlogo-list (scene) (pxcor-to-check) (pycor-to-check)) )
+; output-debug-message (word "The class of the object on these coordinates is: '" class-of-object-on-patch-ahead "'.  Reporting if this is equal to '" empty-patch-token "' or '" blind-patch-token "'") (who)
+; set debug-indent-level (debug-indent-level - 2)
+; report (class-of-object-on-patch-ahead) = empty-patch-token or (class-of-object-on-patch-ahead = blind-patch-token)
+;end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; "PERFORM-ACTION" PROCEDURE ;;;
@@ -3797,118 +3797,118 @@ to-report quote-string-or-read-from-string [value]
   ]
 end
          
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;; "RECTIFY-HEADING" PROCEDURE ;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;Reports one of 0, 90, 180 or 270 if the heading passed does not already
-;equal one of these values. If the heading passed is less than 0, it is 
-;converted to its positive equivalent and this converted value is used
-;to determine what heading is reported.  If the heading does not equal 
-;0, 90, 180 or 270 the value returned is as follows:
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;; "RECTIFY-HEADING" PROCEDURE ;;; - MAY NO LONGER BE NEEDED
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;
-; - If the heading passed is 360, 0 is returned.
-; - If the heading passed is > 0 and < 90 either 0 or 90 is returned.
-; - If the heading passed is > 90 and < 180 either 90 or 180 is returned.
-; - If the heading passed is > 180 and < 270 either 180 or 270 is returned.
-; - If the heading passed is > 270 and < 360 either 270 or 0 is returned. 
-;
-;The non-determinism of the value reported ensures that the calling turtle
-;does not repeat the same action over and over e.g. if a calling turtle's
-;closest tile is to the south-east and the calling turtle turns to face this
-;tile and its heading is then rectified, it has a 1 in 2 chance of setting 
-;its heading east or south rather than always setting its heading to the east
-;or always to the south.  Thus, the behaviour of the calling turtle is more 
-;flexible.
-;
-;         Name              Data Type     Description
-;         ----              ---------     -----------
-;@param   heading-to-recify Float         The heading to be rectified.
-;
-;@author  Martyn Lloyd-Kelly <martynlk@liverpool.ac.uk>  
-to-report rectify-heading [heading-to-rectify]
- set debug-indent-level (debug-indent-level + 1)
- output-debug-message ("EXECUTING THE 'recitify-heading' PROCEDURE...") ("")
- set debug-indent-level (debug-indent-level + 1)
- output-debug-message (word "THE VALUE OF THE LOCAL VARIABLE 'heading-to-rectify' IS: '" heading-to-rectify "'.") ("")
- 
- if(heading-to-rectify = 360)[
-   output-debug-message (word "'heading-to-rectify' IS EQUAL TO 360, REPORTING 0") ("")
-   set debug-indent-level (debug-indent-level - 2)
-   report 0
- ]
- 
- if(heading-to-rectify < 0)[
-   set heading-to-rectify (360 + heading-to-rectify)
-   output-debug-message ("'heading-to-rectify' IS LESS THAN 0, SO 360 HAS BEEN ADDED TO IT TO CONVERT IT TO A POSITIVE VALUE.") ("")
-   output-debug-message(word "'heading-to-rectify' IS NOW EQUAL TO: '" heading-to-rectify "'.") ("")
- ]
- 
- output-debug-message ("SETTING THE LOCAL 'random-decision' VARIABLE VALUE...") ("")
- let random-decision (random 2)
- output-debug-message (word "THE LOCAL 'random-decision' VARIABLE VALUE IS NOW SET TO: " random-decision "...") ("")
- output-debug-message (word "CHECKING THE VALUE OF THE LOCAL 'heading-to-rectify' VARIABLE VALUE (" heading-to-rectify ")...") ("")
- 
- if( (heading-to-rectify > 0) and (heading-to-rectify < 90) )[
-   output-debug-message (word "THE LOCAL 'heading-to-rectify' VARIABLE VALUE IS > 0 AND < 90...") ("")
-   ifelse( random-decision = 0 )[
-     output-debug-message (word "REPORTING " (item (0) (movement-headings)) "...") ("")
-     set debug-indent-level (debug-indent-level - 2)
-     report (item (0) (movement-headings))
-   ]
-   [
-     output-debug-message (word "REPORTING " (item (1) (movement-headings)) "...") ("")
-     set debug-indent-level (debug-indent-level - 2)
-     report (item (1) (movement-headings))
-   ]
- ]
- 
- if( (heading-to-rectify > 90) and (heading-to-rectify < 180) )[
-   output-debug-message (word "THE LOCAL 'heading-to-rectify' VARIABLE VALUE IS > 90 AND < 180...") ("")
-   ifelse( random-decision = 0 )[
-     output-debug-message (word "REPORTING " (item (1) (movement-headings)) "...") ("")
-     set debug-indent-level (debug-indent-level - 2)
-     report (item (1) (movement-headings))
-   ]
-   [
-     output-debug-message (word "REPORTING " (item (2) (movement-headings)) "...") ("")
-     set debug-indent-level (debug-indent-level - 2)
-     report (item (2) (movement-headings))
-   ]
- ]
- 
- if( (heading-to-rectify > 180) and (heading-to-rectify < 270) )[
-   output-debug-message (word "THE LOCAL 'heading-to-rectify' VARIABLE VALUE IS > 180 AND < 270...") ("")
-   ifelse( random-decision = 0 )[
-     output-debug-message (word "REPORTING " (item (2) (movement-headings)) "...") ("")
-     set debug-indent-level (debug-indent-level - 2)
-     report (item (2) (movement-headings))
-   ]
-   [
-     output-debug-message (word "REPORTING " (item (3) (movement-headings)) "...") ("")
-     set debug-indent-level (debug-indent-level - 2)
-     report (item (3) (movement-headings))
-   ]
- ]
- 
- if( (heading-to-rectify > 270) and (heading-to-rectify < 360) )[
-   output-debug-message (word "THE LOCAL 'heading-to-rectify' VARIABLE VALUE IS > 270 AND < 360...") ("")
-   ifelse( random-decision = 0 )[
-     output-debug-message (word "REPORTING " (item (3) (movement-headings)) "...") ("")
-     set debug-indent-level (debug-indent-level - 2)
-     report (item (3) (movement-headings))
-   ]
-   [
-     output-debug-message (word "REPORTING " (item (0) (movement-headings)) "...") ("")
-     set debug-indent-level (debug-indent-level - 2)
-     report (item (0) (movement-headings))
-   ]
- ]
- 
- output-debug-message ("THE LOCAL 'heading-to-rectify' VARIABLE VALUE IS SET TO EITHER 0, 90, 180 or 270, REPORTING THIS VALUE...") ("")
- set debug-indent-level (debug-indent-level - 2)
- report heading-to-rectify
-end
+;;Reports one of 0, 90, 180 or 270 if the heading passed does not already
+;;equal one of these values. If the heading passed is less than 0, it is 
+;;converted to its positive equivalent and this converted value is used
+;;to determine what heading is reported.  If the heading does not equal 
+;;0, 90, 180 or 270 the value returned is as follows:
+;;
+;; - If the heading passed is 360, 0 is returned.
+;; - If the heading passed is > 0 and < 90 either 0 or 90 is returned.
+;; - If the heading passed is > 90 and < 180 either 90 or 180 is returned.
+;; - If the heading passed is > 180 and < 270 either 180 or 270 is returned.
+;; - If the heading passed is > 270 and < 360 either 270 or 0 is returned. 
+;;
+;;The non-determinism of the value reported ensures that the calling turtle
+;;does not repeat the same action over and over e.g. if a calling turtle's
+;;closest tile is to the south-east and the calling turtle turns to face this
+;;tile and its heading is then rectified, it has a 1 in 2 chance of setting 
+;;its heading east or south rather than always setting its heading to the east
+;;or always to the south.  Thus, the behaviour of the calling turtle is more 
+;;flexible.
+;;
+;;         Name              Data Type     Description
+;;         ----              ---------     -----------
+;;@param   heading-to-recify Float         The heading to be rectified.
+;;
+;;@author  Martyn Lloyd-Kelly <martynlk@liverpool.ac.uk>  
+;to-report rectify-heading [heading-to-rectify]
+; set debug-indent-level (debug-indent-level + 1)
+; output-debug-message ("EXECUTING THE 'recitify-heading' PROCEDURE...") ("")
+; set debug-indent-level (debug-indent-level + 1)
+; output-debug-message (word "THE VALUE OF THE LOCAL VARIABLE 'heading-to-rectify' IS: '" heading-to-rectify "'.") ("")
+; 
+; if(heading-to-rectify = 360)[
+;   output-debug-message (word "'heading-to-rectify' IS EQUAL TO 360, REPORTING 0") ("")
+;   set debug-indent-level (debug-indent-level - 2)
+;   report 0
+; ]
+; 
+; if(heading-to-rectify < 0)[
+;   set heading-to-rectify (360 + heading-to-rectify)
+;   output-debug-message ("'heading-to-rectify' IS LESS THAN 0, SO 360 HAS BEEN ADDED TO IT TO CONVERT IT TO A POSITIVE VALUE.") ("")
+;   output-debug-message(word "'heading-to-rectify' IS NOW EQUAL TO: '" heading-to-rectify "'.") ("")
+; ]
+; 
+; output-debug-message ("SETTING THE LOCAL 'random-decision' VARIABLE VALUE...") ("")
+; let random-decision (random 2)
+; output-debug-message (word "THE LOCAL 'random-decision' VARIABLE VALUE IS NOW SET TO: " random-decision "...") ("")
+; output-debug-message (word "CHECKING THE VALUE OF THE LOCAL 'heading-to-rectify' VARIABLE VALUE (" heading-to-rectify ")...") ("")
+; 
+; if( (heading-to-rectify > 0) and (heading-to-rectify < 90) )[
+;   output-debug-message (word "THE LOCAL 'heading-to-rectify' VARIABLE VALUE IS > 0 AND < 90...") ("")
+;   ifelse( random-decision = 0 )[
+;     output-debug-message (word "REPORTING " (item (0) (movement-headings)) "...") ("")
+;     set debug-indent-level (debug-indent-level - 2)
+;     report (item (0) (movement-headings))
+;   ]
+;   [
+;     output-debug-message (word "REPORTING " (item (1) (movement-headings)) "...") ("")
+;     set debug-indent-level (debug-indent-level - 2)
+;     report (item (1) (movement-headings))
+;   ]
+; ]
+; 
+; if( (heading-to-rectify > 90) and (heading-to-rectify < 180) )[
+;   output-debug-message (word "THE LOCAL 'heading-to-rectify' VARIABLE VALUE IS > 90 AND < 180...") ("")
+;   ifelse( random-decision = 0 )[
+;     output-debug-message (word "REPORTING " (item (1) (movement-headings)) "...") ("")
+;     set debug-indent-level (debug-indent-level - 2)
+;     report (item (1) (movement-headings))
+;   ]
+;   [
+;     output-debug-message (word "REPORTING " (item (2) (movement-headings)) "...") ("")
+;     set debug-indent-level (debug-indent-level - 2)
+;     report (item (2) (movement-headings))
+;   ]
+; ]
+; 
+; if( (heading-to-rectify > 180) and (heading-to-rectify < 270) )[
+;   output-debug-message (word "THE LOCAL 'heading-to-rectify' VARIABLE VALUE IS > 180 AND < 270...") ("")
+;   ifelse( random-decision = 0 )[
+;     output-debug-message (word "REPORTING " (item (2) (movement-headings)) "...") ("")
+;     set debug-indent-level (debug-indent-level - 2)
+;     report (item (2) (movement-headings))
+;   ]
+;   [
+;     output-debug-message (word "REPORTING " (item (3) (movement-headings)) "...") ("")
+;     set debug-indent-level (debug-indent-level - 2)
+;     report (item (3) (movement-headings))
+;   ]
+; ]
+; 
+; if( (heading-to-rectify > 270) and (heading-to-rectify < 360) )[
+;   output-debug-message (word "THE LOCAL 'heading-to-rectify' VARIABLE VALUE IS > 270 AND < 360...") ("")
+;   ifelse( random-decision = 0 )[
+;     output-debug-message (word "REPORTING " (item (3) (movement-headings)) "...") ("")
+;     set debug-indent-level (debug-indent-level - 2)
+;     report (item (3) (movement-headings))
+;   ]
+;   [
+;     output-debug-message (word "REPORTING " (item (0) (movement-headings)) "...") ("")
+;     set debug-indent-level (debug-indent-level - 2)
+;     report (item (0) (movement-headings))
+;   ]
+; ]
+; 
+; output-debug-message ("THE LOCAL 'heading-to-rectify' VARIABLE VALUE IS SET TO EITHER 0, 90, 180 or 270, REPORTING THIS VALUE...") ("")
+; set debug-indent-level (debug-indent-level - 2)
+; report heading-to-rectify
+;end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;; "REINFORCE-VISUAL-ACTION-LINKS" PROCEDURE ;;;;;
