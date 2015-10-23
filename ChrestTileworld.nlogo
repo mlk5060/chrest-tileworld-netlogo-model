@@ -94,7 +94,7 @@ globals [
   testing-debug-messages         ;Stores a string composed of all debug messages output when tests are run.
   test-info                      ;Stores a list delineating the type of test, name of the test and number of the named test being run/last run.
   tile-born-every                ;Stores the length of time (in milliseconds) that must pass before a tile may possibly be created.
-  tile-birth-prob                ;Stores the probability that a hole will be created on each tick in the game.
+  tile-birth-prob                ;Stores the probability that a tile will be created on each tick in the game.
   tile-lifespan                  ;Stores the length of time (in milliseconds) that a tile lives for after creation.
   tile-token                     ;Stores the string used to indicate a tile in scene instances.
   training?                      ;Stores boolean true or false: true if the game is a training game, false if not (true by default).
