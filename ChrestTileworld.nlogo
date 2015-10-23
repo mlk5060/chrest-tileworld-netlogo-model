@@ -2507,6 +2507,22 @@ end
 ;;; "GET-OBSERVABLE-ENVIRONMENT" PROCEDURE ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;Reports what the calling turtle can "see" as a 2D list.  Each inner list contains 4 elements:
+;
+; - The x-coordinate offset of the patch from the calling turtle.
+; - The y-coordinate offset of the patch from the calling turtle.
+; - The 'who' value of the turtle on the patch.
+; - The object class of the turtle on the patch (see jchrest.lib.TileworldDomain).
+;
+;If a patch is empty then the 3rd and 4th elements are set to the "empty-patch-token" specified.
+;The patches will be ordered from west -> east and then from south -> north.  Therefore, the
+;south-western patch will appear first and the north-eastern patch will appear last. 
+;
+;         Name   Data Type     Description
+;         ----   ---------     -----------
+;@return  -      List          See above.
+;
+;@author  Martyn Lloyd-Kelly <martynlk@liverpool.ac.uk>
 to-report get-observable-environment
   set debug-indent-level (debug-indent-level + 1)
   output-debug-message ("EXECUTING THE 'get-observable-environment' PROCEDURE...") ("")
