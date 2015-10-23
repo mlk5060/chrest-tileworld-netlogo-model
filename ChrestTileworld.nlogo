@@ -3027,55 +3027,55 @@ to output-debug-message [msg-to-output turtle-id]
   ]
 end
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;; "PATCH-AHEAD-BLOCKED?" PROCEDURE ;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;Determines if the patch ahead of the calling turtle's location in scene
-;is blocked.  A patch is blocked if it contains an opponent, a hole or
-;a non-moveable tile.
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;; "PATCH-AHEAD-BLOCKED?" PROCEDURE ;;; - MAY NO LONGER BE NEEDED
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;
-;         Name              Data Type          Description
-;         ----              ---------          -----------
-;@param   scene             jchrest.lib.Scene  The scene to be evaluated.
-;@param   heading-to-face   Number             The heading along which the patch to check is located.
-;@return  -                 Boolean            True if the patch ahead along the heading specified
-;                                              in scene is blocked, false if not.
-;
-;@author  Martyn Lloyd-Kelly <martynlk@liverpool.ac.uk>    
-to-report patch-ahead-blocked? [scene heading-to-face]
-  set debug-indent-level (debug-indent-level + 1)
-  output-debug-message ("EXECUTING THE 'patch-ahead-blocked?' PROCEDURE...") ("")
-  set debug-indent-level (debug-indent-level + 1)
-  
-  output-debug-message (word "Checking to see if the patch along heading '" heading-to-face "' from my location in the scene passed contains an opponent, hole or unmoveable tile...") (who)
-  let object-ahead-one-patch-away ( item (1) (get-object-and-patch-coordinates-ahead-of-location-in-scene (scene) (heading-to-face) (1)) )
-  let object-ahead-two-patches-away ( item (1) (get-object-and-patch-coordinates-ahead-of-location-in-scene (scene) (heading-to-face) (2)) )
-  output-debug-message (word "The patch ahead contains '" object-ahead-one-patch-away "' and the patch ahead of this patch contains '" object-ahead-two-patches-away "'...") (who)
-          
-  ifelse(
-    (object-ahead-one-patch-away = opponent-token) or
-    (object-ahead-one-patch-away = hole-token) or
-    ;(object-ahead-one-patch-away = "null" and cautious?) or
-    (
-      (object-ahead-one-patch-away = tile-token) and
-      (
-        (object-ahead-two-patches-away = opponent-token) or
-        (object-ahead-two-patches-away = tile-token)
-        ;(object-ahead-two-patches-away = "null" and cautious? )
-      )
-    )
-  )[
-    output-debug-message ("The patch ahead is blocked, reporting true...") (who)
-    set debug-indent-level (debug-indent-level - 2)
-    report true
-  ]
-  [
-    output-debug-message ("The patch ahead is not blocked or isn't present in the scene passed, reporting false...") (who)
-    set debug-indent-level (debug-indent-level - 2)
-    report false
-  ]
-end
+;;Determines if the patch ahead of the calling turtle's location in scene
+;;is blocked.  A patch is blocked if it contains an opponent, a hole or
+;;a non-moveable tile.
+;;
+;;         Name              Data Type          Description
+;;         ----              ---------          -----------
+;;@param   scene             jchrest.lib.Scene  The scene to be evaluated.
+;;@param   heading-to-face   Number             The heading along which the patch to check is located.
+;;@return  -                 Boolean            True if the patch ahead along the heading specified
+;;                                              in scene is blocked, false if not.
+;;
+;;@author  Martyn Lloyd-Kelly <martynlk@liverpool.ac.uk>    
+;to-report patch-ahead-blocked? [scene heading-to-face]
+;  set debug-indent-level (debug-indent-level + 1)
+;  output-debug-message ("EXECUTING THE 'patch-ahead-blocked?' PROCEDURE...") ("")
+;  set debug-indent-level (debug-indent-level + 1)
+;  
+;  output-debug-message (word "Checking to see if the patch along heading '" heading-to-face "' from my location in the scene passed contains an opponent, hole or unmoveable tile...") (who)
+;  let object-ahead-one-patch-away ( item (1) (get-object-and-patch-coordinates-ahead-of-location-in-scene (scene) (heading-to-face) (1)) )
+;  let object-ahead-two-patches-away ( item (1) (get-object-and-patch-coordinates-ahead-of-location-in-scene (scene) (heading-to-face) (2)) )
+;  output-debug-message (word "The patch ahead contains '" object-ahead-one-patch-away "' and the patch ahead of this patch contains '" object-ahead-two-patches-away "'...") (who)
+;          
+;  ifelse(
+;    (object-ahead-one-patch-away = opponent-token) or
+;    (object-ahead-one-patch-away = hole-token) or
+;    ;(object-ahead-one-patch-away = "null" and cautious?) or
+;    (
+;      (object-ahead-one-patch-away = tile-token) and
+;      (
+;        (object-ahead-two-patches-away = opponent-token) or
+;        (object-ahead-two-patches-away = tile-token)
+;        ;(object-ahead-two-patches-away = "null" and cautious? )
+;      )
+;    )
+;  )[
+;    output-debug-message ("The patch ahead is blocked, reporting true...") (who)
+;    set debug-indent-level (debug-indent-level - 2)
+;    report true
+;  ]
+;  [
+;    output-debug-message ("The patch ahead is not blocked or isn't present in the scene passed, reporting false...") (who)
+;    set debug-indent-level (debug-indent-level - 2)
+;    report false
+;  ]
+;end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; "PATCH-AHEAD-EMPTY?" PROCEDURE ;;;
