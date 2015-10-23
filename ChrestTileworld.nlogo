@@ -2411,97 +2411,97 @@ to-report generate-visual-spatial-field-moves [ action-pattern reverse? ]
   report object-moves
 end
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;; "GET-OBJECT-AND-PATCH-COORDINATES-AHEAD-OF-LOCATION-IN-SCENE" PROCEDURE ;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;Reports information regarding the object located on the patch ahead 
-;with the heading and location specified in the scene passed.
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;; "GET-OBJECT-AND-PATCH-COORDINATES-AHEAD-OF-LOCATION-IN-SCENE" PROCEDURE ;;; - MAY NO LONGER BE NEEDED
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;
-;NOTE: This procedure does not support environment wrapping and therefore care
-;      should be used when passing a scene consisting of absolute coordinates
-;      rather than a scene consisting of coordinates that are relative to the
-;      agent's current location.
-;
-;         Name              Data Type          Description
-;         ----              ---------          -----------
-;@param   scene             jchrest.lib.Scene  The scene to be evaluated.        
-;@param   heading-to-check  Number             The heading from the location specified
-;                                              to check.
-;@param   patches-ahead     Number             The number of patches from from the source
-;                                              to check along the heading specified.
-;@return  -                 List               Contains 4 elements:
-;
-;                                                1. The ID of the object on the target patch.
-;                                                2. The class of the object on the target patch.
-;                                                3. The xcor of the target patch
-;                                                4. The ycor of the target patch
-;
-;                                              If the patch specified is not in the scene then
-;                                              elements 1 and 2 will be empty strings.
-;
-;@author  Martyn Lloyd-Kelly <martynlk@liverpool.ac.uk> 
-to-report get-object-and-patch-coordinates-ahead-of-location-in-scene [scene heading-to-check patches-ahead]
-  set debug-indent-level (debug-indent-level + 1)
-  output-debug-message ("EXECUTING THE 'get-object-and-patch-coordinates-ahead-of-location-in-scene' PROCEDURE...") ("")
-  set debug-indent-level (debug-indent-level + 1)
-  
-  output-debug-message (word "Getting location of self in 'scene' passed and setting x/ycor values to local variables 'source-location-xcor' and 'source-location-ycor'...") (who)   
-  let source-location ( chrest:Scene.get-location-of-creator (scene) )      
-  let source-location-xcor ( item (0) (source-location) )       
-  let source-location-ycor ( item (1) (source-location) )         
-  output-debug-message (word "The local 'source-location-xcor' and 'source-location-ycor' variables are equal to '" source-location-xcor "' and '" source-location-ycor "', respectively...") (who)      
-  
-  output-debug-message (word "Calculating target patch x/ycor by determining the heading along which to check (" heading-to-check ") and setting these values to 'target-location-xcor' and 'target-location-ycor'...") (who)   
-  let target-location-xcor 0   
-  let target-location-ycor 0      
-  
-  ifelse(heading-to-check = 0)[     
-    set target-location-xcor (source-location-xcor)     
-    set target-location-ycor (source-location-ycor + patches-ahead)   
-  ]   
-  [     
-    ifelse(heading-to-check = 90)[       
-      set target-location-xcor (source-location-xcor + patches-ahead)       
-      set target-location-ycor (source-location-ycor)     
-    ]     
-    [       
-      ifelse(heading-to-check = 180)[         
-        set target-location-xcor (source-location-xcor)         
-        set target-location-ycor (source-location-ycor - patches-ahead)       
-      ]       
-      [         
-        ifelse(heading-to-check = 270)[           
-          set target-location-xcor (source-location-xcor - patches-ahead)           
-          set target-location-ycor (source-location-ycor)         
-        ]         
-        [           
-          error (word "The heading specified (" heading-to-check ") is not supported by the 'get-object-and-patch-coordinates-ahead-of-location-in-scene' procedure.")         
-        ]       
-      ]     
-    ]   
-  ]   
-  output-debug-message (word "The local 'target-location-xcor' and 'target-location-ycor' variables are set to '" target-location-xcor "' and '" target-location-ycor "', respectively...") (who)      
-  
-  let target-patch-contents ( chrest:Scene.get-square-contents-as-netlogo-list (scene) (target-location-xcor) (target-location-ycor) )
-  output-debug-message (word "Result of getting contents of the target location from scene: " target-patch-contents) (who)
-  
-  let list-to-report (list
-    ("") 
-    ("") 
-    (target-location-xcor) 
-    (target-location-ycor)
-  )
-  
-  if(not empty? target-patch-contents)[
-    set list-to-report ( replace-item (0) (list-to-report) (item (0) (target-patch-contents)) )
-    set list-to-report ( replace-item (1) (list-to-report) (item (1) (target-patch-contents)) )
-  ]
-  
-  output-debug-message (word "Reporting: " list-to-report) (who)
-  set debug-indent-level (debug-indent-level - 2)
-  report list-to-report
-end
+;;Reports information regarding the object located on the patch ahead 
+;;with the heading and location specified in the scene passed.
+;;
+;;NOTE: This procedure does not support environment wrapping and therefore care
+;;      should be used when passing a scene consisting of absolute coordinates
+;;      rather than a scene consisting of coordinates that are relative to the
+;;      agent's current location.
+;;
+;;         Name              Data Type          Description
+;;         ----              ---------          -----------
+;;@param   scene             jchrest.lib.Scene  The scene to be evaluated.        
+;;@param   heading-to-check  Number             The heading from the location specified
+;;                                              to check.
+;;@param   patches-ahead     Number             The number of patches from from the source
+;;                                              to check along the heading specified.
+;;@return  -                 List               Contains 4 elements:
+;;
+;;                                                1. The ID of the object on the target patch.
+;;                                                2. The class of the object on the target patch.
+;;                                                3. The xcor of the target patch
+;;                                                4. The ycor of the target patch
+;;
+;;                                              If the patch specified is not in the scene then
+;;                                              elements 1 and 2 will be empty strings.
+;;
+;;@author  Martyn Lloyd-Kelly <martynlk@liverpool.ac.uk> 
+;to-report get-object-and-patch-coordinates-ahead-of-location-in-scene [scene heading-to-check patches-ahead]
+;  set debug-indent-level (debug-indent-level + 1)
+;  output-debug-message ("EXECUTING THE 'get-object-and-patch-coordinates-ahead-of-location-in-scene' PROCEDURE...") ("")
+;  set debug-indent-level (debug-indent-level + 1)
+;  
+;  output-debug-message (word "Getting location of self in 'scene' passed and setting x/ycor values to local variables 'source-location-xcor' and 'source-location-ycor'...") (who)   
+;  let source-location ( chrest:Scene.get-location-of-creator (scene) )      
+;  let source-location-xcor ( item (0) (source-location) )       
+;  let source-location-ycor ( item (1) (source-location) )         
+;  output-debug-message (word "The local 'source-location-xcor' and 'source-location-ycor' variables are equal to '" source-location-xcor "' and '" source-location-ycor "', respectively...") (who)      
+;  
+;  output-debug-message (word "Calculating target patch x/ycor by determining the heading along which to check (" heading-to-check ") and setting these values to 'target-location-xcor' and 'target-location-ycor'...") (who)   
+;  let target-location-xcor 0   
+;  let target-location-ycor 0      
+;  
+;  ifelse(heading-to-check = 0)[     
+;    set target-location-xcor (source-location-xcor)     
+;    set target-location-ycor (source-location-ycor + patches-ahead)   
+;  ]   
+;  [     
+;    ifelse(heading-to-check = 90)[       
+;      set target-location-xcor (source-location-xcor + patches-ahead)       
+;      set target-location-ycor (source-location-ycor)     
+;    ]     
+;    [       
+;      ifelse(heading-to-check = 180)[         
+;        set target-location-xcor (source-location-xcor)         
+;        set target-location-ycor (source-location-ycor - patches-ahead)       
+;      ]       
+;      [         
+;        ifelse(heading-to-check = 270)[           
+;          set target-location-xcor (source-location-xcor - patches-ahead)           
+;          set target-location-ycor (source-location-ycor)         
+;        ]         
+;        [           
+;          error (word "The heading specified (" heading-to-check ") is not supported by the 'get-object-and-patch-coordinates-ahead-of-location-in-scene' procedure.")         
+;        ]       
+;      ]     
+;    ]   
+;  ]   
+;  output-debug-message (word "The local 'target-location-xcor' and 'target-location-ycor' variables are set to '" target-location-xcor "' and '" target-location-ycor "', respectively...") (who)      
+;  
+;  let target-patch-contents ( chrest:Scene.get-square-contents-as-netlogo-list (scene) (target-location-xcor) (target-location-ycor) )
+;  output-debug-message (word "Result of getting contents of the target location from scene: " target-patch-contents) (who)
+;  
+;  let list-to-report (list
+;    ("") 
+;    ("") 
+;    (target-location-xcor) 
+;    (target-location-ycor)
+;  )
+;  
+;  if(not empty? target-patch-contents)[
+;    set list-to-report ( replace-item (0) (list-to-report) (item (0) (target-patch-contents)) )
+;    set list-to-report ( replace-item (1) (list-to-report) (item (1) (target-patch-contents)) )
+;  ]
+;  
+;  output-debug-message (word "Reporting: " list-to-report) (who)
+;  set debug-indent-level (debug-indent-level - 2)
+;  report list-to-report
+;end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; "GET-OBSERVABLE-ENVIRONMENT" PROCEDURE ;;;
