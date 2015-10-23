@@ -699,76 +699,76 @@ to chrest-turtles-act
  ]
 end
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;; "CLOSEST-OBJECT-IN-SET-TO-SPECIFIED-OBJECT-AND-MANHATTAN-DISTANCE" PROCEDURE ;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;Determines the manhattan distance from each element in the object set specified 
-;to the object specified.  If only one object in the set specified is closest then
-;this object is reported otherwise, one of the objects in the set with the shortest
-;manhattan distance is randomly reported.  The manhattan distance of this object
-;is also reported. 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;; "CLOSEST-OBJECT-IN-SET-TO-SPECIFIED-OBJECT-AND-MANHATTAN-DISTANCE" PROCEDURE ;;; - MAY NO LONGER BE NECESSARY
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;
-;         Name              Data Type     Description
-;         ----              ---------     -----------
-;@param   object-from       String        The location of the object that is to be used as the 
-;                                         source point of the manhattan distance calculations.
-;                                         String should be formatted as the string representation
-;                                         of a CHREST-compatible "ItemSquarePattern" instance.
-;@param   objects-to        List          A list of strings representing the locations of the
-;                                         objects that are to be used as the terminal points 
-;                                         in the manhattan distance calculations. Strings should 
-;                                         be formatted as the string representation of a 
-;                                         CHREST-compatible "ItemSquarePattern" instance, i.e.
-;                                         "[object-id xcor ycor]"
-;@return  -                 List          Two elements:
-;                                         1) The location of the object from the set of terminal 
-;                                            locations specified that has the shortest manhattan 
-;                                            distance from the source object.
-;                                         2) The manhattan distance between the source and reported
-;                                            terminal object.
-;
-;@author  Martyn Lloyd-Kelly <martynlk@liverpool.ac.uk>
-to-report closest-object-in-set-to-specified-object-and-manhattan-distance [object-from objects-to]
-  set debug-indent-level (debug-indent-level + 1)
-  output-debug-message ("EXECUTING THE 'closest-object-in-set-to-specified-object' PROCEDURE...") ("")
-  set debug-indent-level (debug-indent-level + 1)
-  
-  output-debug-message (word "Calculating the manhattan distance of each item in (" objects-to ") relative to the specified object (" object-from ")...") (who)
-  let manhattan-distances []
-  
-  let object-from-xcor ( chrest:ItemSquarePattern.get-column (object-from) )
-  let object-from-ycor ( chrest:ItemSquarePattern.get-row (object-from) )
-  
-  foreach(objects-to)[
-    let abs-num-patches-between-objects-along-xcor ( abs( (chrest:ItemSquarePattern.get-column (?)) - object-from-xcor) )
-    let abs-num-patches-between-objects-along-ycor ( abs( (chrest:ItemSquarePattern.get-row (?)) - object-from-ycor) )
-    output-debug-message (word "The absolute distance between " ? " and " object-from " is " abs-num-patches-between-objects-along-xcor " patches along the x-axis and " abs-num-patches-between-objects-along-ycor " patches along the y-axis.") (who) 
-    
-    let manhattan-distance (abs-num-patches-between-objects-along-xcor + abs-num-patches-between-objects-along-ycor)
-    output-debug-message (word "The manhattan distance between " ? " and " object-from " is: " manhattan-distance ".  Adding it to the local 'manhattan-distances' list...") (who)
-    set manhattan-distances ( lput (manhattan-distance) (manhattan-distances) )
-    output-debug-message (word "The 'manhattan-distances' list is now equal to: '" manhattan-distances "'...") (who)
-  ]
-  
-  let min-manhattan-distance ( min (manhattan-distances) )
-  let i (0)
-  let positions-of-objects-with-min-manhattan-distance-from-specified-object []
-  foreach(manhattan-distances)[
-    output-debug-message (word "Checking to see if the manhattan distance " ? " is equal to the minimum manhattan distance calculated: " min-manhattan-distance "...") (who)
-    if(? = min-manhattan-distance)[
-      output-debug-message (word "This manhattan distance (" ? ") is equal to the minimum manhattan distance specified so the position of this manhattan distance in 'manhattan-distances' (" i ") will be added to the local 'positions-of-objects-with-min-manhattan-distance-from-specified-object' variable...") (who)
-      set positions-of-objects-with-min-manhattan-distance-from-specified-object (lput (i) (positions-of-objects-with-min-manhattan-distance-from-specified-object))
-    ]
-    set i (i + 1)
-  ]
-  
-  output-debug-message (word "Selecting one of the elements in 'positions-of-objects-with-min-manhattan-distance-from-specified-object' (" positions-of-objects-with-min-manhattan-distance-from-specified-object ") to define the object to return in the local 'objects-to' variable (" objects-to ") as the closest object to '" object-from "'") (who)
-  let closest-object ( item (one-of (positions-of-objects-with-min-manhattan-distance-from-specified-object)) (objects-to) )
-  output-debug-message (word "The closest object to " object-from " from " objects-to " has been set to " closest-object ".  Reporting this along with the minimum manhattan distance calculated (" min-manhattan-distance ") as a list ..." ) (who)
-  set debug-indent-level (debug-indent-level - 2)
-  report (list (closest-object) (min-manhattan-distance) )
-end
+;;Determines the manhattan distance from each element in the object set specified 
+;;to the object specified.  If only one object in the set specified is closest then
+;;this object is reported otherwise, one of the objects in the set with the shortest
+;;manhattan distance is randomly reported.  The manhattan distance of this object
+;;is also reported. 
+;;
+;;         Name              Data Type     Description
+;;         ----              ---------     -----------
+;;@param   object-from       String        The location of the object that is to be used as the 
+;;                                         source point of the manhattan distance calculations.
+;;                                         String should be formatted as the string representation
+;;                                         of a CHREST-compatible "ItemSquarePattern" instance.
+;;@param   objects-to        List          A list of strings representing the locations of the
+;;                                         objects that are to be used as the terminal points 
+;;                                         in the manhattan distance calculations. Strings should 
+;;                                         be formatted as the string representation of a 
+;;                                         CHREST-compatible "ItemSquarePattern" instance, i.e.
+;;                                         "[object-id xcor ycor]"
+;;@return  -                 List          Two elements:
+;;                                         1) The location of the object from the set of terminal 
+;;                                            locations specified that has the shortest manhattan 
+;;                                            distance from the source object.
+;;                                         2) The manhattan distance between the source and reported
+;;                                            terminal object.
+;;
+;;@author  Martyn Lloyd-Kelly <martynlk@liverpool.ac.uk>
+;to-report closest-object-in-set-to-specified-object-and-manhattan-distance [object-from objects-to]
+;  set debug-indent-level (debug-indent-level + 1)
+;  output-debug-message ("EXECUTING THE 'closest-object-in-set-to-specified-object' PROCEDURE...") ("")
+;  set debug-indent-level (debug-indent-level + 1)
+;  
+;  output-debug-message (word "Calculating the manhattan distance of each item in (" objects-to ") relative to the specified object (" object-from ")...") (who)
+;  let manhattan-distances []
+;  
+;  let object-from-xcor ( chrest:ItemSquarePattern.get-column (object-from) )
+;  let object-from-ycor ( chrest:ItemSquarePattern.get-row (object-from) )
+;  
+;  foreach(objects-to)[
+;    let abs-num-patches-between-objects-along-xcor ( abs( (chrest:ItemSquarePattern.get-column (?)) - object-from-xcor) )
+;    let abs-num-patches-between-objects-along-ycor ( abs( (chrest:ItemSquarePattern.get-row (?)) - object-from-ycor) )
+;    output-debug-message (word "The absolute distance between " ? " and " object-from " is " abs-num-patches-between-objects-along-xcor " patches along the x-axis and " abs-num-patches-between-objects-along-ycor " patches along the y-axis.") (who) 
+;    
+;    let manhattan-distance (abs-num-patches-between-objects-along-xcor + abs-num-patches-between-objects-along-ycor)
+;    output-debug-message (word "The manhattan distance between " ? " and " object-from " is: " manhattan-distance ".  Adding it to the local 'manhattan-distances' list...") (who)
+;    set manhattan-distances ( lput (manhattan-distance) (manhattan-distances) )
+;    output-debug-message (word "The 'manhattan-distances' list is now equal to: '" manhattan-distances "'...") (who)
+;  ]
+;  
+;  let min-manhattan-distance ( min (manhattan-distances) )
+;  let i (0)
+;  let positions-of-objects-with-min-manhattan-distance-from-specified-object []
+;  foreach(manhattan-distances)[
+;    output-debug-message (word "Checking to see if the manhattan distance " ? " is equal to the minimum manhattan distance calculated: " min-manhattan-distance "...") (who)
+;    if(? = min-manhattan-distance)[
+;      output-debug-message (word "This manhattan distance (" ? ") is equal to the minimum manhattan distance specified so the position of this manhattan distance in 'manhattan-distances' (" i ") will be added to the local 'positions-of-objects-with-min-manhattan-distance-from-specified-object' variable...") (who)
+;      set positions-of-objects-with-min-manhattan-distance-from-specified-object (lput (i) (positions-of-objects-with-min-manhattan-distance-from-specified-object))
+;    ]
+;    set i (i + 1)
+;  ]
+;  
+;  output-debug-message (word "Selecting one of the elements in 'positions-of-objects-with-min-manhattan-distance-from-specified-object' (" positions-of-objects-with-min-manhattan-distance-from-specified-object ") to define the object to return in the local 'objects-to' variable (" objects-to ") as the closest object to '" object-from "'") (who)
+;  let closest-object ( item (one-of (positions-of-objects-with-min-manhattan-distance-from-specified-object)) (objects-to) )
+;  output-debug-message (word "The closest object to " object-from " from " objects-to " has been set to " closest-object ".  Reporting this along with the minimum manhattan distance calculated (" min-manhattan-distance ") as a list ..." ) (who)
+;  set debug-indent-level (debug-indent-level - 2)
+;  report (list (closest-object) (min-manhattan-distance) )
+;end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; "CONSTRUCT-VISUAL-SPATIAL-FIELD" PROCEDURE ;;;
