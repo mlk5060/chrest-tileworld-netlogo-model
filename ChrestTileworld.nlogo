@@ -4626,7 +4626,7 @@ to setup-plot-pen [name-of-plot mode-of-pen]
 end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;; "SHORTEST-DISTANCE-FROM-LOCATION-TO-LOCATION" PROCEDURE ;;;
+;;; "SHORTEST-DISTANCE-FROM-LOCATION-TO-LOCATION" PROCEDURE ;;; - MAY NO LONGER BE NEEDED
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;Reports the least number of patches that would need to be traversed to
@@ -4646,21 +4646,21 @@ end
 ;@return  -                 Number        See procedure description.
 ;
 ;@author  Martyn Lloyd-Kelly <martynlk@liverpool.ac.uk>  
-to-report shortest-distance-from-location-to-location [from-location to-location]
-  set debug-indent-level (debug-indent-level + 1)
-  output-debug-message ("EXECUTING THE 'shortest-distance-from-location-to-location' PROCEDURE...") ("")
-  set debug-indent-level (debug-indent-level + 1)
-  
-  let from-location-xcor ( chrest:ItemSquarePattern.get-column (from-location) )
-  let from-location-ycor ( chrest:ItemSquarePattern.get-row (from-location) )
-      
-  let to-location-xcor ( chrest:ItemSquarePattern.get-column (to-location) )
-  let to-location-ycor ( chrest:ItemSquarePattern.get-row (to-location) )
-      
-  output-debug-message (word "The x/ycor values to calculate the shortest distance between when wrapping is enabled are '" from-location-xcor "'/'" from-location-ycor "' and '" to-location-xcor "'/'" to-location-ycor "', respectively...") (who)
-  set debug-indent-level (debug-indent-level - 2)
-  report ( extras:distance (from-location-xcor) (from-location-ycor) (to-location-xcor) (to-location-ycor) (true) )
-end
+;to-report shortest-distance-from-location-to-location [from-location to-location]
+;  set debug-indent-level (debug-indent-level + 1)
+;  output-debug-message ("EXECUTING THE 'shortest-distance-from-location-to-location' PROCEDURE...") ("")
+;  set debug-indent-level (debug-indent-level + 1)
+;  
+;  let from-location-xcor ( chrest:ItemSquarePattern.get-column (from-location) )
+;  let from-location-ycor ( chrest:ItemSquarePattern.get-row (from-location) )
+;      
+;  let to-location-xcor ( chrest:ItemSquarePattern.get-column (to-location) )
+;  let to-location-ycor ( chrest:ItemSquarePattern.get-row (to-location) )
+;      
+;  output-debug-message (word "The x/ycor values to calculate the shortest distance between when wrapping is enabled are '" from-location-xcor "'/'" from-location-ycor "' and '" to-location-xcor "'/'" to-location-ycor "', respectively...") (who)
+;  set debug-indent-level (debug-indent-level - 2)
+;  report ( extras:distance (from-location-xcor) (from-location-ycor) (to-location-xcor) (to-location-ycor) (true) )
+;end
         
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; "SPECIFY-DEBUG-MESSAGE-OUTPUT-FILE" PROCEDURE ;;;
