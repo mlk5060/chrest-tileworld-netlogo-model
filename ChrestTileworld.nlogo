@@ -4666,97 +4666,97 @@ to specify-debug-message-output-file
  ]
 end
              
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;; "SURROUNDED?" PROCEDURE ;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;Determines whether the calling turtle is surrounded by checking to see if either 
-;condition that follows is true for each item, n, in the global 'movement-headings' 
-;variable:
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;; "SURROUNDED?" PROCEDURE ;;; - MAY NO LONGER BE NEEDED
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;
-; - Is there a turtle other than a tile on the patch immediately ahead of the calling
-;   turtle with heading n?
-; - If there is a tile on the patch immediately ahead of the calling turtle with 
-;   heading n, is there another turtle other than a hole on the patch that is 2 
-;   patches away from the calling turtle with heading n?
-;
-;If these conditions are true for all items in the global 'movement-headings' 
-;variable then the calling turtle is surrounded. 
-;
-;         Name              Data Type          Description
-;         ----              ---------          -----------
-;@param   scene             jchrest.lib.Scene  The scene to evaluate.
-;@return  -                 Boolean            Boolean true indicates that the calling turtle is
-;                                              surrounded, boolean false indicates that the calling 
-;                                              turtle is not surrounded.
-;
-;@author  Martyn Lloyd-Kelly <martynlk@liverpool.ac.uk>  
-to-report surrounded? [scene]
- set debug-indent-level (debug-indent-level + 1)
- output-debug-message ("EXECUTING THE 'surrounded?' PROCEDURE...") ("")
- set debug-indent-level (debug-indent-level + 1)
- 
- output-debug-message ("Setting the local 'headings-blocked' and 'heading-item' variable values to an empty list and 0, respectively...") (who)
- let headings-blocked []
- let heading-item 0
- output-debug-message (word "The local 'headings-blocked' and 'heading-item' variable values are now set to: '" headings-blocked "' and '" heading-item "'...") (who)
- 
- output-debug-message (word "Setting the local 'location-of-self' variable to the location of myself in the scene I am to analyse so I can determine if I am surrounded...") (who)
- let location-of-self ( chrest:Scene.get-location-of-creator (scene) )
- output-debug-message (word "The local 'location-of-self' variable is now set to: '" location-of-self "'.") (who)
- let self-xcor ( item (0) (location-of-self) )
- let self-ycor ( item (1) (location-of-self) )
-  
- let xcor-of-adjacent-patch 0
- let ycor-of-adjacent-patch 0
- let xcor-of-patch-ahead-of-adjacent-patch 0
- let ycor-of-patch-ahead-of-adjacent-patch 0
- 
- while[heading-item < length movement-headings][
-   let heading-to-check (item (heading-item) (movement-headings))
-   
-   let object-on-adjacent-patch ( item (1) (get-object-and-patch-coordinates-ahead-of-location-in-scene (scene) (heading-to-check) (1)) )
-   let object-on-patch-ahead-of-adjacent-patch ( item (1) (get-object-and-patch-coordinates-ahead-of-location-in-scene (scene) (heading-to-check) (2)) )
-   
-   
-   output-debug-message (word "With heading " heading-to-check "the object on the patch adjacent to me is: '" object-on-adjacent-patch "' and the object on the patch ahead of the patch adjacent to me is: '" object-on-patch-ahead-of-adjacent-patch "'.") (who)
-   if(
-     ;Check that the patch adjacent to the calling turtle along the heading specified is not empty, not a "blind spot" and contains an object other than a tile.
-     (
-       object-on-adjacent-patch != tile-token and 
-       object-on-adjacent-patch != empty-patch-token and 
-       object-on-adjacent-patch != blind-patch-token
-     ) or
-     ;Check that the adjacent patch contains a tile and the patch ahead of this adjacent patch is not empty, a "blind spot" and doesn't contain a hole.
-     (
-       object-on-adjacent-patch = tile-token and
-       object-on-patch-ahead-of-adjacent-patch != hole-token and
-       object-on-patch-ahead-of-adjacent-patch != empty-patch-token and
-       object-on-patch-ahead-of-adjacent-patch != blind-patch-token
-     )
-   )[
-     output-debug-message (word "Either, the patch adjacent to me with heading " heading-to-check " contains a non-moveable object or a non-moveable tile so I'll add " heading-to-check " to the local 'headings-blocked' list...") (who)
-     set headings-blocked (lput (heading-to-check) (headings-blocked))
-     output-debug-message (word "The local 'headings-blocked' variable is now set to: " headings-blocked ".  Checking the next heading in the global 'movement-headings' variable...") (who)
-   ]
-   
-   ;TODO: CONSIDER INCREMENTING DELIBERATION TIME HERE.
-   set heading-item (heading-item + 1)
- ]
- 
- output-debug-message (word "Checking the length of the local 'headings-blocked' list (" length headings-blocked ").  If this is equal to the length of the global 'movement-headings' list (" length movement-headings ") then I'm surrounded...") (who)
- ifelse( (length headings-blocked) = (length movement-headings) )[
-   output-debug-message ("The length of the local 'headings-blocked' list is equal to the length of the global 'movement-headings' list so I am surrounded...") (who)
-   set debug-indent-level (debug-indent-level - 2)
-   report true
- ]
- [
-   output-debug-message ("The length of the local 'headings-blocked' list is not equal to the length of the global 'movement-headings' list so I am not surrounded...") (who)
-   set debug-indent-level (debug-indent-level - 2)
-   report false
- ]
-   
-end
+;;Determines whether the calling turtle is surrounded by checking to see if either 
+;;condition that follows is true for each item, n, in the global 'movement-headings' 
+;;variable:
+;;
+;; - Is there a turtle other than a tile on the patch immediately ahead of the calling
+;;   turtle with heading n?
+;; - If there is a tile on the patch immediately ahead of the calling turtle with 
+;;   heading n, is there another turtle other than a hole on the patch that is 2 
+;;   patches away from the calling turtle with heading n?
+;;
+;;If these conditions are true for all items in the global 'movement-headings' 
+;;variable then the calling turtle is surrounded. 
+;;
+;;         Name              Data Type          Description
+;;         ----              ---------          -----------
+;;@param   scene             jchrest.lib.Scene  The scene to evaluate.
+;;@return  -                 Boolean            Boolean true indicates that the calling turtle is
+;;                                              surrounded, boolean false indicates that the calling 
+;;                                              turtle is not surrounded.
+;;
+;;@author  Martyn Lloyd-Kelly <martynlk@liverpool.ac.uk>  
+;to-report surrounded? [scene]
+; set debug-indent-level (debug-indent-level + 1)
+; output-debug-message ("EXECUTING THE 'surrounded?' PROCEDURE...") ("")
+; set debug-indent-level (debug-indent-level + 1)
+; 
+; output-debug-message ("Setting the local 'headings-blocked' and 'heading-item' variable values to an empty list and 0, respectively...") (who)
+; let headings-blocked []
+; let heading-item 0
+; output-debug-message (word "The local 'headings-blocked' and 'heading-item' variable values are now set to: '" headings-blocked "' and '" heading-item "'...") (who)
+; 
+; output-debug-message (word "Setting the local 'location-of-self' variable to the location of myself in the scene I am to analyse so I can determine if I am surrounded...") (who)
+; let location-of-self ( chrest:Scene.get-location-of-creator (scene) )
+; output-debug-message (word "The local 'location-of-self' variable is now set to: '" location-of-self "'.") (who)
+; let self-xcor ( item (0) (location-of-self) )
+; let self-ycor ( item (1) (location-of-self) )
+;  
+; let xcor-of-adjacent-patch 0
+; let ycor-of-adjacent-patch 0
+; let xcor-of-patch-ahead-of-adjacent-patch 0
+; let ycor-of-patch-ahead-of-adjacent-patch 0
+; 
+; while[heading-item < length movement-headings][
+;   let heading-to-check (item (heading-item) (movement-headings))
+;   
+;   let object-on-adjacent-patch ( item (1) (get-object-and-patch-coordinates-ahead-of-location-in-scene (scene) (heading-to-check) (1)) )
+;   let object-on-patch-ahead-of-adjacent-patch ( item (1) (get-object-and-patch-coordinates-ahead-of-location-in-scene (scene) (heading-to-check) (2)) )
+;   
+;   
+;   output-debug-message (word "With heading " heading-to-check "the object on the patch adjacent to me is: '" object-on-adjacent-patch "' and the object on the patch ahead of the patch adjacent to me is: '" object-on-patch-ahead-of-adjacent-patch "'.") (who)
+;   if(
+;     ;Check that the patch adjacent to the calling turtle along the heading specified is not empty, not a "blind spot" and contains an object other than a tile.
+;     (
+;       object-on-adjacent-patch != tile-token and 
+;       object-on-adjacent-patch != empty-patch-token and 
+;       object-on-adjacent-patch != blind-patch-token
+;     ) or
+;     ;Check that the adjacent patch contains a tile and the patch ahead of this adjacent patch is not empty, a "blind spot" and doesn't contain a hole.
+;     (
+;       object-on-adjacent-patch = tile-token and
+;       object-on-patch-ahead-of-adjacent-patch != hole-token and
+;       object-on-patch-ahead-of-adjacent-patch != empty-patch-token and
+;       object-on-patch-ahead-of-adjacent-patch != blind-patch-token
+;     )
+;   )[
+;     output-debug-message (word "Either, the patch adjacent to me with heading " heading-to-check " contains a non-moveable object or a non-moveable tile so I'll add " heading-to-check " to the local 'headings-blocked' list...") (who)
+;     set headings-blocked (lput (heading-to-check) (headings-blocked))
+;     output-debug-message (word "The local 'headings-blocked' variable is now set to: " headings-blocked ".  Checking the next heading in the global 'movement-headings' variable...") (who)
+;   ]
+;   
+;   ;TODO: CONSIDER INCREMENTING DELIBERATION TIME HERE.
+;   set heading-item (heading-item + 1)
+; ]
+; 
+; output-debug-message (word "Checking the length of the local 'headings-blocked' list (" length headings-blocked ").  If this is equal to the length of the global 'movement-headings' list (" length movement-headings ") then I'm surrounded...") (who)
+; ifelse( (length headings-blocked) = (length movement-headings) )[
+;   output-debug-message ("The length of the local 'headings-blocked' list is equal to the length of the global 'movement-headings' list so I am surrounded...") (who)
+;   set debug-indent-level (debug-indent-level - 2)
+;   report true
+; ]
+; [
+;   output-debug-message ("The length of the local 'headings-blocked' list is not equal to the length of the global 'movement-headings' list so I am not surrounded...") (who)
+;   set debug-indent-level (debug-indent-level - 2)
+;   report false
+; ]
+;   
+;end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; "UPDATE-PLOT-NO-X-AXIS-VALUE" PROCEDURE ;;;
