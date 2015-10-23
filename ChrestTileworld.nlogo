@@ -243,42 +243,42 @@ to age
   set debug-indent-level (debug-indent-level - 2)
 end
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;; "ALTER-HEADING-RANDOMLY-BY-ADDING-OR-SUBTRACTING-90" PROCEDURE ;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;Alters the value of the heading passed by non-deterministically adding 
-;or subtracting 90.  So, if the heading indicates:
-; - North (0): resultant heading will be west (270) or east (90).
-; - East (90): resultant heading will be north (0) or south (180).
-; - South (180): resultant heading will be east (90) or west (270).
-; - West (270): resultant heading will be south (180) or north (0).
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;; "ALTER-HEADING-RANDOMLY-BY-ADDING-OR-SUBTRACTING-90" PROCEDURE ;;; - MAY NO LONGER BE NEEDED
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;
-;         Name              Data Type     Description
-;         ----              ---------     -----------
-;@param   current-heading   Number        The heading to be altered.
-;@return  -                 Number        The altered heading (see description above).
-;
-;@author  Martyn Lloyd-Kelly <martynlk@liverpool.ac.uk>  
-to-report alter-heading-randomly-by-adding-or-subtracting-90 [current-heading]
-  set debug-indent-level (debug-indent-level + 1)
-  output-debug-message ("EXECUTING THE 'alter-heading-randomly-by-adding-or-subtracting-90' PROCEDURE...") ("")
-  set debug-indent-level (debug-indent-level + 1)
-  
-  output-debug-message (word "The heading to alter is: '" current-heading "'.") (who)
-  ifelse( (random 2) = 0)[
-    output-debug-message ("Altering current heading by adding 90.") (who)
-    set current-heading ( current-heading + 90 )
-  ]
-  [ 
-    output-debug-message ("Altering current heading by subtracting 90.") (who)
-    set current-heading ( current-heading - 90 )
-  ]
-  
-  output-debug-message (word "The heading after alteration is now set to: '" current-heading "'.") (who)
-  set debug-indent-level (debug-indent-level - 2)
-  report ( rectify-heading (current-heading) )
-end
+;;Alters the value of the heading passed by non-deterministically adding 
+;;or subtracting 90.  So, if the heading indicates:
+;; - North (0): resultant heading will be west (270) or east (90).
+;; - East (90): resultant heading will be north (0) or south (180).
+;; - South (180): resultant heading will be east (90) or west (270).
+;; - West (270): resultant heading will be south (180) or north (0).
+;;
+;;         Name              Data Type     Description
+;;         ----              ---------     -----------
+;;@param   current-heading   Number        The heading to be altered.
+;;@return  -                 Number        The altered heading (see description above).
+;;
+;;@author  Martyn Lloyd-Kelly <martynlk@liverpool.ac.uk>  
+;to-report alter-heading-randomly-by-adding-or-subtracting-90 [current-heading]
+;  set debug-indent-level (debug-indent-level + 1)
+;  output-debug-message ("EXECUTING THE 'alter-heading-randomly-by-adding-or-subtracting-90' PROCEDURE...") ("")
+;  set debug-indent-level (debug-indent-level + 1)
+;  
+;  output-debug-message (word "The heading to alter is: '" current-heading "'.") (who)
+;  ifelse( (random 2) = 0)[
+;    output-debug-message ("Altering current heading by adding 90.") (who)
+;    set current-heading ( current-heading + 90 )
+;  ]
+;  [ 
+;    output-debug-message ("Altering current heading by subtracting 90.") (who)
+;    set current-heading ( current-heading - 90 )
+;  ]
+;  
+;  output-debug-message (word "The heading after alteration is now set to: '" current-heading "'.") (who)
+;  set debug-indent-level (debug-indent-level - 2)
+;  report ( rectify-heading (current-heading) )
+;end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; "ANY-TILES-ON-PATCH-AHEAD?" PROCEDURE ;;; - THIS COULD BE REMOVED!
