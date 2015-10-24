@@ -7,7 +7,7 @@
 ; 1) The calling turtle's breed is 'chrest-turtles'.
 ; 2) Every action is performed successfully.
 ; 3) The calling turtle can reinforce problem-solving.
-; 4) Pattern-recognition is not used to generate the action performed.
+; 4) Problem-solving is used to generate the action performed.
 ;
 ;
 ;======================================
@@ -17,6 +17,10 @@
 ; Every action created has:
 ; - Heading = 0 (due north)
 ; - Number of patches = 1
+;
+; Since problem-solving is used to generate the action and both problem-solving and explicit actions can be used as the "action" part of productions, the
+; CHREST turtle should eventually create two productions from the same visual node where one terminates with the explicit action and the other terminates
+; with the 'problem-solving' action.
 ;
 ;=====================================
 ;========== TESTS PERFORMED ==========
@@ -29,7 +33,7 @@
 ;   patterns should never be added to a turtle's 'episodic-memory' because they should never have a chance of being associated with visual 
 ;   chunks (don't want to bias a turtle's free movement given stochasticity of Tileworld).
 ; - If any other action than 'move' is performed then the length of the calling turtle's episodic memory should increase by 1 
-;   every time the 'perform-action' procedure is called. Also, one production between the visual chunk and the 'problem-solving?' action should 
+;   every time the 'perform-action' procedure is called. Also, two production between the visual chunk and the 'problem-solving?' action should 
 ;   be present in the calling turtle's visual LTM.  This is implicitly checked since the test will run forever if a production isn't created.
 ; - Not interested as to the correctness of a turtle's 'episodic-memory' contents since this is checked in another test.
 ;
@@ -52,11 +56,12 @@
 			set visual-spatial-field-object-movement-time (25)
 			set number-fixations (4)
 			set play-time (14400000.0)
+			set probability-of-creating-problem-solving-production (1.0)
 			set probability-of-reinforcing-problem-solving (0.5)
 			set reinforce-actions? (true)
 			set reinforce-problem-solving? (true)
 			set reinforcement-learning-theory ("profit_sharing_with_discount_rate")
-			set sight-radius (2)
+			set sight-radius (1)
 			setup-chrest-turtles (true)
 		]
 
@@ -67,7 +72,7 @@
 		;in an action link never being formed.  This causes the while loop in the 'ask turtle 0' code fragment below to run forever so,
 		;at every patch in the turtle's observable environment, there should be some object so a non-empty visual chunk is created.  This
 		;is what the code below achieves.
-		if(? != move-token)[
+		if(action != move-token)[
 			let ycord (-1)
 			while[ycord <= 1][
 				let xcord (-1)
@@ -98,21 +103,57 @@
 					("when checking length of episodic memory for move action")
 			]
 			[
-				let expected-length-episodic-memory 0
+				;=============================================================;
+				;== GENERATE LIST-PATTERN OF CURRENT OBSERVABLE ENVIRONMENT ==;
+				;=============================================================;
 
-				;======================;
-				;== LEARN THE ACTION ==;
-				;======================;
+				let observable-environment ( get-observable-environment )
+				let observable-environment-as-list-of-item-square-patterns []
+				foreach (observable-environment)[
+					let patch-seen (?)
+					let xcor-patch-seen (item (0) (patch-seen))
+					let ycor-patch-seen (item (1) (patch-seen))
+					let object-patch-seen (item (3) (patch-seen))
+					set observable-environment-as-list-of-item-square-patterns (lput chrest:ItemSquarePattern.new (xcor-patch-seen) (ycor-patch-seen) (object-patch-seen))
+				]
 
-				while [ chrest:Node.get-image (chrest:recognise-and-learn-list-pattern (action-list-pattern) (report-current-time)) != chrest:ListPattern.get-as-string (action-list-pattern) ][
+				set observable-environment (chrest:ListPattern.new ("visual") (observable-environment-as-list-of-item-square-patterns))
+				let observable-environment-string (chrest:ListPattern.get-as-string (observable-environment))
+
+				;==========================================================;
+				;== LEARN LIST-PATTERN OF CURRENT OBSERVABLE ENVIRONMENT ==;
+				;==========================================================;
+				
+				while [ 
+					(chrest:ListPattern.get-as-string 
+						(chrest:Node.get-image 
+							(chrest:recognise-and-learn-list-pattern (observable-environment) (report-current-time))
+						)
+					) != observable-environment-string
+				][
 					set current-training-time (chrest:get-learning-clock)
 				]
 
-				let observable-environment ( scan-scene-using-chrest (chrest:Scene.new ( get-observable-environment ) ("")) )
-				let number-of-productions length (chrest:recognise-list-pattern-and-return-nodes-with-modality (observable-environment) ("action") (report-current-time))
+				;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+				;;;;; 24TH OCTOBER - UP TO HERE ;;;;;
+				;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+				let number-of-productions (length 
+					(chrest:recognise-list-pattern-and-return-nodes-with-modality 
+						(observable-environment) 
+						("action") 
+						(report-current-time)
+					)
+				)
+
+				let original-location (list xcor ycor)
+				let expected-length-episodic-memory 1
 
 				;Until this visual-chunk has got one production, keep performing the action.
 				while[ number-of-productions < 2 ][
+
+					set xcor (item (0) (original-location))
+					set ycor (item (1) (original-location))
 					
 					set observable-environment ( scan-scene-using-chrest (chrest:Scene.new ( get-observable-environment ) ("")) )
 
