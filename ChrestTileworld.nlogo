@@ -128,8 +128,6 @@ chrest-turtles-own [
   pattern-recognition?                                  ;Stores a boolean value that indicates whether pattern-recognition can be used or not.
   plan                                                  ;Stores a series of moves generated using the current state of the visual-spatial field and heuristics that should be executed by the CHREST turtle.
   play-time                                             ;Stores the length of time (in milliseconds) that the turtle plays for after training.
-  probability-of-creating-problem-solving-production    ;Stores the probability that a CHREST turtle will create a production terminating with the problem-solving action if it can reinforce both problem-solving and pattern-recognition and problem-solving was used to generate the action performed.
-  probability-of-reinforcing-problem-solving            ;Stores the probability that a CHREST turtle will reinforce problem-solving rather than an actual action.
   reinforce-actions?                                    ;Stores a boolean value that indicates whether CHREST turtles should reinforce links between visual patterns and actions.
   reinforce-problem-solving?                            ;Stores a boolean value that indicates whether CHREST turtles should reinforce links between visual patterns and use of problem-solving.
   reinforcement-learning-theory                         ;Stores the name of the reinforcement learning theory the CHREST turtle will use.
@@ -602,11 +600,10 @@ to check-variable-values
       ( list ("discount-rate") (false) (0.0) (1.0) ) 
       ( list ("discrimination-time") (false) (0.0) (max-time) )
       ( list ("familiarisation-time") (false) (0.0) (max-time) )
-      ( list ("max-length-of-episodic-memory") (true) (0) (false) )
+      ( list ("max-length-of-episodic-memory") (true) (1) (false) )
       ( list ("max-search-iteration") (true) (1) (false) )
       ( list ("number-fixations") (true) (1) (false) )
       ( list ("play-time") (false) (0.0) (false) )
-      ( list ("probability-of-reinforcing-problem-solving") (false) (0.0) (0.9) )
       ( list ("sight-radius") (true) (1) (max-pxcor) )
       ( list ("sight-radius") (true) (1) (max-pycor) )
       ( list ("time-taken-to-act-randomly") (false) (0.0) (max-time) )
@@ -1172,8 +1169,31 @@ to execute-next-planned-action
       output-debug-message (word "Setting a local 'action-performed-successfully' variable to boolean false.  This will be used to determine what to do after the action has been executed..." ) (who)
       let action-performed-successfully (false)
       
+      ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+      ;;; GET AND PREPARE OBSERVABLE ENVIRONMENT ;;;
+      ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+      
+      output-debug-message (word "Getting what I can currently see so that this information can be passed to the procedure that handles performing the planned action...") (who)
+      let observable-environment (get-observable-environment)
+      
+      output-debug-message (word "Removing object ID's from what I can currently see since this information is not required by the action performance procedure...") (who)
+      foreach (observable-environment)[
+        let patch-info-with-object-id (?)
+        let patch-info-without-object-id (remove-item (2) (patch-info-with-object-id))
+        set observable-environment (replace-item 
+          (position (patch-info-with-object-id) (observable-environment)) 
+          (observable-environment) 
+          (patch-info-without-object-id)
+        )
+      ]
+      output-debug-message (word "What I can see after removing object ID's: " observable-environment) (who)
+      
+      ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+      ;;; PERFORM NEXT PLANNED ACTION ;;;
+      ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+      
       output-debug-message ( word "The current model time is greater than or equal to the value of my 'deliberation-finished-time' turtle variable so I'll attempt to perform the first action in my 'plan' and set the result of this to a local 'result-of-performing-action' variable..." ) (who)
-      let result-of-performing-action ( perform-action (first (plan)) )
+      let result-of-performing-action ( perform-action (first (plan)) (observable-environment) )
       
       output-debug-message ( word "Checking to see if the local 'result-of-performing-action' variable is a list or not.  If it is then the action performed must have been a 'push-tile' action so the first element of the list will be whether the action was performed successfully whilst the second element will indicate whether or not a hole was filled..." ) (who)
       ifelse( is-list? (result-of-performing-action) )[
@@ -3170,16 +3190,22 @@ end
 ;         ----              ---------                -----------
 ;@param   action-info       List                     Should contain two elements:
 ;                                                    1) The action pattern to perform as a
-;                                                       "jchrest.lib.ItemSquarePattern"
-;                                                       instance.
+;                                                       list with the following form:
+;                                                       [action-token heading patches-moved].
 ;                                                    2) Boolean value indicating whether 
 ;                                                       pattern-recognition was used to decide 
 ;                                                       upon this action.
-;@param   current-view     List                      What the turtle can currently see as a list of
-;                                                    jchrest.lib.ItemSquarePattern instances (this is
-;                                                    used to enable production creation).  If the turtle
-;                                                    is not capable of production creation or does
-;                                                    not have such visual information available, 
+;@param   current-view     List                      What the turtle can currently see as a list of 
+;                                                    lists with the following form:
+; 
+;                                                    [
+;                                                      [pxcor pycor object1-class]
+;                                                      [pxcor pycor object2-class]
+;                                                    ]
+;
+;                                                    This list is used to enable production creation.  
+;                                                    If the turtle is not capable of production creation 
+;                                                    or is not able to produce such visual information, 
 ;                                                    pass an empty list.
 ;@return  -                 Boolean                  True if the action was performed successfully,
 ;                                                    false if not.
@@ -3190,177 +3216,249 @@ to-report perform-action [ action-info current-view ]
   output-debug-message ("EXECUTING THE 'perform-action' PROCEDURE...") ("")
   set debug-indent-level (debug-indent-level + 1)
   
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;
-  ;;; GET ACTION DETAILS ;;;
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;
+  ;;;;;;;;;;;;;
+  ;;; SETUP ;;;
+  ;;;;;;;;;;;;;
   
-  let action-pattern ( item (0) (action-info) )
-  output-debug-message (word "The action to perform is: " ( chrest:ItemSquarePattern.get-as-string (action-pattern) )) (who)
+  let action-details ( item (0) (action-info) )
+  output-debug-message (word "The action to perform is: " action-details) (who)
   
-  output-debug-message ( word "Setting a local 'pattern-rec-used?' variable to the second element of the action info passed to this procedure (" (item (1) (action-info)) ")") (who)
+  let action-identifier ( item (0) (action-details) )
+  let action-heading ( item (1) (action-details) )
+  let action-patches ( item (2) (action-details) )
+  output-debug-message ( word "After extracting information from the action passed to this procedure, three local variables 'action-identifier', 'action-heading' and 'action-patches' have been set to '" action-identifier "', '" action-heading "' and '" action-patches "', respectively..." ) (who)
+  
   let pattern-rec-used? (item (1) (action-info))
-  output-debug-message ( word "The local 'pattern-rec-used?' variable is now set to: '" pattern-rec-used? "'..." ) (who)
+  output-debug-message ( word "Was pattern-recognition used to generate this action? '" pattern-rec-used? "'..." ) (who)
   
-  output-debug-message ( word "Setting a local variable 'result-of-performing-action' to 0.  This will be assigned the result of attempting to perform the action specified (" ( chrest:ItemSquarePattern.get-as-string (action-pattern) ) ")..." ) (who)
-  let result-of-performing-action (true) ;Set to true since the 'remain-stationary' action should be associated with the visual pattern generated in this procedure but there is no specific procedure to implement remaining-stationary; the turtle just does nothing.
+  let action-performed-successfully (false)
+  output-debug-message (word "Assuming that the action will be performed unsuccessfully since the action specified may not be a valid action.  Checking this now...") (who)
   
-  output-debug-message ( word "Setting a local 'action-performed-successfully' variable to 'true'.  This will store the result of performing an action and its assignment is based upon whether the 'result-of-performing-action' variable is a list or not..." ) (who)
-  let action-performed-successfully (true)
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  ;;; CHECK FOR VALID ACTION ;;;
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   
-  let action-identifier ( chrest:ItemSquarePattern.get-item (action-pattern) )
-  let action-heading ( chrest:ItemSquarePattern.get-column (action-pattern) )
-  let action-patches ( chrest:ItemSquarePattern.get-row (action-pattern) )
-  output-debug-message ( word "After extracting information from the action pattern passed to this procedure, three local variables 'action-identifier', 'action-heading' and 'action-patches' have been set to '" action-identifier "', '" action-heading "' and '" action-patches "', respectively..." ) (who)
-  
-  ;;;;;;;;;;;;;;;;;;;;;;
-  ;;; PERFORM ACTION ;;;
-  ;;;;;;;;;;;;;;;;;;;;;;
-  
-  output-debug-message (word "Checking to see if I am to push a tile...") (who)
-  ifelse(action-identifier = push-tile-token)[
-    output-debug-message (word "The local 'action-identifier' variable value indicates that I should execute the 'push-tile' procedure...") (who)
-    set result-of-performing-action ( push-tile (action-heading) )
-  ]
-  [
-    output-debug-message (word "The local '" action-identifier "' variable is equal to: '" action-identifier "' so I'm to move myself only...") (who)
-    set result-of-performing-action ( move (action-heading) (action-patches) )
-  ]
+  ifelse(member? (action-identifier) (possible-actions))[
+    output-debug-message (word "The action to perform (" action-identifier ") is a valid action so I'll try to perform it now") (who)
     
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-  ;;; CHECK IF ACTION PERFORMED SUCCESSFULLY ;;;
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ;;;;;;;;;;;;;;;;;;;;;;
+    ;;; PERFORM ACTION ;;;
+    ;;;;;;;;;;;;;;;;;;;;;;
   
-  output-debug-message ( word "Checking to see if the local 'result-of-performing-action' variable is a list (" is-list? result-of-performing-action ") so the local 'action-performed-successfully' variable can be set appropriately" ) (who)
-  ifelse( is-list? (result-of-performing-action) )[
-    output-debug-message ( word "The local 'result-of-performing-action' variable is a list so the local 'action-performed-successfully' variable will be set to the first element of this list (" ( item (0) (result-of-performing-action) ) ")..." ) (who)
-    set action-performed-successfully ( item (0) (result-of-performing-action) )
-  ]
-  [
-    output-debug-message ( word "The local 'result-of-performing-action' variable is not a list so the local 'action-performed-successfully' variable will be set to the current value of the 'result-of-performing-action' variable..." ) (who)
-    set action-performed-successfully ( result-of-performing-action )
-  ]
+    ifelse(action-identifier = push-tile-token)[
+      output-debug-message (word "The local 'action-identifier' variable is equal to: '" action-identifier "' so I should execute the 'push-tile' procedure...") (who)
+        set action-performed-successfully ( push-tile (action-heading) )
+    ]
+    [
+      output-debug-message (word "The local 'action-identifier' variable is equal to: '" action-identifier "' so I should execute the 'move' procedure...") (who)
+        set action-performed-successfully ( move (action-heading) (action-patches) )
+    ]
     
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;
-  ;;; CHREST TURTLE CODE ;;;
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;
-    
-  output-debug-message ( "Checking to see if I am a CHREST turtle and if the action was performed successfully.  If so, I'll learn the action and I may need to create a production..." ) (who)
-  if( 
-    (breed = chrest-turtles) and 
-    (action-performed-successfully)
-  )[
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ;;; CHECK IF ACTION PERFORMED SUCCESSFULLY ;;;
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   
-    ;;;;;;;;;;;;;;;;;;;;
-    ;;; LEARN ACTION ;;;
-    ;;;;;;;;;;;;;;;;;;;;
+    output-debug-message ( word "Checking to see if the local 'action-performed-successfully' variable is a list (" is-list? action-performed-successfully ").  If it is, the first element will be extracted and set as this variable's value" ) (who)
+    if( is-list? (action-performed-successfully) )[
+      output-debug-message ( word "The local 'action-performed-successfully' variable is a list so its value will be set to the first element (" ( item (0) (action-performed-successfully) ) ")..." ) (who)
+        set action-performed-successfully ( item (0) (action-performed-successfully) )
+    ]
+  
+    ifelse(action-performed-successfully)[
+      output-debug-message (word "Action was performed successfully.  Running any post action-performance code now...") (who) 
     
-    ; |---------------------|-----------|---------------|-------------------------------------|
-    ; | PS Generate Action? | Reinf PS? | Reinf Action? | Outcome                             |
-    ; |---------------------|-----------|---------------|-------------------------------------|
-    ; | Yes                 | Yes       | Yes           | Choice: learn PS or explicit action |
-    ; |                     |           | No            | Reinforce PS                        |
-    ; |                     | No        | Yes           | Reinforce explicit action           |
-    ; |                     |           | No            | -                                   |
-    ; | No                  | Yes       | Yes           | Reinforce explicit action           |
-    ; |                     |           | No            | -                                   |
-    ; |                     | No        | Yes           | Reinforce explicit action           |
-    ; |                     |           | No            | -                                   |
-    ; |---------------------|-----------|---------------|-------------------------------------|
+      ;;;;;;;;;;;;;;;;;;;;;;;;;;
+      ;;; CHREST TURTLE CODE ;;;
+      ;;;;;;;;;;;;;;;;;;;;;;;;;;
     
-    ; 24th OCTOBER 2015: COMMENTED OUT UNTIL ALL OUTCOMES DECIDED UPON
-;    if(reinforce-problem-solving? and reinforce-actions?)[
-;      ifelse(not patt-rec-used?)[
-;        ifelse( (random-float (1.0)) < 0.5)[
-;          let ignore-this chrest:recognise-and-learn-list-pattern (chrest:ListPattern.new ("action") (list chrest:ItemSquarePattern.new (problem-solving-token) (0) (0)))
-;        ]
-;        [
-;          let ignore-this chrest:recognise-and-learn-list-pattern (chrest:ListPattern.new ("action") (list chrest:ItemSquarePattern.new (action-identifier) (action-heading) (action-patches)))
-;        ]
-;      ]
-;      [
-;        let ignore-this chrest:recognise-and-learn-list-pattern (chrest:ListPattern.new ("action") (list chrest:ItemSquarePattern.new (action-identifier) (action-heading) (action-patches)))
-;      ]
-;    ]
+      output-debug-message ( "Checking to see if I am a CHREST turtle.  If so, I'll learn the action just performed unless its a standard 'move' action..." ) (who)
+      if(breed = chrest-turtles and action-identifier != move-token)[
     
-    if(not empty? current-view)[
-      output-debug-message ("Creating the visual and action chunks for the production..." ) (who)
+        let problem-solving-action ( chrest:ListPattern.new ("action") (list chrest:ItemSquarePattern.new (problem-solving-token) (0) (0)) )
+        let explicit-action ( chrest:ListPattern.new ("action") (list chrest:ItemSquarePattern.new (action-identifier) (action-heading) (action-patches)) )
+      
+        ;;;;;;;;;;;;;;;;;;;;
+        ;;; LEARN ACTION ;;;
+        ;;;;;;;;;;;;;;;;;;;;
+      
+        ;If the turtle is a CHREST turtle it will always try to learn an action.  If problem-solving has been used 
+        ;the turtle has a 50% chance of learning either the problem-solving action or the explicit action.  If the 
+        ;problem-solving action is selected for learning but is already learned, the explicit action will be 
+        ;learned instead.  Otherwise, the explicit action will be learned.
+        let action-to-learn (explicit-action)
+        if( (not pattern-rec-used?) and ((random-float (1.0)) < 0.5) )[
+          set action-to-learn (problem-solving-action)
+        ]
+    
+        ;Check for learned problem-solving action.
+        let action-recognised  ( chrest:Node.get-image (chrest:recognise-and-learn-list-pattern (action-to-learn) (report-current-time)) )
+        output-debug-message (word "Recognised " chrest:ListPattern.get-as-string (action-recognised) " given action " chrest:ListPattern.get-as-string (action-to-learn)) (who)
         
-      ;Normalise the 'patches-looked-at-content-as-list' according to the CHREST turtle's domain-specifics.  This will remove
-      ;patches that contain empty squares.
-      let visual-list-pattern ( chrest:DomainSpecifics.normalise-list-pattern (chrest:ListPattern.new (current-view) ("")) )
-      let action-list-pattern (chrest:ListPattern.new ("action") (list action-pattern))
-      output-debug-message (word "Vision part of production: " chrest:ListPattern.get-as-string (visual-list-pattern)) (who)
-      output-debug-message (word "Action part of production: " chrest:ListPattern.get-as-string (action-list-pattern)) (who)
+        ;Learn explicit action if problem-solving action already learned.
+        if( 
+          ( (chrest:ListPattern.get-as-string (action-to-learn)) = (chrest:ListPattern.get-as-string (problem-solving-action)) ) and 
+          ( (chrest:ListPattern.get-as-string (action-recognised)) = (chrest:ListPattern.get-as-string (problem-solving-action)) ) 
+        )[
+          output-debug-message ("The action to learn is the problem-solving action but I've already learned it so I'll learn the explicit action instead") (who)
+          set action-to-learn (explicit-action)
+        ]
         
-      if(not chrest:ListPattern.empty? (visual-list-pattern) )[
-        output-debug-message ("The visual-part of the production isn't empty, continuing to try and generate a production") (who)
-          
-        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-        ;;; DETERMINE IF PRODUCTION SHOULD BE CREATED AND IF SO, WHAT ACTION THE PRODUCTION SHOULD TERMINATE WITH  ;;;
-        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+        output-debug-message (word "Attempting to learn action: " chrest:ListPattern.get-as-string (action-to-learn)) (who)
+        let ignore-this (chrest:recognise-and-learn-list-pattern (action-to-learn) (report-current-time))
+        ;Note: the action won't be learned (learning resource in CHREST won't be consumed) if the action is already committed to LTM.
+      
+        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+        ;;; CREATE VISUAL LIST-PATTERN FOR EPISODIC MEMORY AND PRODUCTION CREATION ;;;
+        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+      
+        ;Construct a jchrest.lib.ListPattern from the contents of 'current-view-as-list-of-item-square-patterns' and normalise the jchrest.lib.ListPattern 
+        ;according to the CHREST turtle's domain-specifics so that its possible to determine if an episode and production created from this visual information
+        ;will actually be of use.
+        ;
+        ;The visual information passed to this procedure will eventually be used by CHREST in a recognition function (to create or identify a production, the
+        ;visual part of the production must be recognised completely).  CHREST doesn't learn visual information that is entirely empty when its domain is set 
+        ;to Tileworld.  So, if during learning, the turtle can only see empty patches then nothing is learned since the "jchrest.lib.TileWorldDomain#normalise" 
+        ;function will strip out all jchrest.lib.ItemSquarePatterns that denote empty or blind patches from the jchrest.lib.ListPattern passed to it when 
+        ;discrimination or familiarisation occurs.  Consequently, if the CHREST turtle attempts to use an episode containing a visual jchrest.lib.ListPattern
+        ;that denotes only empty squares to reinforce a production or to create a production then neither operation will occur since nothing will be recognised
+        ;when these functions are invoked.  To save wasting time invoking such functions if they will ultimately fail, create the visual chrest.lib.ListPattern
+        ;that will be contained in an episode or production and pass it to the "jchrest.lib.TileWorldDomain#normalise" function.  If this produces an empty
+        ;jchrest.lib.ListPattern, don't bother adding an episode to the CHREST turtle's episodic memory or creating a production using it.
+        output-debug-message ("Creating the visual list-pattern for the episode to be added to episodic memory and the (potential) production to be created..." ) (who)
+      
+        let current-view-as-list-of-item-square-patterns []
+        foreach(current-view)[
+          set current-view-as-list-of-item-square-patterns (lput 
+            (chrest:ItemSquarePattern.new 
+              (item (2) (?)) 
+              (item (0) (?)) 
+              (item (1) (?))
+              ) 
+            (current-view-as-list-of-item-square-patterns)
+            )
+        ]
+    
+        let visual-list-pattern ( chrest:DomainSpecifics.normalise-list-pattern (chrest:ListPattern.new ("visual") (current-view-as-list-of-item-square-patterns)) )
+        output-debug-message (word "Visual list-pattern generated: " chrest:ListPattern.get-as-string (visual-list-pattern)) (who)
+      
+        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+        ;;; CHECK FOR EMPTY VISUAL LIST-PATTERN ;;;
+        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+      
+        ifelse(not chrest:ListPattern.empty? visual-list-pattern)[
         
-        output-debug-message ( word "Determining whether to create a production and, if so, whether to have the production terminate with the problem-solving action or the actual action performed..." ) (who)
-        let problem-solving-list-pattern (chrest:ListPattern.new ("action") (list chrest:ItemSquarePattern.new (problem-solving-token) (0) (0)))
+          output-debug-message ("The visual list-pattern generated is not empty.") (who)
         
-        ; |-----------|---------------|---------------------|-----------------------------------|
-        ; | Reinf PS? | Reinf Action? | PS Generate Action? | Outcome                           |
-        ; |-----------|---------------|---------------------|-----------------------------------|
-        ; | Yes       | Yes           | Yes                 | Choice between PS and action      |
-        ; |           |               | No                  | Create explicit action production |
-        ; |           | No            | Yes                 | Create explicit PS production     |
-        ; |           |               | No                  | -                                 |
-        ; | No        | Yes           | Yes                 | Create explicit action production |
-        ; |           |               | No                  | Create explicit action production |
-        ; |           | No            | Yes                 | -                                 |
-        ; |           |               | No                  | -                                 |
-        ; |-----------|---------------|---------------------|-----------------------------------|
+          ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+          ;;; ADD EPISODE TO EPISODIC MEMORY ;;;
+          ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+      
+          output-debug-message ( word "I'll add an episode containing the visual list-pattern, the explicit action performed and whether pattern-recognition was used to generate the action to my 'episodic-memory'..." ) (who)
+          add-episode-to-episodic-memory (visual-list-pattern) (explicit-action) (pattern-rec-used?)
+
+          ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+          ;;; DETERMINE IF A PRODUCTION SHOULD BE CREATED ;;;
+          ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         
-        let create-production? (true)
-        let action-for-production (action-list-pattern)
-          
-        ifelse(reinforce-problem-solving?)[
-          ifelse(reinforce-actions?)[
-            if(not pattern-rec-used?)[
-              if(random-float 1.0 < probability-of-creating-problem-solving-production)[
-                set action-for-production (problem-solving-list-pattern)
+          output-debug-message ( word "Determining whether to create a production.  If I can reinforce problem-solving (" reinforce-problem-solving? ") or actions (" reinforce-actions? ") then I will") (who)
+          ifelse(reinforce-problem-solving? or reinforce-actions?) [
+      
+            ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+            ;;; DETERMINE WHAT ACTION THE PRODUCTION SHOULD TERMINATE WITH ;;;
+            ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+      
+            output-debug-message ("I can reinforce problems or actions so I'll attempt to create a production now.  Determining what type of production (problem-solving or explicit action) to create...") (who)
+      
+            ; In most cases, the CHREST turtle should create a production terminating in an explicit action.  However,
+            ; in certain circumstances, a production terminating with the problem-solving action should be created.
+            ; If its determined that a problem-solving production should be created, it may still be the case that the
+            ; CHREST turtle creates an explicit-action production if the problem-solving production for the visual
+            ; list pattern created below already exists (same reasoning as with the determination of whether to learn
+            ; the problem-solving action or an explicit action above).
+            ;
+            ; The following table makes explicit all possible scenarios that may occur at this point and what the outcome
+            ; with regard to production creation should be.
+            ;
+            ; |-----------|---------------|---------------------|------------------------------------------------------|
+            ; | Reinf PS? | Reinf Action? | PS Generate Action? | Outcome                                              |
+            ; |-----------|---------------|---------------------|------------------------------------------------------|
+            ; | Yes       | Yes           | Yes                 | Choice between PS and action                         |
+            ; |           |               | No                  | Create explicit action production                    |
+            ; |           | No            | Yes                 | Create explicit PS production                        |
+            ; |           |               | No                  | N/A (must be able to reinf PS or action to get here) |
+            ; | No        | Yes           | Yes                 | Create explicit action production                    |
+            ; |           |               | No                  | Create explicit action production                    |
+            ; |           | No            | Yes                 | N/A (must be able to reinf PS or action to get here) |
+            ; |           |               | No                  | N/A (must be able to reinf PS or action to get here) |
+            ; |-----------|---------------|---------------------|------------------------------------------------------|
+            
+            ; Since its more likely that the CHREST turtle will create an explicit-action production, set the action to
+            ; be used in the production to the explicit action here.
+            let action-for-production (explicit-action)
+      
+            ; Overwrite the action to be used in the production here, if applicable.
+            if(reinforce-problem-solving?)[
+              ifelse(reinforce-actions?)[
+                if(not pattern-rec-used?)[
+                  if( (random-float 1.0) < 0.5)[
+                    set action-for-production (problem-solving-action)
+                  ]
+                ]
+              ]
+              [
+                if(not pattern-rec-used?)[
+                  set action-for-production (problem-solving-action)
+                ]
               ]
             ]
+            output-debug-message (word "Determined that " chrest:ListPattern.get-as-string (action-for-production) " is to be the action part of the production" ) (who)
+      
+            if( (chrest:ListPattern.get-as-string (action-for-production)) = (chrest:ListPattern.get-as-string (problem-solving-action)) )[
+              output-debug-message (word "This is a problem-solving action. Checking if a production with the problem-solving action already exists for the visual part of the production to be created (" chrest:ListPattern.get-as-string (visual-list-pattern) ")...") (who)
+              output-debug-message (word "If so, I'll create a production with the explicit action instead...") (who)
+              
+              let associated-action-nodes-and-link-values (chrest:recognise-list-pattern-and-return-nodes-with-modality (visual-list-pattern) ("action") (report-current-time))
+              output-debug-message (word "Actions associated with " chrest:ListPattern.get-as-string (visual-list-pattern) ": " map ([chrest:ListPattern.get-as-string (chrest:Node.get-image (item (0) (?)))]) (associated-action-nodes-and-link-values)) (who)
+              
+              foreach(associated-action-nodes-and-link-values)[
+                let associated-action-node (item (0) (?))
+                let associated-action-node-contents ( chrest:ListPattern.get-as-netlogo-list (chrest:Node.get-image (associated-action-node)) )
+                foreach(associated-action-node-contents)[
+                  let associated-action (chrest:ItemSquarePattern.get-item (?))
+                  output-debug-message (word "Checking if '" associated-action "' is equal to '" problem-solving-token "'" ) (who)
+                  if(associated-action = problem-solving-token)[
+                    output-debug-message (word "Action '" associated-action "' is equal to '" problem-solving-token "' so there is already a problem-solving production for " chrest:ListPattern.get-as-string (visual-list-pattern) "!") (who)
+                    output-debug-message (word "Setting the action for the production to " chrest:ListPattern.get-as-string (explicit-action) " instead...") (who)
+                    set action-for-production (explicit-action)
+                  ]
+                ]
+              ]
+            ]
+        
+            output-debug-message (word "The production will terminate with action " chrest:ListPattern.get-as-string (action-for-production)) (who)
+        
+            ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+            ;;; CREATE PRODUCTION IN LTM ;;;
+            ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+            
+            output-debug-message (word "Creating a production that starts with vision " chrest:ListPattern.get-as-string (visual-list-pattern) " and terminates with action " chrest:ListPattern.get-as-string (action-for-production)) (who)
+            chrest:associate-list-patterns (visual-list-pattern) (action-for-production) (report-current-time)
           ]
           [
-            ifelse(not pattern-rec-used?)[
-              set action-for-production (problem-solving-list-pattern)
-            ]
-            [
-              set create-production? (false)
-            ]
+            output-debug-message (word "I can't reinforce problem-solving or explicit actions so I won't create a production since the production created will never be reinforced") (who)
           ]
         ]
         [
-          if(not reinforce-actions?)[
-            set create-production? (false)
-          ]
+          output-debug-message (word "The visual list-pattern generated is empty so no episode will be added to episodic memory and no production will be created.") (who)
         ]
-          
-        output-debug-message (word "Should I create a production (" create-production? ")?  What action should it terminate with? (" chrest:ListPattern.get-as-string (action-for-production) ")") (who)
-          
-        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-        ;;; CREATE PRODUCTION IN LTM ;;;
-        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-        
-        if(create-production?)[
-          output-debug-message (word "Creating a production that terminates with action " chrest:ListPattern.get-as-string (action-for-production)) (who)
-          chrest:associate-list-patterns (visual-list-pattern) (action-for-production) (report-current-time)
-        ]
-          
-        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-        ;;; ADD EPISODE TO EPISODIC MEMORY ;;;
-        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-          
-        output-debug-message ( word "I'll also add an episode containing the action performed and the state of the environment before the action was performed to my 'episodic-memory'..." ) (who)
-        add-episode-to-episodic-memory (visual-list-pattern) (action-list-pattern) (pattern-rec-used?)
-          
-      ]; Check for empty visual-list pattern after normalisation
-    ]; Check for empty current view
+      ] ;CHREST turtle breed and non "move" check.
+    ]
+    [
+      output-debug-message ("Action was not performed successfully") (who)
+    ]
+  ]
+  [
+    error (word "The action to perform specified by turtle " who " is not a valid action (does not occur in the global 'possible-actions' list: " possible-actions ").")
   ]
   
   output-debug-message ( word "Reporting the value of the local 'action-performed-successfully' variable (" action-performed-successfully ")..." ) (who)
@@ -3701,6 +3799,8 @@ to print-and-run [string-to-be-run]
  output-debug-message (word "NETLOGO COMMAND TO BE PASSED TO 'run' PRIMITIVE: '" string-to-be-run "'.") ("")
  set debug-indent-level (debug-indent-level - 2)
  run string-to-be-run
+ 
+ 
 end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -5358,7 +5458,7 @@ SWITCH
 168
 debug?
 debug?
-0
+1
 1
 -1000
 
