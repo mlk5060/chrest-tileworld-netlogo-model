@@ -5,11 +5,8 @@
 ; To determine if the 'perform-action' procedure operates as expected when:
 ;
 ; 1) All valid actions are performed.
-; 2) Each action is performed successfully.
+; 2) Each action is performed unsuccessfully.
 ; 3) The calling turtle is a CHREST turtle.
-; 4) The CHREST turtle can reinforce problem-solving and explicit actions.
-; 5) The visual information passed to the 'perform-action' function isn't empty (lists objects other than blind/empty patches and the CHREST turtle)
-; 6) Problem-solving is used to generate the action performed.
 ;
 ;======================================
 ;========== TEST DESCRIPTION ==========
@@ -17,85 +14,47 @@
 ;
 ; 1) Each action declared in the global 'possible-actions' list is performed and the following procedure is applied.
 ; 2) A CHREST turtle is created with all essential turtle variables set.  Of note are the following:
-;    - max-length-of-episodic-memory: set to 300000, enough to ensure that the correct amount of episodes are added to episodic memory since the main part
-;                                     of the test where actions are performed repeats x times and every time an action is performed, an episode is added to 
-;                                     episodic memory (this value could be much smaller but, play it *very* safe).
-;    - reinforce-actions?: set to true, used by a CHREST turtle to determine what action a production to be created should terminate with.
-;    - reinforce-problem-solving?: set to true, used by a CHREST turtle to determine what action a production to be created should terminate with and whether 
-;                                  there is a choice between learning the explicit action performed successfully or the 'problem-solving' action.
 ;    - sight-radius: set to 1, important to understand the output of the "get-observable-environment" procedure that is invoked to generate the visual info that 
 ;                    should be passed to the "perform-action" procedure.
 ; 3) The CHREST turtle's observable environment is populated with resources to ensure that some visual information can be passed to the "perform-action" procedure.
-;    The resources are also organised in such a way that the action performed will be successful.  If the action to perform is not a 'push-tile' action then the
-;    CHREST turtle is surrounded by tiles expect for the patch immediately north of it (any other action than 'push-tile' just involves the CHREST turtle moving
-;    north by one patch).  If the action to perform is a 'push-tile' action then the patch ahead of the CHREST turtle has a tile placed on it.
+;    The resources are also organised in such a way that the action performed will be unsuccessful.  If the action to perform is not a 'push-tile' action then the
+;    CHREST turtle is surrounded by tiles (any other action than 'push-tile' just involves the CHREST turtle moving north by one patch).  If the action to perform 
+;    is a 'push-tile' action then the patch ahead of the CHREST turtle has no tile placed on it.
 ; 4) The CHREST turtle gets the state of its observable environment and prepares the data for use by the "perform-action" procedure.
-; 5) The CHREST turtle commits the state of its observable environment to LTM (it learns).  This is done now since the type of action performed dictates whether 
-;    the CHREST turtle will attempt to create a production.  For a standard 'move' action, a production shouldn't be created, even if the visual information passed 
-;    to the "perform-action" procedure has been learned.  For any other action, the CHREST turtle should attempt to create a production using the visual information
-;    committed to LTM and passed to the "generate-plan" function.  So, if the visual information passed to the "generate-plan" procedure isn't learned beforehand, a
-;    production will never be created for that vision.
+; 5) The CHREST turtle commits the state of its observable environment to LTM (it learns).  This is done now since a production can be added to this learned visual
+;    state in LTM but only if the action is performed successfully.  Therefore, it is possible to assert that no production is added since action performance should
+;    be unsuccessful.
 ; 6) The CHREST turtle performs the action specified.  For every action, the action heading and patches to move are set to 0 (north) and 1, respectively.  Each action 
-;    is performed 50 times and the state of the environment is reset after each repetition (to ensure the subsequent action is performed successfully).  Some tests
+;    is performed 50 times and the state of the environment is reset after each repetition (to ensure the subsequent action is performed unsuccessfully).  Some tests
 ;    are performed after each repeat.
-; 7) Remaining tests are performed after the action has been performed for the number of times specified.
+; 7) Remaining tests are performed after the action performance loop has completed.
 ;
-; Since:
-;
-; 1) Problem-solving is used to generate the action performed.
-; 2) Both problem-solving and explicit actions can be reinforced and hence used as the "action" part of productions.
-; 3) The action is always performed successfully.
-; 4) The visual-information supplied is never "empty".
-;
-; The CHREST turtle should be permitted to add up to two productions to the visual node created after learning the visual information: one that terminates with the
-; explicit action performed and the other that terminates with the 'problem-solving' action.  Note that these productions are only created if the action performed
-; is not the 'move' action: use of a particular heading for the 'move' action should not be biased since this action is generated when the turtle should explore its
-; environment, i.e. when no tiles can be seen.  Thus, biasing its heading may prevent the CHREST turtle from finding lucrative environment states that may arise
-; anywhere in Tileworld due to environment resource creation/termination stochasticity.
+; Since the action is always performed unsuccessfully, the CHREST turtle should never create an action node in LTM and never add a production to the visual node 
+; created after learning the visual information.
 ;
 ;=====================================
 ;========== TESTS PERFORMED ==========
 ;=====================================
 ;
 ; - After every invocation of "perform-action":
-;   ~ A check is made to see if the action was performed successfully.  This check should always evaluate to 'true'.
-;	~ If the action performed is not a 'move' action, a check is made on the episode just added to episodic-memory (required at this point since the time specified can 
-;     not be determined precisely after the main action performance loop has completed).  The episode added should be a list and have the state of the environment 
-;     passed to the "perform-action" procedure as its first element, the action performed as its second element, the time the action was performed as its third element 
-;     and whether pattern-recognition was used to generate the action as its fourth element.  This check is not performed for the 'move' action since there is no 
-;     purpose in recording episodes relating to actions that will never translate into productions which can be reinforced (this is the purpose of storing episodes in
-;     episodic memory).  See the "TEST DESCRIPTION" section above for why the 'move' action is never used to create a production).
+;   ~ A check is made to see if the action was performed successfully.  This check should always evaluate to 'false'.
 ;
 ; - Following the repeated invocations of "perform-action", the following values are checked:
 ;
 ;   ~ CHREST's learning clock.
-;     + If the 'move' action is being performed, neither the 'move' action or the 'problem-solving' action should be learned so the clock should still be set to 
-;       the time it was set to after learning of the visual information finishes.
-;     + If any other action is being performed, both the action and the 'problem-solving' action should be learned so the clock should be set to the time it was 
-;       set to after learning of the visual information finishes plus the time taken to discriminate twice (addition of nodes containing the action performed and
-;       the 'problem-solving' action) and familiarise twice (to add the images of the action performed and the 'problem-solving' action to the nodes).
+;     + The action performed shouldn't be learned (see the "TEST DESCRIPTION" section above) so the clock should still be set to the time it was set to after 
+;       learning of the visual information finishes.
 ;
-;	~ Number of productions created for the visual node created in LTM after learning the observable environment state.
-;     + If the 'move' action is being performed, this value should be 0.
-;     + If any other action is being performed, this value should be 2.
+;	~ The number of productions created for the visual node created in LTM after learning the observable environment state should be 0 (no actions learned so
+;     no productions can/should be created).
 ;
-;	~ The actual productions created.
-;     + If the 'move' action is being performed, no productions should be created.
-;     + If any other action is being performed, the productions should be the action performed and the 'problem-solving' action.
+;   ~ The number of productions that exist across visual LTM should be 0 (just to ensure no "rogue" productions have been created).
 ;
-;   ~ The number of productions that exist across visual LTM (ensures that only the intended productions exist for the intended visual node in LTM).
-;     + If the 'move' action is being performed, this value should be 0.
-;     + If any other action is being performed, this value should be 2. 
+;   ~ The number of nodes in action LTM should be 1: the action LTM root node is always included in this count and no other actions should have been learned (no new
+;     action nodes added).
 ;
-;   ~ The number of nodes in action LTM (root node, n, is always included so value is set to n + number of nodes added).
-;     + If the 'move' action is being performed, this value should be 1 (just the root node, no actions learned).
-;     + If any other action is being performed, this value should be 3 (the root node plus the explicit action performed plus the 'problem-solving' action).
-;
-;	~ The length of episodic memory
-;     + If the 'move' action is being performed, this value should be 0 (see above for why episodes containing 'move' actions are never generated).
-;     + If any other action is being performed, this value should be equal to the number of times the action is performed.  Since performing the action will always 
-;       be successful and any non 'move' action can be used to create a production, an episode detailing the performance of the action should be added to episodic 
-;       memory.
+;	~ The length of episodic memory should be 0 since the action is never performed successfully so is never learned so is never used in construction of a production
+;     so storing information (episode) that facilitates reinforcement of a non-existing production is pointless.
 ;
 <test>
 	foreach(possible-actions)[
@@ -141,17 +100,19 @@
 		while[ycord <= 1][
 			let xcord (-1)
 			while[xcord <= 1][
-
-				ifelse( (xcord = 0 and ycord = 0) or (xcord = 0 and ycord = 1 and action != push-tile-token) )[]
-				[
-					create-tiles 1 [setxy (([pxcor] of turtle 0) + xcord) (([pycor] of turtle 0) + ycord)]
-				]
+				create-tiles 1 [setxy (([pxcor] of turtle 0) + xcord) (([pycor] of turtle 0) + ycord)]
 				set xcord (xcord + 1)
 			]
 			set ycord (ycord + 1)
 		]
 
 		ask turtle 0 [
+
+			if (action = push-tile-token)[
+				ask tiles-on (patch-at-heading-and-distance (0) (1))[
+					die
+				]
+			]
 
 			;=============================================;
 			;== GENERATE CURRENT OBSERVABLE ENVIRONMENT ==;
@@ -244,77 +205,22 @@
 
 				check-equal 
 					(action-performed-successfully) 
-					(true) 
+					(false) 
 					(word "when checking if '" action "' action is performed successfully")
 
-				;==============================;
-				;== CHECK LAST EPISODE ADDED ==;
-				;==============================;
-
-				if (action != move-token)[
-
-					let expected-last-episode (list
-						(chrest:ListPattern.get-as-string (observable-environment-list-pattern))
-						(chrest:ListPattern.get-as-string (chrest:ListPattern.new ("action") (list chrest:ItemSquarePattern.new (action) (0) (1))))
-						(report-current-time)
-						(false)
-					)
-
-					;The visual and action parts of the episode will be jchrest.lib.ListPatterns so the String version of these
-					;needs to be returned in order to be able to conduct a proper comparison.
-					let last-episode (last episodic-memory)
-					set last-episode (replace-item 
-						(0) 
-						(last-episode) 
-						(chrest:ListPattern.get-as-string (item (0) (last-episode)))
-					)
-					set last-episode (replace-item 
-						(1) 
-						(last-episode) 
-						(chrest:ListPattern.get-as-string (item (1) (last-episode)))
-					)
-
-					check-equal
-						(last-episode)
-						(expected-last-episode)
-						(word "when checking the contents of episodic memory for action " action)
-				]
-
-				;================================================================;
-				;== RESET LOCATION OF TURTLE 0 AND PUSHED TILE (IF APPLICABLE) ==;
-				;================================================================;
+				;=================================;
+				;== RESET LOCATION OF TURTLE 0  ==;
+				;=================================;
 
 				set xcor (item (0) (turtle-0-original-location))
 				set ycor (item (1) (turtle-0-original-location))
 
-				if(action = push-tile-token)[
-					ask (tiles-at (0) (2))[
-						setxy (xcor) (ycor - 1)
-					]
-				]
-
 				set current-training-time (chrest:get-learning-clock)
 			]
 
-			;====================================================================;
-			;== MODIFY EXPECTED VARIABLE VALUES IF NON 'move' ACTION PERFORMED ==;
-			;====================================================================;
-				
-			if(action != move-token)[
-				set expected-learning-clock (expected-learning-clock + (chrest:get-discrimination-time * 2) + (chrest:get-familiarisation-time * 2))
-				set expected-number-productions (2)
-				set expected-productions (list 
-					(chrest:ListPattern.get-as-string (chrest:ListPattern.new ("action") (list chrest:ItemSquarePattern.new (problem-solving-token) (0) (0))))
-					(chrest:ListPattern.get-as-string (chrest:ListPattern.new ("action") (list chrest:ItemSquarePattern.new (action) (0) (1))))
-				)
-				set expected-length-episodic-memory (repetitions)
-				set expected-number-productions-across-visual-ltm (2)
-				set expected-size-action-ltm (expected-size-action-ltm + 2)
-			]
-
-			;======================;
-			;== POST-TEST CHECKS ==;
-			;======================;
+			;===========================;
+			;== POST TEST LOOP CHECKS ==;
+			;===========================;
 
 			let test-description (word "after exiting the performance loop for action " action)
 
@@ -336,13 +242,6 @@
 				(length productions)
 				(expected-number-productions)
 				(word "when checking the number of productions " test-description)
-
-			foreach(expected-productions)[
-				check-equal 
-					(member? (?) (productions)) 
-					(true) 
-					(word "when checking if production '" ? "' is a member of the productions: " productions " created " test-description)
-			]
 
 			check-equal
 				(chrest:get-ltm-modality-num-action-links ("visual"))

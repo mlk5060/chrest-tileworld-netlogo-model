@@ -3799,8 +3799,6 @@ to print-and-run [string-to-be-run]
  output-debug-message (word "NETLOGO COMMAND TO BE PASSED TO 'run' PRIMITIVE: '" string-to-be-run "'.") ("")
  set debug-indent-level (debug-indent-level - 2)
  run string-to-be-run
- 
- 
 end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
