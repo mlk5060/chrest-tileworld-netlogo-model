@@ -3304,162 +3304,178 @@ to-report perform-action [ action-info current-view ]
       output-debug-message (word "Attempting to learn action: " chrest:ListPattern.get-as-string (action-to-learn)) (who)
       let ignore-this (chrest:recognise-and-learn-list-pattern (action-to-learn) (report-current-time))
       ;Note: the action won't be learned (learning resource in CHREST won't be consumed) if the action is already committed to LTM.
-    
-      ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-      ;;; CHECK FOR SUCCESSFUL PERFORMANCE OF NON 'move' ACTION ;;;
-      ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
       
-      ifelse(action-identifier != move-token and action-performed-successfully)[
+      ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+      ;;; CREATE VISUAL LIST-PATTERN TO USE IN PRODUCTION/EPISODE CREATION ;;;
+      ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+      
+      ;Construct a jchrest.lib.ListPattern from the contents of 'current-view-as-list-of-item-square-patterns' and normalise the jchrest.lib.ListPattern 
+      ;according to the CHREST turtle's domain-specifics so that its possible to determine if an episode and production created from this visual information
+      ;will actually be of use.
+      ;
+      ;The visual information passed to this procedure will eventually be used by CHREST in a recognition function (to create or identify a production, the
+      ;visual part of the production must be recognised completely).  CHREST doesn't learn visual information that is entirely empty when its domain is set 
+      ;to Tileworld.  So, if during learning, the turtle can only see empty/blind patches or itself (hereafter referred to as an "empty" visual list-pattern)
+      ;then nothing is learned since the "jchrest.lib.TileWorldDomain#normalise" function will strip out all jchrest.lib.ItemSquarePatterns that denote 
+      ;empty/blind patches or the CHREST turtle itself from the jchrest.lib.ListPattern passed to it when discrimination or familiarisation occurs.  If the
+      ;result of this is an empty visual list-pattern, the CHREST turtle does not proceed with discrimination or familiarisation.  Consequently, if the CHREST 
+      ;turtle attempts to create a production using an empty visual list-pattern or use an episode containing an empty visual list-pattern to reinforce a 
+      ;production then neither operation will occur since nothing will be recognised when these functions are invoked.  To save wasting time invoking such
+      ;functions if they will ultimately fail, create the visual chrest.lib.ListPattern that will be contained in an episode or production and pass it to 
+      ;the "jchrest.lib.TileWorldDomain#normalise" function.  If this produces an empty visual list-pattern, the CHREST turtle will forego adding an episode 
+      ;containing it or creating a production using it.
+      output-debug-message ("Creating the visual list-pattern for the episode to be added to episodic memory and the (potential) production to be created..." ) (who)
+      
+      let current-view-as-list-of-item-square-patterns []
+      foreach(current-view)[
+        set current-view-as-list-of-item-square-patterns (lput 
+          (chrest:ItemSquarePattern.new 
+            (item (2) (?)) 
+            (item (0) (?)) 
+            (item (1) (?))
+          ) 
+          (current-view-as-list-of-item-square-patterns)
+        )
+      ]
+      
+      let visual-list-pattern ( chrest:DomainSpecifics.normalise-list-pattern (chrest:ListPattern.new ("visual") (current-view-as-list-of-item-square-patterns)) )
+      output-debug-message (word "Visual list-pattern generated: " chrest:ListPattern.get-as-string (visual-list-pattern)) (who)
+    
+      ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+      ;;; CHECK IF PRODUCTION/EPISODE CREATION SHOULD OCCUR ;;;
+      ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+      
+      ;At this point, all information required to make a decision on whether to add an episode to episodic memory and attempt production creation is available.
+      ;Note that episodes are used to facilitate production reinforcement in CHREST, the importance of this statement will become apparent below.
+      ;
+      ;To add an episode to episodic memory and attempt production creation, the following statements must all evaluate to true for the reasons provided:
+      ;
+      ; 1) Action performed must not be a 'move' action: the 'move' action is only generated when a turtle should explore the environment freely to try and
+      ;    find an environment state that enables it to secure a tile or push a tile into a hole.  Due to the stochasticity of Tileworld, such movement should
+      ;    be random so biasing such random movement by creating a production that terminates with the 'move' action makes such movements non-random.  This may
+      ;    adversely affect the scoring potential of the turtle so should be avoided.
+      ; 2) Only successful actions should be used to create productions.  Helps to uphold the principle of production rationality specified by Miyazaki et al: 
+      ;    "better productions should be selected more frequently than worse ones" [Miyazaki, K., Yamamura, M., Kobayashi, S.: On the rationality of profit 
+      ;    sharing in reinforcement learning. In: 3rd International Conference on Fuzzy Logic, Neural Nets and Soft Computing. pp. 285–288. Korean Institute of 
+      ;    Intelligent Systems (1994)].
+      ; 3) The visual list-pattern constructed above should not be empty: (see comment in "CREATE VISUAL LIST-PATTERN TO USE IN PRODUCTION/EPISODE CREATION" section).
+      ; 4) The CHREST turtle must be capable of reinforcing problem-solving, explicit actions or both: when a production is created, its utility value is initially
+      ;    set to 0 so will not be selected for use if recognised in future unless the utility is incremented through production reinforcement. There is therefore 
+      ;    no gain to be made by creating productions if they will never be reinforced since they will never be used.  Likewise, since episodes are used to 
+      ;    facilitate production reinforcement, if the CHREST turtle is incapable of reinforcing any type of production then there is no purpose in creating an
+      ;    episode.
+      ; 5) The action performed was generated using pattern recognition and the CHREST turtle can't reinforce explicit actions: in this case, production creation
+      ;    is invalid since creating a production containing an explicit action without being able to reinforce it means that the production will never be used.
+      ;    Likewise, if its not possible to reinforce explicit action productions then there's no reason to add an episode to episodic memory.
+      output-debug-message ("Checking to see if I should add an episode to episodic memory and if I should attempt to create a production...") (who)
+      output-debug-message (word "I'll do this if the following are all true:") (who)
+      output-debug-message (word " 1. The action performed was not equal to '" move-token "' (" (action-identifier != move-token) ")") (who) 
+      output-debug-message (word " 2. The action was performed successfully (" action-performed-successfully ")") (who) 
+      output-debug-message (word " 3. The visual list-pattern generated isn't empty (" not chrest:ListPattern.empty? visual-list-pattern ")") (who)
+      output-debug-message (word " 4. I can reinforce either problem-solving productions (" reinforce-problem-solving? ") or explicit action productions (" reinforce-actions? ")") (who)
+      output-debug-message (word " 5. Its not the case that the action performed was generated using pattern-recognition and I can't reinforce explicit action productions (" not (pattern-rec-used? and not reinforce-actions?) ")") (who)
+      
+      ifelse(
+        (action-identifier != move-token) and 
+        (action-performed-successfully) and
+        (not chrest:ListPattern.empty? visual-list-pattern) and
+        (reinforce-problem-solving? or reinforce-actions?) and
+        (not (pattern-rec-used? and not reinforce-actions?))
+      )[
         
-        output-debug-message ("The action just performed is not a 'move' action and was performed successfully so I'll attempt to create a production and add an episode to episodic memory...") (who)
+        output-debug-message ("I'll attempt to create a production and add an episode to episodic memory...") (who)
         
-        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-        ;;; CREATE VISUAL LIST-PATTERN FOR EPISODIC MEMORY AND PRODUCTION CREATION ;;;
-        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+        ;;; ADD EPISODE TO EPISODIC MEMORY ;;;
+        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         
-        ;Construct a jchrest.lib.ListPattern from the contents of 'current-view-as-list-of-item-square-patterns' and normalise the jchrest.lib.ListPattern 
-        ;according to the CHREST turtle's domain-specifics so that its possible to determine if an episode and production created from this visual information
-        ;will actually be of use.
+        output-debug-message ( word "I'll add an episode containing the visual list-pattern, the explicit action performed and whether pattern-recognition was used to generate the action to my 'episodic-memory'..." ) (who)
+        add-episode-to-episodic-memory (visual-list-pattern) (explicit-action) (pattern-rec-used?)
+            
+        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+        ;;; DETERMINE IF PRODUCTION CREATION SHOULD OCCUR AND IF SO, WHAT ACTION TO USE ;;;
+        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 
+            
+        output-debug-message ("I can reinforce problems or actions so I'll attempt to create a production now.  Determining what type of production (problem-solving or explicit action) to create...") (who)
+              
+        ; In most cases, the CHREST turtle should create a production terminating in an explicit action.  However,
+        ; in certain circumstances, a production terminating with the problem-solving action should be created.
+        ; If its determined that a problem-solving production should be created, it may still be the case that the
+        ; CHREST turtle creates an explicit-action production if the problem-solving production for the visual
+        ; list pattern created below already exists (same reasoning as with the determination of whether to learn
+        ; the problem-solving action or an explicit action above).
         ;
-        ;The visual information passed to this procedure will eventually be used by CHREST in a recognition function (to create or identify a production, the
-        ;visual part of the production must be recognised completely).  CHREST doesn't learn visual information that is entirely empty when its domain is set 
-        ;to Tileworld.  So, if during learning, the turtle can only see empty patches then nothing is learned since the "jchrest.lib.TileWorldDomain#normalise" 
-        ;function will strip out all jchrest.lib.ItemSquarePatterns that denote empty or blind patches from the jchrest.lib.ListPattern passed to it when 
-        ;discrimination or familiarisation occurs.  Consequently, if the CHREST turtle attempts to use an episode containing a visual jchrest.lib.ListPattern
-        ;that denotes only empty squares to reinforce a production or to create a production then neither operation will occur since nothing will be recognised
-        ;when these functions are invoked.  To save wasting time invoking such functions if they will ultimately fail, create the visual chrest.lib.ListPattern
-        ;that will be contained in an episode or production and pass it to the "jchrest.lib.TileWorldDomain#normalise" function.  If this produces an empty
-        ;jchrest.lib.ListPattern, don't bother adding an episode to the CHREST turtle's episodic memory or creating a production using it.
-        output-debug-message ("Creating the visual list-pattern for the episode to be added to episodic memory and the (potential) production to be created..." ) (who)
+        ; The following table makes explicit all possible scenarios that may occur at this point and what the outcome
+        ; with regard to production creation should be.
+        ;
+        ; |---------------------|-----------|---------------|------------------------------------------------------|
+        ; | PS Generate Action? | Reinf PS? | Reinf Action? | Outcome                                              |
+        ; |---------------------|-----------|---------------|------------------------------------------------------|
+        ; | Yes                 | Yes       | Yes           | Choice between PS and action                         |
+        ; |                     |           | No            | Create explicit PS production                        |
+        ; |                     | No        | Yes           | Create explicit action production                    |
+        ; |                     |           | No            | N/A (must be able to reinf PS or action to get here) |
+        ; | No                  | Yes       | Yes           | Create explicit action production                    |
+        ; |                     |           | No            | N/A (this is checked for in outer conditional)       |
+        ; |                     | No        | Yes           | Create explicit action production                    |
+        ; |                     |           | No            | N/A (must be able to reinf PS or action to get here) |
+        ; |---------------------|-----------|---------------|------------------------------------------------------|
+          
+        ; Since its more likely that the CHREST turtle will create an explicit-action production, set the action to
+        ; be used in the production to the explicit action here.
+        let action-for-production (explicit-action)
         
-        let current-view-as-list-of-item-square-patterns []
-        foreach(current-view)[
-          set current-view-as-list-of-item-square-patterns (lput 
-            (chrest:ItemSquarePattern.new 
-              (item (2) (?)) 
-              (item (0) (?)) 
-              (item (1) (?))
-            ) 
-            (current-view-as-list-of-item-square-patterns)
-          )
-        ]
-        
-        let visual-list-pattern ( chrest:DomainSpecifics.normalise-list-pattern (chrest:ListPattern.new ("visual") (current-view-as-list-of-item-square-patterns)) )
-        output-debug-message (word "Visual list-pattern generated: " chrest:ListPattern.get-as-string (visual-list-pattern)) (who)
-        
-        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-        ;;; CHECK FOR EMPTY VISUAL LIST-PATTERN ;;;
-        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-        
-        ifelse(not chrest:ListPattern.empty? visual-list-pattern)[
-          
-          output-debug-message ("The visual list-pattern generated is not empty.") (who)
-          
-          ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-          ;;; ADD EPISODE TO EPISODIC MEMORY ;;;
-          ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-          
-          output-debug-message ( word "I'll add an episode containing the visual list-pattern, the explicit action performed and whether pattern-recognition was used to generate the action to my 'episodic-memory'..." ) (who)
-          add-episode-to-episodic-memory (visual-list-pattern) (explicit-action) (pattern-rec-used?)
-          
-          ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-          ;;; DETERMINE IF A PRODUCTION SHOULD BE CREATED ;;;
-          ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-          
-          output-debug-message ( word "Determining whether to create a production.  If I can reinforce problem-solving (" reinforce-problem-solving? ") or actions (" reinforce-actions? ") then I will") (who)
-          ifelse(reinforce-problem-solving? or reinforce-actions?) [
-            
-            ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-            ;;; DETERMINE WHAT ACTION THE PRODUCTION SHOULD TERMINATE WITH ;;;
-            ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-            
-            output-debug-message ("I can reinforce problems or actions so I'll attempt to create a production now.  Determining what type of production (problem-solving or explicit action) to create...") (who)
-              
-            ; In most cases, the CHREST turtle should create a production terminating in an explicit action.  However,
-            ; in certain circumstances, a production terminating with the problem-solving action should be created.
-            ; If its determined that a problem-solving production should be created, it may still be the case that the
-            ; CHREST turtle creates an explicit-action production if the problem-solving production for the visual
-            ; list pattern created below already exists (same reasoning as with the determination of whether to learn
-            ; the problem-solving action or an explicit action above).
-            ;
-            ; The following table makes explicit all possible scenarios that may occur at this point and what the outcome
-            ; with regard to production creation should be.
-            ;
-            ; |-----------|---------------|---------------------|------------------------------------------------------|
-            ; | Reinf PS? | Reinf Action? | PS Generate Action? | Outcome                                              |
-            ; |-----------|---------------|---------------------|------------------------------------------------------|
-            ; | Yes       | Yes           | Yes                 | Choice between PS and action                         |
-            ; |           |               | No                  | Create explicit action production                    |
-            ; |           | No            | Yes                 | Create explicit PS production                        |
-            ; |           |               | No                  | N/A (must be able to reinf PS or action to get here) |
-            ; | No        | Yes           | Yes                 | Create explicit action production                    |
-            ; |           |               | No                  | Create explicit action production                    |
-            ; |           | No            | Yes                 | N/A (must be able to reinf PS or action to get here) |
-            ; |           |               | No                  | N/A (must be able to reinf PS or action to get here) |
-            ; |-----------|---------------|---------------------|------------------------------------------------------|
-            
-            ; Since its more likely that the CHREST turtle will create an explicit-action production, set the action to
-            ; be used in the production to the explicit action here.
-            let action-for-production (explicit-action)
-              
-            ; Overwrite the action to be used in the production here, if applicable.
-            if(reinforce-problem-solving?)[
-              ifelse(reinforce-actions?)[
-                if(not pattern-rec-used?)[
-                  if( (random-float 1.0) < 0.5)[
-                    set action-for-production (problem-solving-action)
-                  ]
-                ]
-              ]
-              [
-                if(not pattern-rec-used?)[
-                  set action-for-production (problem-solving-action)
-                ]
+        ; Overwrite the action to be used in the production here, if applicable.
+        if(not pattern-rec-used?)[
+          if(reinforce-problem-solving?)[
+            ifelse(reinforce-actions?)[
+              if( (random-float 1.0) < 0.5)[
+                set action-for-production (problem-solving-action)
               ]
             ]
-            output-debug-message (word "Determined that " chrest:ListPattern.get-as-string (action-for-production) " is to be the action part of the production" ) (who)
-            
-            if( (chrest:ListPattern.get-as-string (action-for-production)) = (chrest:ListPattern.get-as-string (problem-solving-action)) )[
-              output-debug-message (word "This is a problem-solving action. Checking if a production with the problem-solving action already exists for the visual part of the production to be created (" chrest:ListPattern.get-as-string (visual-list-pattern) ")...") (who)
-              output-debug-message (word "If so, I'll create a production with the explicit action instead...") (who)
-              
-              let associated-action-nodes-and-link-values (chrest:recognise-list-pattern-and-return-nodes-with-modality (visual-list-pattern) ("action") (report-current-time))
-              output-debug-message (word "Actions associated with " chrest:ListPattern.get-as-string (visual-list-pattern) ": " map ([chrest:ListPattern.get-as-string (chrest:Node.get-image (item (0) (?)))]) (associated-action-nodes-and-link-values)) (who)
-              
-              foreach(associated-action-nodes-and-link-values)[
-                let associated-action-node (item (0) (?))
-                let associated-action-node-contents ( chrest:ListPattern.get-as-netlogo-list (chrest:Node.get-image (associated-action-node)) )
-                foreach(associated-action-node-contents)[
-                  let associated-action (chrest:ItemSquarePattern.get-item (?))
-                  output-debug-message (word "Checking if '" associated-action "' is equal to '" problem-solving-token "'" ) (who)
-                  if(associated-action = problem-solving-token)[
-                    output-debug-message (word "Action '" associated-action "' is equal to '" problem-solving-token "' so there is already a problem-solving production for " chrest:ListPattern.get-as-string (visual-list-pattern) "!") (who)
-                    output-debug-message (word "Setting the action for the production to " chrest:ListPattern.get-as-string (explicit-action) " instead...") (who)
-                    set action-for-production (explicit-action)
-                  ]
-                ]
+            [
+              set action-for-production (problem-solving-action)
+            ]
+          ]
+        ]
+        output-debug-message (word "Determined that " chrest:ListPattern.get-as-string (action-for-production) " is to be the action part of the production" ) (who)
+        
+        ; Check to see if the turtle should create an explicit action production instead of a problem-solving production. 
+        if( 
+          (chrest:ListPattern.get-as-string (action-for-production)) = (chrest:ListPattern.get-as-string (problem-solving-action)) and
+          reinforce-actions?
+        )[
+          output-debug-message (word "I'm to create a problem-solving production and I can reinforce explicit actions so if such a production already exists for the visual list-pattern generated I'll create a production with the explicit action instead...") (who)
+          
+          let associated-action-nodes-and-link-values (chrest:recognise-list-pattern-and-return-nodes-with-modality (visual-list-pattern) ("action") (report-current-time))
+          output-debug-message (word "Actions associated with " chrest:ListPattern.get-as-string (visual-list-pattern) ": " map ([chrest:ListPattern.get-as-string (chrest:Node.get-image (item (0) (?)))]) (associated-action-nodes-and-link-values)) (who)
+          
+          foreach(associated-action-nodes-and-link-values)[
+            let associated-action-node (item (0) (?))
+            let associated-action-node-contents ( chrest:ListPattern.get-as-netlogo-list (chrest:Node.get-image (associated-action-node)) )
+            foreach(associated-action-node-contents)[
+              let associated-action (chrest:ItemSquarePattern.get-item (?))
+              output-debug-message (word "Checking if '" associated-action "' is equal to '" problem-solving-token "'" ) (who)
+              if(associated-action = problem-solving-token)[
+                output-debug-message (word "Action '" associated-action "' is equal to '" problem-solving-token "' so there is already a problem-solving production for " chrest:ListPattern.get-as-string (visual-list-pattern) "!") (who)
+                output-debug-message (word "Setting the action for the production to " chrest:ListPattern.get-as-string (explicit-action) " instead...") (who)
+                set action-for-production (explicit-action)
               ]
             ]
-              
-            output-debug-message (word "The production will terminate with action " chrest:ListPattern.get-as-string (action-for-production)) (who)
-              
-            ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-            ;;; CREATE PRODUCTION IN LTM ;;;
-            ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-            
-            output-debug-message (word "Creating a production that starts with vision " chrest:ListPattern.get-as-string (visual-list-pattern) " and terminates with action " chrest:ListPattern.get-as-string (action-for-production)) (who)
-            chrest:associate-list-patterns (visual-list-pattern) (action-for-production) (report-current-time)
-          ]
-          [
-            output-debug-message (word "I can't reinforce problem-solving or explicit actions so I won't create a production since the production created will never be reinforced") (who)
           ]
         ]
-        [
-          output-debug-message (word "The visual list-pattern generated is empty so no episode will be added to episodic memory and no production will be created.") (who)
-        ]
+          
+        output-debug-message (word "The production will terminate with action " chrest:ListPattern.get-as-string (action-for-production)) (who)
+        
+        ;;;;;;;;;;;;;;;;;;;;;;;;;
+        ;;; CREATE PRODUCTION ;;;
+        ;;;;;;;;;;;;;;;;;;;;;;;;;
+        
+        output-debug-message (word "Creating a production that starts with vision " chrest:ListPattern.get-as-string (visual-list-pattern) " and terminates with action " chrest:ListPattern.get-as-string (action-for-production)) (who)
+        chrest:associate-list-patterns (visual-list-pattern) (action-for-production) (report-current-time)
       ]
       [
-        output-debug-message (word "The action just performed is either a 'move' action or was not performed successfully so I won't create a production or add an episode to episodic memory.") (who)
+        output-debug-message ("I won't attempt to create a production or add an episode to episodic memory...") (who)
       ]
     ] ;CHREST turtle breed check.
   ]
@@ -5462,7 +5478,7 @@ SWITCH
 168
 debug?
 debug?
-1
+0
 1
 -1000
 
