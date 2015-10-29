@@ -2,7 +2,7 @@
 ;========== TEST AIM ==========
 ;==============================
 ;
-; 1) To determine if deliberation produces an expected action when the calling turtle uses problem solving and is guaranteed to see
+; 1) To determine if deliberation produces an expected action when the calling turtle is a CHREST turtle, uses problem solving and is guaranteed to see
 ;    a tile given the state of the observable environment.
 ;
 ;======================================
@@ -44,28 +44,29 @@
 	repeat 50 [
 		
 		create-chrest-turtles 1[
-			set action-performance-time 10000
-			set action-selection-procedure "roulette-selection"
-			set add-link-time 10000
-			set discount-rate 0.5
-			set discrimination-time 10000
-			set familiarisation-time 2000
-			set max-search-iteration 5
-			set number-fixations 4
-			set pattern-recognition? true
-			set play-time 14400000.0
-			set reinforce-actions? true
-			set reinforce-problem-solving? true
-			set reinforcement-learning-theory "profit_sharing_with_discount_rate" 
-			set sight-radius 1
-			set time-taken-to-use-pattern-recognition 200
-			set time-taken-to-problem-solve 1000
-			set visual-spatial-field-access-time 50
-			set visual-spatial-field-empty-square-placement-time 5
-			set visual-spatial-field-object-movement-time 25
-			set visual-spatial-field-object-placement-time 10
-			set visual-spatial-field-recognised-object-lifespan 100000
-			set visual-spatial-field-unrecognised-object-lifespan 90000
+			set action-performance-time (10000)
+			set action-selection-procedure ("roulette-selection")
+			set add-link-time (10000)
+			set discount-rate (0.5)
+			set discrimination-time (10000)
+			set familiarisation-time (2000)
+			set max-length-of-episodic-memory (5)
+			set max-search-iteration (5)
+			set number-fixations (4)
+			set pattern-recognition? (true)
+			set play-time (14400000.0)
+			set reinforce-actions? (true)
+			set reinforce-problem-solving? (true)
+			set reinforcement-learning-theory ("profit_sharing_with_discount_rate")
+			set sight-radius (1)
+			set time-taken-to-use-pattern-recognition (200)
+			set time-taken-to-problem-solve (1000)
+			set visual-spatial-field-access-time (50)
+			set visual-spatial-field-empty-square-placement-time (5)
+			set visual-spatial-field-object-movement-time (25)
+			set visual-spatial-field-object-placement-time (10)
+			set visual-spatial-field-recognised-object-lifespan (100000)
+			set visual-spatial-field-unrecognised-object-lifespan (90000)
 		]
 		setup (true)
 
@@ -80,23 +81,27 @@
 
 		ask turtle 0 [
 
-			let deliberation-result ( deliberate (chrest:Scene.new (get-observable-environment) ("test")) )
+			let deliberation-result ( deliberate (get-observable-environment) )
 			let expected-actions (list
-				chrest:ItemSquarePattern.get-as-string (chrest:ItemSquarePattern.new (move-around-tile-token) (0) (1))
-				chrest:ItemSquarePattern.get-as-string (chrest:ItemSquarePattern.new (move-around-tile-token) (90) (1))
-				chrest:ItemSquarePattern.get-as-string (chrest:ItemSquarePattern.new (move-around-tile-token) (180) (1))
-				chrest:ItemSquarePattern.get-as-string (chrest:ItemSquarePattern.new (move-around-tile-token) (270) (1))
-				chrest:ItemSquarePattern.get-as-string (chrest:ItemSquarePattern.new (move-to-tile-token) (0) (1))
-				chrest:ItemSquarePattern.get-as-string (chrest:ItemSquarePattern.new (move-to-tile-token) (90) (1))
-				chrest:ItemSquarePattern.get-as-string (chrest:ItemSquarePattern.new (move-to-tile-token) (180) (1))
-				chrest:ItemSquarePattern.get-as-string (chrest:ItemSquarePattern.new (move-to-tile-token) (270) (1))
-				chrest:ItemSquarePattern.get-as-string (chrest:ItemSquarePattern.new (push-tile-token) (0) (1))
-				chrest:ItemSquarePattern.get-as-string (chrest:ItemSquarePattern.new (push-tile-token) (90) (1))
-				chrest:ItemSquarePattern.get-as-string (chrest:ItemSquarePattern.new (push-tile-token) (180) (1))
-				chrest:ItemSquarePattern.get-as-string (chrest:ItemSquarePattern.new (push-tile-token) (270) (1))
+				(list (move-around-tile-token) (0) (1))
+				(list (move-around-tile-token) (90) (1))
+				(list (move-around-tile-token) (180) (1))
+				(list (move-around-tile-token) (270) (1))
+				(list (move-to-tile-token) (0) (1))
+				(list (move-to-tile-token) (90) (1))
+				(list (move-to-tile-token) (180) (1))
+				(list (move-to-tile-token) (270) (1))
+				(list (push-tile-token) (0) (1))
+				(list (push-tile-token) (90) (1))
+				(list (push-tile-token) (180) (1))
+				(list (push-tile-token) (270) (1))
 			)
 
-			check-test-output (chrest:ItemSquarePattern.get-as-string (item (0) (deliberation-result))) (expected-actions) ("when checking action reported")
+			check-equal
+				(member? (item (0) (deliberation-result)) (expected-actions) ) 
+				(true) 
+				("when checking action reported")
+
 			check-equal (item (1) (deliberation-result)) (time-taken-to-problem-solve) ("when checking time taken to deliberate")
 			check-equal item (2) (deliberation-result) (false) ("when checking if pattern recognition used")
 		]

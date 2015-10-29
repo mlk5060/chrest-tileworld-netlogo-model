@@ -2,7 +2,7 @@
 ;========== TEST AIM ==========
 ;==============================
 ;
-; 1) To determine if deliberation produces an expected action when the calling turtle can use pattern recognition and the environment 
+; 1) To determine if deliberation produces an expected action when the calling turtle is a CHREST turtle, can use pattern recognition and the environment 
 ;    matches the visual part of a learned production.
 ;
 ;======================================
@@ -57,6 +57,7 @@
 			set discount-rate 0.5
 			set discrimination-time 10000
 			set familiarisation-time 2000
+			set max-length-of-episodic-memory (5)
 			set max-search-iteration 5
 			set number-fixations 4
 			set pattern-recognition? true
@@ -84,7 +85,8 @@
 			;== CREATE VISUAL AND ACTION DATA TO USE IN TEST ==;
 			;==================================================;
 
-			let observable-environment-as-scene (chrest:Scene.new (get-observable-environment) ("test"))
+			let observable-environment (get-observable-environment)
+			let observable-environment-as-scene (chrest:Scene.new (observable-environment) ("test"))
 
 			;When the ListPattern representing the observable environment as a Scene is learned, CHREST will normalise the ListPattern according to 
 			;the DomainSpecifics class set as its current domain.  So, to control learning, it is necessary to check if what is recognised is equal
@@ -168,7 +170,7 @@
 			;== DELIBERATE UNTIL PATTERN-RECOGNITION USED ==;
 			;===============================================;
 
-			let deliberation-result (deliberate (observable-environment-as-scene))
+			let deliberation-result (deliberate (observable-environment))
 			while [not item (2) (deliberation-result)][
 				set deliberation-result (deliberate (observable-environment-as-scene))
 			]
@@ -178,8 +180,8 @@
 			;===========;
 
 			check-equal 
-				(chrest:ItemSquarePattern.get-as-string (item (0) (deliberation-result))) 
-				(chrest:ItemSquarePattern.get-as-string (action-pattern)) 
+				(item (0) (deliberation-result)) 
+				(list (push-tile-token) (180) (1)) 
 				("when checking action returned")
 
 			check-equal 

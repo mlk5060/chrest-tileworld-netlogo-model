@@ -958,12 +958,51 @@ end
 ;
 ;         Name              Data Type          Description
 ;         ----              ---------          -----------
-;@param   scene             jchrest.lib.Scene  The scene to be deliberated upon.
+;@param   scene             List               The scene to be deliberated as a 2D list whose first
+;                                              dimension elements should represent x-axis coordinates 
+;                                              and second dimension elements should represent
+;                                              y-axis coordinates (for the x-axis coordinate that surrounds
+;                                              it).  Second dimension elements should essentially represent
+;                                              a patches content (containing at most one object) and
+;                                              should be a list containing 4 values:
+;
+;                                              1) The xcor of the patch from the turtle deliberating.
+;                                              2) The ycor of the patch from the turtle deliberating.
+;                                              3) The who or unique identifier of a turtle/object on the patch.
+;                                              4) The class or breed of the turtle/object on the patch.
+;
+;                                              For a turtle with who = 0 that can see the following (turtles
+;                                              are denoted by their who value with the first letter of their breed 
+;                                              in parenthesis expect for turtle 0 who's parenthesised value is "S" 
+;                                              which stands for "self") the following list should be generated and
+;                                              passed:
+;                                              
+;                                                |------|------|------|
+;                                              6 | 5(H) | 2(H) | 8(T) |
+;                                                |------|------|------|
+;                                              5 | 4(O) | 0(S) | 7(H) |
+;                                                |------|------|------|
+;                                              4 | 3(T) | 1(T) | 6(O) |
+;                                                |------|------|------|
+;                                                   3      4      5     MODEL COORDINATES
+;                                              
+;                                              [
+;                                                [-1 -1 3 "tile"][-1 0 4 "opponent"][-1 1 5 "hole"]
+;                                              ]
+;                                              [
+;                                                [0 -1 1 "tile"][0 0 0 "self"][0 1 2 "hole"]
+;                                              ]
+;                                              [
+;                                                [1 -1 6 "opponent"][1 0 7 "hole"][1 1 8 "tile"]
+;                                              ]
+;.
 ;@return  -                 List               A three element list:
-;                                              1) The action to be performed as a 
-;                                                 "jchrest.lib.ItemSquarePattern" instance.
+;                                              1) The action to be performed as a 3 element list
+;                                                 containing the action identifier, heading and
+;                                                 patches that the turtle should move.
 ;                                              2) The time taken to complete deliberation.
-;                                              3) Whether pattern-recognition was used or not.
+;                                              3) Whether pattern-recognition was used or not (will
+;                                                 be set to false for non-CHREST turtles).
 ;
 ;@author  Martyn Lloyd-Kelly <martynlk@liverpool.ac.uk> 
 to-report deliberate [scene]
@@ -971,18 +1010,17 @@ to-report deliberate [scene]
   output-debug-message ("EXECUTING THE 'deliberate' PROCEDURE...") ("")
   set debug-indent-level (debug-indent-level + 1)
   
-  output-debug-message (word "The scene I'll deliberate with: " (chrest:ListPattern.get-as-string (chrest:scene.get-as-list-pattern (scene) (false) (true))) ".") (who)
-  output-debug-message ("Creating five local variables: 'action', 'time-taken-to-deliberate', 'used-pattern-recognition', 'scene-contents' and 'scene-scanned-during-pattern-recognition'...") (who)
-  output-debug-message ("The 'action' variable will be populated with a jchrest.lib.ItemSquarePattern representing the action decided upon and is used to perform an action in my visual-spatial field or in reality...") (who) 
-  output-debug-message ("The 'time-taken-to-deliberate' variable will store the length of time taken to deliberate and is used to make me wait until I can perform an action thus simulating decision-making time...") (who)
-  output-debug-message ("The 'used-pattern-recognition' variable will store whether I have used pattern reocgnition in this deliberation.  Setting value to 'false' since this is a fresh deliberation...") (who)
-  output-debug-message ("The 'scene-contents' variable will store the contents of the scene to deliberate with as a 'jchrest.lib.ListPattern' instance...") (who)
-  output-debug-message ("The 'scene-scanned-during-pattern-recognition' is used if I problem-solve to determine if I have already scanned the scene during pattern-recognition since I should only scan the scene once and pattern-reocgnition may result in problem-solving...") (who)
+  output-debug-message (word "The scene I'll deliberate with: " scene) (who)
+  output-debug-message ("Creating four local variables: 'action', 'time-taken-to-deliberate', 'used-pattern-recognition' and 'patches-looked-at'...") (who)
+  output-debug-message ("The 'action' variable will be populated with a 3 element list representing the action decided upon, the heading I should adopt when performing the action and how many patches the object to be actioned should be shifted along the heading specified...") (who) 
+  output-debug-message ("The 'time-taken-to-deliberate' variable will store the length of time taken to deliberate...") (who)
+  output-debug-message ("The 'used-pattern-recognition' variable controls whether problem-solving will be used (if set to false then problem-solving will be used).  Should only be set to true if I'm a CHREST turtle and I select an action using pattern-recogniition. Setting value to 'false' since this is a fresh deliberation...") (who)
+  output-debug-message ("The 'patches-looked-at' variable will store what patches are looked at for problem-solving.  Should contain values representing the number of patches along the x and y axis that the patch looked at is from the deliberating turtle...") (who)
+  
   let action ("")
   let time-taken-to-deliberate (0)
   let used-pattern-recognition (false)
-  let scene-contents (chrest:scene.get-as-list-pattern (scene) (true) (true)) ; Want creator-relative coordinates and objects to be identified by their class
-  let scanned-scene-during-pattern-recognition (false)
+  let patches-looked-at []
   
   ;===================================;
   ;== CHECK BREED OF CALLING TURTLE ==;
@@ -991,19 +1029,24 @@ to-report deliberate [scene]
   output-debug-message ("Checking to see if I am a chrest-turtle...") (who)
   if(breed = chrest-turtles)[
     output-debug-message ("I am a chrest-turtle so I will deliberate accordingly...") (who)
+    
+    output-debug-message ("Setting a local 'scene-scanned-during-pattern-recognition' variable to 'false'.  This is used if I use problem-solving to determine if I have already scanned the scene during pattern-recognition since I should only scan the scene once and pattern-recognition may result in problem-solving...") (who)
+    let scanned-scene-during-pattern-recognition (false)
 
     ;=========================;
     ;== PATTERN-RECOGNITION ==;
     ;=========================;
 
-    output-debug-message (word "If 'scene-contents' isn't empty and I can use pattern-recognition (" pattern-recognition? "), I'll use pattern-recognition to select an action to perform...") (who)
-    if( pattern-recognition? and (not (chrest:ListPattern.empty? scene-contents)) )[
+    output-debug-message (word "If 'scene' isn't empty and I can use pattern-recognition (" pattern-recognition? "), I'll use pattern-recognition to select an action to perform...") (who)
+    if( pattern-recognition? and (not empty? scene) )[
       
-      output-debug-message (word "My 'pattern-recognition?' variable is set to 'true' and 'scene-contents' isn't empty so I'll get any action-patterns associated with chunks I recognise in the scene, along with their optimality ratings...") (who)
+      output-debug-message (word "My 'pattern-recognition?' variable is set to 'true' and 'scene' isn't empty so I'll get any action-patterns associated with chunks I recognise in the scene, along with their optimality ratings...") (who)
       let action-chunks-and-weights-associated-with-recognised-visual-chunks []
       
+      let chrest-scene (chrest:Scene.new (scene) (""))
+      
       output-debug-message (word "My visual STM will be cleared before the scene is scanned so that any visual chunks recognised definitely originate from the scene passed.") (who)
-      let recognised-scene (chrest:scan-scene(scene) (number-fixations) (true) (report-current-time) (false))
+      let recognised-scene (chrest:scan-scene(chrest-scene) (number-fixations) (true) (report-current-time) (false))
       output-debug-message (word "Setting the local 'scanned-scene-during-pattern-recognition' variable to true.") (who)
       set scanned-scene-during-pattern-recognition (true)
       
@@ -1035,8 +1078,15 @@ to-report deliberate [scene]
         if( not is-list? action-chunk )[
           
           output-debug-message (word "The action returned is not a list.  Checking to see if it indicates that I should use problem-solving to deliberate further, if not, I'll set my 'used-pattern-recognition' variable to 'true'...") (who)
-          set action ( item (0) ( (chrest:ListPattern.get-as-netlogo-list (chrest:Node.get-image (action-chunk))) ) )
-          if( (chrest:ItemSquarePattern.get-item (action)) != (problem-solving-token))[
+          set action (item (0) (chrest:ListPattern.get-as-netlogo-list (chrest:Node.get-image (action-chunk))))
+          
+          set action (list
+            (chrest:ItemSquarePattern.get-item (action))
+            (chrest:ItemSquarePattern.get-column (action))
+            (chrest:ItemSquarePattern.get-row (action))
+          )
+          
+          if( (item (0) (action)) != (problem-solving-token))[
             output-debug-message ("Action indicates that I shouldn't use problem-solving so I'll set the local 'used-pattern-recognition' variable to 'true'...") (who)
             set used-pattern-recognition (true)
           ]
@@ -1052,9 +1102,9 @@ to-report deliberate [scene]
       ]
     ]
     
-    ;=====================;
-    ;== PROBLEM-SOLVING ==;
-    ;=====================;
+    ;==========================================;
+    ;== SET-UP VARIABLES FOR PROBLEM-SOLVING ==;
+    ;==========================================;
     
     output-debug-message (word "Checking to see if the local 'used-pattern-recognition' variable value (" used-pattern-recognition ") is set to 'false'.  If so, I'll attempt to generate an action using problem-solving...") (who)
     if(not used-pattern-recognition)[
@@ -1066,60 +1116,69 @@ to-report deliberate [scene]
         let scanned-scene (chrest:scan-scene (scene) (number-fixations) (true) (report-current-time) (false))
       ]
       
-      ;========================;
-      ;== GET TILE LOCATIONS ==;
-      ;========================;
-      
-      let patches-looked-at (chrest:Perceiver.get-fixations)
-      let patches-seen-with-tiles-on []
+      let fixations (chrest:Perceiver.get-fixations)
       output-debug-message (word "I've looked at the following squares: " ( map ([ (list (chrest:Perceiver.get-fixation-xcor (?) - (sight-radius)) (chrest:Perceiver.get-fixation-ycor (?) - (sight-radius))) ]) (patches-looked-at) )) (who)
-      output-debug-message ("Checking to see if there are any tiles on the squares looked at according to the scene I'm deliberating with...") (who)
+      output-debug-message ("Adding these patches to the 'patches-looked-at' data structure...") (who)
       
-      foreach(patches-looked-at)[
-        let patch-looked-at (?)
-        let patch-looked-at-xcor (chrest:Perceiver.get-fixation-xcor (patch-looked-at) - (sight-radius))
-        let patch-looked-at-ycor (chrest:Perceiver.get-fixation-ycor (patch-looked-at) - (sight-radius))
-        output-debug-message (word "Checking patch " (list (patch-looked-at-xcor) (patch-looked-at-ycor)) "...") (who)
-        
-        let scene-contents-as-list (chrest:ListPattern.get-as-netlogo-list (scene-contents))
-        foreach(scene-contents-as-list)[
-          let patch-on-scene-contents (chrest:ItemSquarePattern.get-item (?))
-          let patch-on-scene-xcor (chrest:ItemSquarePattern.get-column (?))
-          let patch-on-scene-ycor (chrest:ItemSquarePattern.get-row (?))
-          
-          if( (patch-on-scene-xcor = patch-looked-at-xcor) and (patch-on-scene-ycor = patch-looked-at-ycor) and (patch-on-scene-contents = tile-token) )[
-            set patches-seen-with-tiles-on (lput (patch-looked-at) (patches-seen-with-tiles-on)) 
-          ]
-        ]
-      ]
-      output-debug-message (word "Patches I've seen with tiles on are: " (map ([ ( list (chrest:Perceiver.get-fixation-xcor (?) - (sight-radius)) (chrest:Perceiver.get-fixation-ycor (?) - (sight-radius)) ) ]) (patches-seen-with-tiles-on)) ) (who)
-      
-      ;======================================;
-      ;== DETERMINE HOW TO GENERATE ACTION ==;
-      ;======================================;
-      
-      ifelse( not empty? patches-seen-with-tiles-on )[
-        output-debug-message ("Since I saw one or more tiles, I'll generate an appropriate action...") (who)
-        let patch-with-tile-on (one-of (patches-seen-with-tiles-on))
-        set action ( generate-action-when-tile-can-be-seen ( (chrest:Perceiver.get-fixation-xcor (patch-with-tile-on)) - (sight-radius) ) ( (chrest:Perceiver.get-fixation-ycor (patch-with-tile-on)) - (sight-radius) ) )
-      ]
-      [
-        output-debug-message ("I didn't see any tiles, I'll try to select a random heading to move 1 patch forward along...") (who)
-        set action ( chrest:ItemSquarePattern.new (move-token) (one-of (movement-headings)) (1) )
+      foreach(fixations)[
+        let patch-looked-at-xcor (chrest:Perceiver.get-fixation-xcor (?) - (sight-radius))
+        let patch-looked-at-ycor (chrest:Perceiver.get-fixation-ycor (?) - (sight-radius))
+        set patches-looked-at (lput 
+          (list (patch-looked-at-xcor) (patch-looked-at-ycor)) 
+          (patches-looked-at)
+        )
       ]
       
-      ;================================================;
-      ;== UPDATE PROBLEM-SOLVING TRACKING VARIABLES  ==;
-      ;================================================;
-      
-      output-debug-message (word "Since I have used problem solving I'll set the local 'time-taken-to-deliberate' variable to my 'time-taken-to-problem-solve-variable' value (" time-taken-to-problem-solve ")...") (who)
-      set time-taken-to-deliberate (time-taken-to-deliberate + time-taken-to-problem-solve)
-      output-debug-message (word "My 'time-taken-to-deliberate' variable is now equal to: " time-taken-to-deliberate "...") (who)
-      
-      output-debug-message (word "Since I am generating an action using visually-informed problem-solving, I will increment my 'frequency-of-problem-solving' variable (" frequency-of-problem-solving ") by 1...") (who)
+      output-debug-message (word "Since I am generating an action using problem-solving, I will increment my 'frequency-of-problem-solving' variable (" frequency-of-problem-solving ") by 1...") (who)
       set frequency-of-problem-solving (frequency-of-problem-solving + 1)
       output-debug-message (word "My 'frequency-of-problem-solving' variable is now equal to: " frequency-of-problem-solving "...") (who)
     ]
+  ]
+  
+  ;=====================;
+  ;== PROBLEM-SOLVING ==;
+  ;=====================;
+  
+  if(not used-pattern-recognition)[
+    output-debug-message ("Using problem-solving to deliberate...") (who)
+    output-debug-message (word "Checking to see if I've seen any tiles on the patches looked at: " patches-looked-at) (who)
+    
+    let patches-seen-with-tiles-on []
+        
+    foreach(patches-looked-at)[
+      let patch-looked-at (?)
+      let patch-looked-at-xcor (item (0) (patch-looked-at))
+      let patch-looked-at-ycor (item (1) (patch-looked-at))
+      output-debug-message (word "Checking patch that is " (list (patch-looked-at-xcor) "patches along the x-axis and " (patch-looked-at-ycor)) "patches along the y-axis from myself in the scene passed to this procedure for tiles...") (who)
+    
+      foreach(scene)[
+        if( (item (0) (?) = patch-looked-at-xcor) and (item (1) (?) = patch-looked-at-ycor) and (item (3) (?) = tile-token) )[
+          set patches-seen-with-tiles-on (lput (patch-looked-at) (patches-seen-with-tiles-on)) 
+        ]
+      ]
+    ]
+    output-debug-message (word "Patches I've seen with tiles on are: " patches-seen-with-tiles-on ) (who)
+    
+    ifelse( not empty? patches-seen-with-tiles-on )[
+      output-debug-message ("Since I saw one or more tiles, I'll generate an appropriate action...") (who)
+      let patch-with-tile-on (one-of (patches-seen-with-tiles-on))
+      set action ( generate-action-when-tile-can-be-seen 
+        (item (0) (patch-with-tile-on)) 
+        (item (1) (patch-with-tile-on)) 
+      )
+    ]
+    [
+      output-debug-message ("I didn't see any tiles, I'll try to select a random heading to move 1 patch forward along...") (who)
+      set action ( list (move-token) (one-of (movement-headings)) (1) )
+    ]
+      
+    ;================================================;
+    ;== UPDATE PROBLEM-SOLVING TRACKING VARIABLES  ==;
+    ;================================================;
+      
+    output-debug-message (word "Since I have used problem solving I'll set the local 'time-taken-to-deliberate' variable to my 'time-taken-to-problem-solve-variable' value (" time-taken-to-problem-solve ")...") (who)
+    set time-taken-to-deliberate (time-taken-to-deliberate + time-taken-to-problem-solve)
+    output-debug-message (word "My 'time-taken-to-deliberate' variable is now equal to: " time-taken-to-deliberate "...") (who)
   ]
   
   output-debug-message (word "Incrementing my 'total-deliberation-time' variable (" total-deliberation-time " by the value of the local 'time-taken-to-deliberate' variable (" time-taken-to-deliberate ")...") (who)
@@ -1130,7 +1189,7 @@ to-report deliberate [scene]
   ;== EXTRACT INFORMATION AND REPORT ==;
   ;====================================;
   
-  output-debug-message (word "Reporting the action to perform (" chrest:ItemSquarePattern.get-as-string (action) "), the time-taken to decide upon this action (" time-taken-to-deliberate ") and the value of 'used-pattern-recognition' (" used-pattern-recognition ") as a list...") (who)
+  output-debug-message (word "Reporting the action to perform (" action "), the time-taken to decide upon this action (" time-taken-to-deliberate ") and the value of 'used-pattern-recognition' (" used-pattern-recognition ") as a list...") (who)
   let action-and-time-taken-to-generate-and-pattern-recognition-use ( list 
     (action) 
     (time-taken-to-deliberate)
@@ -1281,8 +1340,15 @@ end
 ;                                                         turtle.
 ;@param   tile-ycor     Number                            The ycor of a tile relative to the calling
 ;                                                         turtle.
-;@return  -             jchrest.lib.ItemSquarePattern     An action that could be performed relative to
-;                                                             the tile's location from the calling turtle.
+;@return  -             List                              An action that could be performed relative to
+;                                                         the tile's location from the calling turtle 
+;                                                         specified as a 3 element list.  Element contents
+;                                                         are as follows:
+;
+;                                                         1) The action to perform.
+;                                                         2) The heading to adopt when performing the action.
+;                                                         3) The number of patches the objects actioned should
+;                                                            be shifted when the object is performed.
 ;
 ;@author  Martyn Lloyd-Kelly <martynlk@liverpool.ac.uk> 
 to-report generate-action-when-tile-can-be-seen [tile-xcor tile-ycor]
@@ -1304,30 +1370,30 @@ to-report generate-action-when-tile-can-be-seen [tile-xcor tile-ycor]
     let potential-actions []
     if(tile-xcor = 0 and tile-ycor = 1)[
       output-debug-message ("Tile is north of me so I could move east or west around it or push it north...") (who)
-      set potential-actions (lput (chrest:ItemSquarePattern.new (move-around-tile-token) (90) (1)) (potential-actions))
-      set potential-actions (lput (chrest:ItemSquarePattern.new (move-around-tile-token) (270) (1)) (potential-actions))
-      set potential-actions (lput (chrest:ItemSquarePattern.new (push-tile-token) (0) (1)) (potential-actions))
+      set potential-actions (lput (list (move-around-tile-token) (90) (1)) (potential-actions))
+      set potential-actions (lput (list (move-around-tile-token) (270) (1)) (potential-actions))
+      set potential-actions (lput (list (push-tile-token) (0) (1)) (potential-actions))
     ]
     
     if(tile-xcor = 1 and tile-ycor = 0)[
       output-debug-message ("Tile is east of me so I could move north or south around it or push it east...") (who)
-      set potential-actions (lput (chrest:ItemSquarePattern.new (move-around-tile-token) (0) (1)) (potential-actions))
-      set potential-actions (lput (chrest:ItemSquarePattern.new (move-around-tile-token) (180) (1)) (potential-actions))
-      set potential-actions (lput (chrest:ItemSquarePattern.new (push-tile-token) (90) (1)) (potential-actions))
+      set potential-actions (lput (list (move-around-tile-token) (0) (1)) (potential-actions))
+      set potential-actions (lput (list (move-around-tile-token) (180) (1)) (potential-actions))
+      set potential-actions (lput (list (push-tile-token) (90) (1)) (potential-actions))
     ]
     
     if(tile-xcor = 0 and tile-ycor = -1)[
       output-debug-message ("Tile is south of me so I could move east or west around it or push it south...") (who)
-      set potential-actions (lput (chrest:ItemSquarePattern.new (move-around-tile-token) (90) (1)) (potential-actions))
-      set potential-actions (lput (chrest:ItemSquarePattern.new (move-around-tile-token) (270) (1)) (potential-actions))
-      set potential-actions (lput (chrest:ItemSquarePattern.new (push-tile-token) (180) (1)) (potential-actions))
+      set potential-actions (lput (list (move-around-tile-token) (90) (1)) (potential-actions))
+      set potential-actions (lput (list (move-around-tile-token) (270) (1)) (potential-actions))
+      set potential-actions (lput (list (push-tile-token) (180) (1)) (potential-actions))
     ]
     
     if(tile-xcor = -1 and tile-ycor = 0)[
       output-debug-message ("Tile is west of me so I could move north or south around it or push it west...") (who)
-      set potential-actions (lput (chrest:ItemSquarePattern.new (move-around-tile-token) (0) (1)) (potential-actions))
-      set potential-actions (lput (chrest:ItemSquarePattern.new (move-around-tile-token) (180) (1)) (potential-actions))
-      set potential-actions (lput (chrest:ItemSquarePattern.new (push-tile-token) (270) (1)) (potential-actions))
+      set potential-actions (lput (list (move-around-tile-token) (0) (1)) (potential-actions))
+      set potential-actions (lput (list (move-around-tile-token) (180) (1)) (potential-actions))
+      set potential-actions (lput (list (push-tile-token) (270) (1)) (potential-actions))
     ]
     
     set action (one-of potential-actions)
@@ -1356,10 +1422,10 @@ to-report generate-action-when-tile-can-be-seen [tile-xcor tile-ycor]
       set potential-headings (lput (270) (potential-headings))
     ]
     
-    set action (chrest:ItemSquarePattern.new (move-to-tile-token) (one-of (potential-headings)) (1))
+    set action (list (move-to-tile-token) (one-of (potential-headings)) (1))
   ]
   
-  output-debug-message (word "The action I'm going to perform is: " chrest:ItemSquarePattern.get-as-string (action)) (who)
+  output-debug-message (word "The action I'm going to perform is: " action) (who)
   set debug-indent-level (debug-indent-level - 2)
   report action
 end
@@ -3821,6 +3887,8 @@ to print-and-run [string-to-be-run]
  output-debug-message (word "NETLOGO COMMAND TO BE PASSED TO 'run' PRIMITIVE: '" string-to-be-run "'.") ("")
  set debug-indent-level (debug-indent-level - 2)
  run string-to-be-run
+ 
+ 
 end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
