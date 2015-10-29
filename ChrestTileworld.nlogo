@@ -958,13 +958,9 @@ end
 ;
 ;         Name              Data Type          Description
 ;         ----              ---------          -----------
-;@param   scene             List               The scene to be deliberated as a 2D list whose first
-;                                              dimension elements should represent x-axis coordinates 
-;                                              and second dimension elements should represent
-;                                              y-axis coordinates (for the x-axis coordinate that surrounds
-;                                              it).  Second dimension elements should essentially represent
-;                                              a patches content (containing at most one object) and
-;                                              should be a list containing 4 values:
+;@param   scene             List               The scene to be deliberated with as a list of lists.
+;                                              Each inner list should represent a patch in the model 
+;                                              and should contain 4 values:
 ;
 ;                                              1) The xcor of the patch from the turtle deliberating.
 ;                                              2) The ycor of the patch from the turtle deliberating.
@@ -978,23 +974,24 @@ end
 ;                                              passed:
 ;                                              
 ;                                                |------|------|------|
-;                                              6 | 5(H) | 2(H) | 8(T) |
+;                                              2 | 5(H) | 2(H) | 8(T) |
 ;                                                |------|------|------|
-;                                              5 | 4(O) | 0(S) | 7(H) |
+;                                              1 | 4(O) | 0(S) | 7(H) |
 ;                                                |------|------|------|
-;                                              4 | 3(T) | 1(T) | 6(O) |
+;                                              0 | 3(T) | 1(T) | 6(O) |
 ;                                                |------|------|------|
-;                                                   3      4      5     MODEL COORDINATES
+;                                                   0      1      2     MODEL COORDINATES
 ;                                              
 ;                                              [
-;                                                [-1 -1 3 "tile"][-1 0 4 "opponent"][-1 1 5 "hole"]
+;                                                [-1 1 5 "hole"]     [0 1 2 "hole"]  [1 1 8 "tile"]
+;                                                [-1 0 4 "opponent"] [0 0 0 "self"]  [1 0 7 "hole"]
+;                                                [-1 -1 3 "tile"]    [0 -1 1 "tile"] [1 -1 6 "opponent"]
 ;                                              ]
-;                                              [
-;                                                [0 -1 1 "tile"][0 0 0 "self"][0 1 2 "hole"]
-;                                              ]
-;                                              [
-;                                                [1 -1 6 "opponent"][1 0 7 "hole"][1 1 8 "tile"]
-;                                              ]
+;
+;                                              Note that there is no strict ordering of inner-lists with respect to
+;                                              what the turtle can actually see, i.e. the patches could be coded
+;                                              in a random order rather than from west -> east and north -> south as
+;                                              above.
 ;.
 ;@return  -                 List               A three element list:
 ;                                              1) The action to be performed as a 3 element list
@@ -1032,6 +1029,8 @@ to-report deliberate [scene]
     
     output-debug-message ("Setting a local 'scene-scanned-during-pattern-recognition' variable to 'false'.  This is used if I use problem-solving to determine if I have already scanned the scene during pattern-recognition since I should only scan the scene once and pattern-recognition may result in problem-solving...") (who)
     let scanned-scene-during-pattern-recognition (false)
+    
+    let chrest-scene (chrest:Scene.new (scene) (""))
 
     ;=========================;
     ;== PATTERN-RECOGNITION ==;
@@ -1042,8 +1041,6 @@ to-report deliberate [scene]
       
       output-debug-message (word "My 'pattern-recognition?' variable is set to 'true' and 'scene' isn't empty so I'll get any action-patterns associated with chunks I recognise in the scene, along with their optimality ratings...") (who)
       let action-chunks-and-weights-associated-with-recognised-visual-chunks []
-      
-      let chrest-scene (chrest:Scene.new (scene) (""))
       
       output-debug-message (word "My visual STM will be cleared before the scene is scanned so that any visual chunks recognised definitely originate from the scene passed.") (who)
       let recognised-scene (chrest:scan-scene(chrest-scene) (number-fixations) (true) (report-current-time) (false))
@@ -1113,7 +1110,7 @@ to-report deliberate [scene]
       output-debug-message ("Checking if I have already scanned the scene using pattern-recognition...") (who)
       if(not scanned-scene-during-pattern-recognition)[
         output-debug-message ("I've not already scanned the scene using pattern-recognition, scanning now but ignoring the scene returned...") (who)
-        let scanned-scene (chrest:scan-scene (scene) (number-fixations) (true) (report-current-time) (false))
+        let scanned-scene (chrest:scan-scene (chrest-scene) (number-fixations) (true) (report-current-time) (false))
       ]
       
       let fixations (chrest:Perceiver.get-fixations)
@@ -1673,10 +1670,56 @@ to generate-plan
         set who-of-tile-last-pushed-in-plan ("")
         
         ;Generate a new move and add it to the plan (at this point, the visual-spatial field will be OK to generate as a Scene since there will not be two objects on any visual-spatial coordinate)
-        let action-to-perform-time-taken-to-deliberate-and-used-pattern-recognition (deliberate (chrest:VisualSpatialField.get-as-scene (report-current-time) (false) ))
+        let visual-spatial-field-as-list-with-object-ids (chrest:ListPattern.get-as-netlogo-list
+          (chrest:Scene.get-as-list-pattern
+            (chrest:VisualSpatialField.get-as-scene 
+              (report-current-time) 
+              (false)
+             ) 
+            (true) ;Creator-relative coordinates
+            (false) ;Object IDs
+           )
+        )
+        
+        let visual-spatial-field-as-list-with-object-classes (chrest:ListPattern.get-as-netlogo-list
+          (chrest:Scene.get-as-list-pattern
+            (chrest:VisualSpatialField.get-as-scene 
+              (report-current-time) 
+              (false)
+             ) 
+            (true) ;Creator-relative coordinates
+            (true) ;Object classes
+           )
+        )
+        
+        let scene-to-deliberate-with []
+        let i (0)
+        while [i < (length visual-spatial-field-as-list-with-object-classes)][
+          let visual-spatial-field-object-info-with-id (item (i) (visual-spatial-field-as-list-with-object-ids))
+          let visual-spatial-field-object-info-with-class (item (i) (visual-spatial-field-as-list-with-object-classes))
+          
+          set scene-to-deliberate-with (lput
+            (list 
+              (chrest:ItemSquarePattern.get-column (visual-spatial-field-object-info-with-id))
+              (chrest:ItemSquarePattern.get-row (visual-spatial-field-object-info-with-id))
+              (chrest:ItemSquarePattern.get-item (visual-spatial-field-object-info-with-id))
+              (chrest:ItemSquarePattern.get-item (visual-spatial-field-object-info-with-class))
+            )
+            (scene-to-deliberate-with)
+          )
+          set i (i + 1)
+        ]
+        
+        let action-to-perform-time-taken-to-deliberate-and-used-pattern-recognition (deliberate (scene-to-deliberate-with) )
         set action-to-perform ( item (0) (action-to-perform-time-taken-to-deliberate-and-used-pattern-recognition) )
         let time-taken-to-deliberate ( item (1) (action-to-perform-time-taken-to-deliberate-and-used-pattern-recognition) )
         let used-pattern-recognition ( item (2) (action-to-perform-time-taken-to-deliberate-and-used-pattern-recognition) )
+        
+        set action-to-perform (chrest:ItemSquarePattern.new 
+          (item (0) (action-to-perform)) 
+          (item (1) (action-to-perform)) 
+          (item (2) (action-to-perform)) 
+        )
         
         output-debug-message (word "Action decided upon: " chrest:ItemSquarePattern.get-as-string (action-to-perform) ) (who)
         output-debug-message (word "Time spent deliberating: " time-taken-to-deliberate ".") (who)
@@ -2987,7 +3030,7 @@ end
 ;;@param   action-pattern    String        The action-pattern that is to be set to the calling
 ;;                                         turtle's 'next-action-to-perform' variable.  This 
 ;;                                         action may then be performed in the future.
-;;@param   delibThe patch ahead with headingeration-time Number        The length of time that must pass to simulate the 
+;;@param   deliberation-time Number        The length of time that must pass to simulate the 
 ;;                                         time it took for the calling turtle to deliberate
 ;;                                         about the action that is to be loaded.  This, in 
 ;;                                         conjunction with the value of the calling turtle's
@@ -5546,7 +5589,7 @@ SWITCH
 168
 debug?
 debug?
-0
+1
 1
 -1000
 

@@ -39,6 +39,7 @@
 		set discount-rate 0.5
 		set discrimination-time 10000
 		set familiarisation-time 2000
+		set max-length-of-episodic-memory 5
 		set max-search-iteration 9999
 		set number-fixations 4
 		set pattern-recognition? true
