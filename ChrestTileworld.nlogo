@@ -222,13 +222,10 @@ end
 ;;;;; "AGE" PROCEDURE ;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;Hole and tile-only procedure.
-;
-;Decreases the calling turtle's "time-to-live" variable by the
-;value specified in the "time-increment" variable.
-;
-;If the calling turtles "time-to-live" variable is less than
-;or equal to 0, the turtle dies.
+;Decreases the "time-to-live" variable for all tiles and holes by the
+;value specified in the "time-increment" variable. If a tile/hole's 
+;"time-to-live" variable is <= 0 after the decrement, the tile/hole 
+;dies.
 ;
 ;@author  Martyn Lloyd-Kelly <martynlk@liverpool.ac.uk>  
 to age
@@ -236,15 +233,16 @@ to age
   output-debug-message ("EXECUTING THE 'age' PROCEDURE...") ("")
   set debug-indent-level (debug-indent-level + 1)
   
-  if(breed = holes or breed = tiles)[
-    output-debug-message (word "My 'time-to-live' variable is set to: '" time-to-live "' and I will age by 1ms...") (who)
-    
+  ask tiles [
     set time-to-live ( precision (time-to-live - 1) (1) )
-    output-debug-message (word "My 'time-to-live' variable is now set to: '" time-to-live "'.  If this is equal to 0, I will die.") (who)
-    
     if(time-to-live <= 0)[
-      output-debug-message (word "My 'time-to-live' variable is equal to : '" time-to-live "' so I will now die.") (who)
-      set debug-indent-level (debug-indent-level - 2)
+      die
+    ]
+  ]
+  
+  ask holes [
+    set time-to-live ( precision (time-to-live - 1) (1) )
+    if(time-to-live <= 0)[
       die
     ]
   ]

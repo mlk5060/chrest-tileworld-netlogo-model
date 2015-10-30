@@ -1,13 +1,49 @@
+;==============================
+;========== TEST AIM ==========
+;==============================
+;
+; To determine if the "age" procedure operates as expected.
+;
+;======================================
+;========== TEST DESCRIPTION ==========
+;======================================
+; 
+; 1) A number of tiles and holes are created: 2 tiles and 1 hole.
+; 2) The first tile and only hole ('who' values = 0 and 2, respectively) have their 'time-to-live' turtle
+;    variables set to 2 whereas the second tile has its 'time-to-live' variable set to 3.
+; 3) The 'age' procedure is then invoked twice.
+;
+; This setup facilitates correct decrementation of the 'time-to-live' variable for holes and tiles since
+; the first tile and hole should have their 'time-to-live' variable decremented to 0 whilst the second tile
+; should have its value decremented to 1.
+;
+; The setup also tests that tiles and holes are removed correctly when their 'time-to-live' variable equals
+; 0: the first tile and hole should no longer exist after the two 'age' procedure invocations whilst the 
+; second tile should persist.
+;
+;=====================================
+;========== TESTS PERFORMED ==========
+;=====================================
+;
+; - The existence of the objects is first checked before the 'age' procedure is invoked.  There should be
+;   2 tiles and 1 hole.
+; - Following the 'age' procedure invocation, a check is made again on the number of tiles and holes.  In 
+;   this case, only 1 tile should exist and its 'time-to-live' variable should equal 1.
+;
 <test>
-	create-tiles 1
-	check-equal (any? tiles-on patches) (true)
 
-	ask tiles [
-		set time-to-live 2
-		age
-		check-equal (time-to-live) (1)
+	create-tiles 1 [ set time-to-live 2 ]
+	create-tiles 1 [ set time-to-live 3 ]
+	create-holes 1 [ set time-to-live 2 ]
+
+	check-equal (count tiles-on patches) (2) ("when checking if the correct number of tiles have been created")
+	check-equal (count holes-on patches) (1) ("when checking if the correct number of holes have been created")
+
+	repeat (2)[
 		age
 	]
 	
-	check-equal (any? tiles-on patches) (false)
+	check-equal (count tiles-on patches) (1) ("when checking the number of tiles")
+	check-equal (any? holes-on patches) (false) ("when checking if there are any holes")
+	check-equal ([time-to-live] of turtle 1) (1) ("when checking the 'time-to-live' of turtle 1")
 </test>
