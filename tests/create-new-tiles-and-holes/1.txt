@@ -1,26 +1,130 @@
+;==============================
+;========== TEST AIM ==========
+;==============================
+;
+; To determine if the 'create-new-tiles-and-holes' procedure operates as expected.
+;
+;======================================
+;========== TEST DESCRIPTION ==========
+;======================================
+;
+; The test ensures that the procedure operates correctly when the model is in training and 
+; non-training states.
+;
+; The test is composed of four major scenarios; the model is reset at the conclusion of each:
+;
+; 1) Training phase; tile creation guaranteed to occur; hole creation guaranteed to not occur.
+; 2) Training phase; tile creation guaranteed to not occur; hole creation guaranteed to occur.
+; 3) Non-training phase; tile creation guaranteed to occur; hole creation guaranteed to not occur.
+; 4) Non-training phase; tile creation guaranteed to not occur; hole creation guaranteed to occur.
+;
+; For each scenario, the 'create-new-tiles-and-holes' procedure is called every tick until the 10th 
+; tick.  Tile and hole creation is consistent across scenarios; every 2 and 4 ticks, respectively.  
+;
+; Setting the creation probabilities and creation intervals for tiles and holes differently makes 
+; the test more robust since it allows for the ascertainment of tile/hole creation algorithm 
+; independence.
+; 
+; Furthermore, the usage of creation intervals other than 1 improves the robustness of checks
+; designed to test the correct operation of the calculation that determines if tile/hole creation 
+; should occur (if the creation interval is set to 1 tick, the result of this calculation will 
+; always result in tile and hole creation occurring when a tick occurs).
+;
+; NOTE: if hole/tile creation probabilities are set to values > 0 or < 1 then it becomes nearly 
+;       impossible to give a precise figure for how many holes/tiles should have been created at
+;       the conclusion of each scenario.  Hence, such values are not used.
+;
+;=====================================
+;========== TESTS PERFORMED ==========
+;=====================================
+;
+; At the conclusion of each scenario, the test checks that the number of tiles and 
+; holes which exist in the environment is as expected:
+;
+; - At the conclusion of the first scenario, 10 tiles and 0 holes should exist.
+; - At the conclusion of the second scenario, 0 tiles and 6 holes should exist.  
+;
+; NOTE: given the operation of the creation interval algorithm, if the creation #
+;       probability for a tile/hole is > 0, a tile or hole has a chance of being 
+;       created at time 0.
+; 
 <test>
-	set tile-birth-prob 1.0
-	set hole-birth-prob 1.0
 
-	set tile-born-every 1.0
-	set hole-born-every 1.0
+	set tile-born-every (2.0)
+	set hole-born-every (4.0)
+	let scenario (1)
 
-	set training? true
-	set current-training-time 10
+	let expected-tiles (0)
+	let expected-holes (0)
 
-	while[current-training-time > 0][
-		create-new-tiles-and-holes
-		set current-training-time (current-training-time - 1)
+	while [scenario <= 4][
+		
+		if(scenario = 1)[
+			set training? (true)
+			set tile-birth-prob (1.0)
+			set hole-birth-prob (0.0)
+			set expected-tiles (5)
+			set expected-holes (0)
+		]
+
+		if(scenario = 2)[
+			set training? (true)
+			set tile-birth-prob 0.0
+			set hole-birth-prob 1.0
+			set expected-tiles (0)
+			set expected-holes (3)
+		]
+
+		if(scenario = 3)[
+			set training? (false)
+			set tile-birth-prob 1.0
+			set hole-birth-prob 0.0
+			set expected-tiles (5)
+			set expected-holes (0)
+		]
+
+		if(scenario = 4)[
+			set training? (false)
+			set tile-birth-prob 0.0
+			set hole-birth-prob 1.0
+			set expected-tiles (0)
+			set expected-holes (3)
+		]
+
+		while[report-current-time < 10][
+			create-new-tiles-and-holes
+
+			ifelse(scenario = 1 or scenario = 2)[
+				set current-training-time (current-training-time + 1)
+			]
+			[
+				set current-game-time (current-game-time + 1)
+			]
+		]
+
+		check-equal 
+			(count (tiles)) 
+			(expected-tiles) 
+			(word "when counting the number of tiles created in scenario " scenario)
+
+		check-equal 
+			(count (holes)) 
+			(expected-holes) 
+			(word "when counting the number of holes created in scenario " scenario)
+
+		;==================;
+		;== HOUSEKEEPING ==;
+		;==================;
+
+		set scenario (scenario + 1)
+		
+		ifelse(scenario = 1 or scenario = 2)[
+			set current-training-time (0)
+		]
+		[
+			set current-game-time (0)
+		]
+		
+		reset(true)
 	]
-
-	set training? false
-	set current-game-time 10
-
-	while[current-game-time > 0][
-		create-new-tiles-and-holes
-		set current-game-time (current-game-time - 1)
-	]
-
-	check-equal (count (tiles-on patches)) (20)
-	check-equal (count (holes-on patches)) (20) 
 </test>
