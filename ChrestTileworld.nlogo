@@ -1182,9 +1182,9 @@ to execute-next-planned-action
         output-debug-message (word "Setting a local 'action-performed-successfully' variable to boolean false.  This will be used to determine what to do after the action has been executed..." ) (who)
         let action-performed-successfully (false)
         
-        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-        ;;; GET AND PREPARE OBSERVABLE ENVIRONMENT ;;;
-        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+        ;=================================================================;
+        ;== GET AND PREPARE OBSERVABLE ENVIRONMENT FOR 'perform-action' ==;
+        ;=================================================================;
         
         output-debug-message (word "Getting what I can currently see so that this information can be passed to the procedure that handles performing the planned action...") (who)
         let observable-environment (get-observable-environment)
@@ -1201,12 +1201,20 @@ to execute-next-planned-action
         ]
         output-debug-message (word "What I can see after removing object ID's: " observable-environment) (who)
         
-        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-        ;;; PERFORM NEXT PLANNED ACTION ;;;
-        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+        ;=================================;
+        ;== PERFORM NEXT PLANNED ACTION ==;
+        ;=================================;
         
         output-debug-message ( word "The current model time is greater than or equal to the value of my 'deliberation-finished-time' turtle variable so I'll attempt to perform the first action in my 'plan' and set the result of this to a local 'result-of-performing-action' variable..." ) (who)
-        let result-of-performing-action ( perform-action (first (plan)) (observable-environment) )
+        let plan-element (first (plan))
+        let action-to-perform ( item (0) (plan-element) )
+        let action-generated-using-pattern-recognition? ( item (1) (plan-element) )
+        set action-to-perform (list
+          (chrest:ItemSquarePattern.get-item (action-to-perform))
+          (chrest:ItemSquarePattern.get-column (action-to-perform))
+          (chrest:ItemSquarePattern.get-row (action-to-perform))
+        )
+        let result-of-performing-action ( perform-action (list (action-to-perform) (action-generated-using-pattern-recognition?)) (observable-environment) )
         
         output-debug-message ( word "Checking to see if the local 'result-of-performing-action' variable is a list or not.  If it is then the action performed must have been a 'push-tile' action so the first element of the list will be whether the action was performed successfully whilst the second element will indicate whether or not a hole was filled..." ) (who)
         ifelse( is-list? (result-of-performing-action) )[
@@ -1218,6 +1226,10 @@ to execute-next-planned-action
           output-debug-message ( word "The local 'result-of-performing-action' variable is not a list so I'll set the local 'action-performed-successfully' variable to its value..." ) (who)
           set action-performed-successfully (result-of-performing-action)
         ]
+        
+        ;=========================================;
+        ;== CHECK SUCCESS OF ACTION PERFORMANCE ==;
+        ;=========================================;
         
         output-debug-message ( word "Checking the value of the local 'action-performed-successfully' variable (" action-performed-successfully ")..." ) (who)
         ifelse( action-performed-successfully )[
@@ -1245,8 +1257,11 @@ to execute-next-planned-action
       ]
     ]
     
-    output-debug-message ("Checking to see if my 'plan' turtle variable is empty...") (who)
-    if( empty? (plan) )[
+    ;===========================================;
+    ;== RESET VARIABLES TO RE-ENABLE PLANNING ==;
+    ;===========================================;
+    
+    if(empty? plan)[
       output-debug-message ( word "My 'plan' turtle variable is empty so I'll set my 'generate-plan?' turtle variable to 'true' and my 'construct-visual-spatial-field?' variable to 'true' so that I can re-plan correctly..." ) (who)
       set generate-plan? (true)
       set construct-visual-spatial-field? (true)
@@ -3361,16 +3376,19 @@ to-report perform-action [ action-info current-view ]
       ]
   
       ;Check for learned problem-solving action.
-      let action-recognised  ( chrest:Node.get-image (chrest:recognise-and-learn-list-pattern (action-to-learn) (report-current-time)) )
-      output-debug-message (word "Recognised " chrest:ListPattern.get-as-string (action-recognised) " given action " chrest:ListPattern.get-as-string (action-to-learn)) (who)
-      
-      ;Learn explicit action if problem-solving action already learned.
-      if( 
-        ( (chrest:ListPattern.get-as-string (action-to-learn)) = (chrest:ListPattern.get-as-string (problem-solving-action)) ) and 
-        ( (chrest:ListPattern.get-as-string (action-recognised)) = (chrest:ListPattern.get-as-string (problem-solving-action)) ) 
-      )[
-        output-debug-message ("The action to learn is the problem-solving action but I've already learned it so I'll learn the explicit action instead") (who)
-        set action-to-learn (explicit-action)
+      let action-recognised ( chrest:recognise-and-learn-list-pattern (action-to-learn) (report-current-time) )
+      if (action-recognised != "")[
+        set action-recognised ( chrest:Node.get-image (action-recognised) )
+        output-debug-message (word "Recognised " chrest:ListPattern.get-as-string (action-recognised) " given action " chrest:ListPattern.get-as-string (action-to-learn)) (who)
+        
+        ;Learn explicit action if problem-solving action already learned.
+        if( 
+          ( (chrest:ListPattern.get-as-string (action-to-learn)) = (chrest:ListPattern.get-as-string (problem-solving-action)) ) and 
+          ( (chrest:ListPattern.get-as-string (action-recognised)) = (chrest:ListPattern.get-as-string (problem-solving-action)) ) 
+        )[
+          output-debug-message ("The action to learn is the problem-solving action but I've already learned it so I'll learn the explicit action instead") (who)
+          set action-to-learn (explicit-action)
+        ]
       ]
       
       output-debug-message (word "Attempting to learn action: " chrest:ListPattern.get-as-string (action-to-learn)) (who)
@@ -3409,8 +3427,10 @@ to-report perform-action [ action-info current-view ]
           (current-view-as-list-of-item-square-patterns)
         )
       ]
+      let visual-list-pattern (chrest:ListPattern.new ("visual") (current-view-as-list-of-item-square-patterns))
+      output-debug-message (word "Visual list-pattern before domain normalisation: " chrest:ListPattern.get-as-string (visual-list-pattern)) (who)
       
-      let visual-list-pattern ( chrest:DomainSpecifics.normalise-list-pattern (chrest:ListPattern.new ("visual") (current-view-as-list-of-item-square-patterns)) )
+      set visual-list-pattern ( chrest:DomainSpecifics.normalise-list-pattern (visual-list-pattern) )
       output-debug-message (word "Visual list-pattern generated: " chrest:ListPattern.get-as-string (visual-list-pattern)) (who)
     
       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3893,8 +3913,6 @@ to print-and-run [string-to-be-run]
  output-debug-message (word "NETLOGO COMMAND TO BE PASSED TO 'run' PRIMITIVE: '" string-to-be-run "'.") ("")
  set debug-indent-level (debug-indent-level - 2)
  run string-to-be-run
- 
- 
 end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
