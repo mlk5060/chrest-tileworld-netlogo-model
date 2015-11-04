@@ -1009,46 +1009,63 @@ to-report deliberate [scene]
         
         output-debug-message (word "Getting any productions associated with the recognised visual chunk: " ( chrest:ListPattern.get-as-string (visual-chunk) ) "..." ) (who)
         let productions (chrest:get-productions (visual-chunk) (report-current-time))
-        
         output-debug-message (word "Productions found: " map ([ ( list (chrest:ListPattern.get-as-string (chrest:Node.get-image (item (0) (?)))) (item (1) (?)) ) ]) (productions) ".") (who)
         
-        if(not empty? productions)[ 
-          output-debug-message (word "There are productions associated with the visual chunk in question.  Adding them to the list of productions associated with recognised visual chunks...") (who)
-          set productions-for-recognised-visual-chunks-in-scene (lput (productions) (productions-for-recognised-visual-chunks-in-scene))
+        ;===============================================================================================================;
+        ;== CONVERT EACH PRODUCTION'S ACTION LIST-PATTERN INTO A FORM SUITABLE FOR USE BY ACTION-SELECTION PROCEDURES ==;
+        ;===============================================================================================================;
+        
+        output-debug-message ("Converting each action in the productions found from a jchrest.lib.ListPattern to a Netlogo list containing 3 elements: the action token, the heading to adopt when performing the action and the patches to shift when performing the action") (who)
+        foreach(productions)[ 
+          let action-in-production (item (0) (?))
+          set action-in-production (chrest:ListPattern.get-as-netlogo-list (chrest:Node.get-image (action-in-production)))
+          set action-in-production (item (0) (action-in-production)) ; There will only ever be one ItemSquarePattern in the ListPattern.
+          set action-in-production (list
+            (chrest:ItemSquarePattern.get-item (action-in-production))
+            (chrest:ItemSquarePattern.get-column (action-in-production))
+            (chrest:ItemSquarePattern.get-row (action-in-production))
+          )
+          
+          set productions-for-recognised-visual-chunks-in-scene (lput 
+            (list
+              (action-in-production)
+              (item (1) (?))
+            )
+            (productions-for-recognised-visual-chunks-in-scene)
+          )
         ]
       ]
+      
+      ;=========================;
+      ;== SELECT A PRODUCTION ==;
+      ;=========================;
       
       output-debug-message (word "Checking to see if there are any productions recognised.  If not, pattern-recognition is impossible so I won't continue with pattern-recognition...") (who)
       if(not empty? productions-for-recognised-visual-chunks-in-scene)[
         output-debug-message (word "I have recognised some productions so I'll continue pattern-recognition...") (who)
         
         output-debug-message (word "Selecting an action to perform from the productions recognised using the specified action-selection procedure (" action-selection-procedure ")...") (who)        
-        let action-chunk ( runresult (word action-selection-procedure "( productions-for-recognised-visual-chunks-in-scene )" ) )
+        let action-selected ( runresult (word action-selection-procedure "( productions-for-recognised-visual-chunks-in-scene )" ) )
 
-        output-debug-message (word "Checking to see if the action returned is a list(" is-list? action-chunk "), if it is then I won't continue with pattern-recognition...") (who)
-        if( not is-list? action-chunk )[
+        output-debug-message (word "Checking to see if the action selected (" action-selected ") is not empty, if it isn't then I'll continue with pattern-recognition...") (who)
+        if( not empty? action-selected )[
           
-          output-debug-message (word "The action returned is not a list.  Checking to see if it indicates that I should use problem-solving to deliberate further, if not, I'll set my 'used-pattern-recognition' variable to 'true'...") (who)
-          set action (item (0) (chrest:ListPattern.get-as-netlogo-list (chrest:Node.get-image (action-chunk))))
+          output-debug-message (word "The action selected is not empty.  Checking to see if it indicates that I should use problem-solving to deliberate further, if not, I'll set my 'used-pattern-recognition' variable to 'true'...") (who)
           
-          set action (list
-            (chrest:ItemSquarePattern.get-item (action))
-            (chrest:ItemSquarePattern.get-column (action))
-            (chrest:ItemSquarePattern.get-row (action))
-          )
-          
-          if( (item (0) (action)) != (problem-solving-token))[
-            output-debug-message ("Action indicates that I shouldn't use problem-solving so I'll set the local 'used-pattern-recognition' variable to 'true'...") (who)
+          if( (item (0) (action-selected)) != (problem-solving-token))[
+            output-debug-message ("Action selected indicates that I shouldn't use problem-solving so I'll set the local 'used-pattern-recognition' variable to 'true'...") (who)
             set used-pattern-recognition (true)
+            
+            set action (action-selected)
+          
+            output-debug-message (word "Since I have used pattern-recognition I'll set the local 'time-taken-to-deliberate' variable to my 'time-taken-to-use-pattern-recognition' value (" time-taken-to-problem-solve ")...") (who)
+            set time-taken-to-deliberate (time-taken-to-deliberate + time-taken-to-use-pattern-recognition)
+            output-debug-message (word "My 'time-taken-to-deliberate' variable is now equal to: " time-taken-to-deliberate "...") (who)
+            
+            output-debug-message (word "Since I generated an action using pattern recognition, I will increment my 'frequency-of-pattern-recognitions' variable (" frequency-of-pattern-recognitions ") by 1...") (who)
+            set frequency-of-pattern-recognitions (frequency-of-pattern-recognitions + 1)
+            output-debug-message (word "My 'frequency-of-pattern-recognitions' variable is now equal to: " frequency-of-pattern-recognitions "...") (who)
           ]
-          
-          output-debug-message (word "Since I have used pattern-recognition I'll set the local 'time-taken-to-deliberate' variable to my 'time-taken-to-use-pattern-recognition' value (" time-taken-to-problem-solve ")...") (who)
-          set time-taken-to-deliberate (time-taken-to-deliberate + time-taken-to-use-pattern-recognition)
-          output-debug-message (word "My 'time-taken-to-deliberate' variable is now equal to: " time-taken-to-deliberate "...") (who)
-          
-          output-debug-message (word "Since I generated an action using pattern recognition, I will increment my 'frequency-of-pattern-recognitions' variable (" frequency-of-pattern-recognitions ") by 1...") (who)
-          set frequency-of-pattern-recognitions (frequency-of-pattern-recognitions + 1)
-          output-debug-message (word "My 'frequency-of-pattern-recognitions' variable is now equal to: " frequency-of-pattern-recognitions "...") (who)
         ]
       ]
     ]
@@ -4425,58 +4442,74 @@ end
 ;
 ;         Name                 Data Type     Description
 ;         ----                 ---------     -----------
-;@param   actions-and-weights  List          A list containing lists of "jchrest.architecture.Node"
-;                                            instances (action chunks) and optimality ratings (numbers),
-;                                            i.e. [[<Node> 2] [<Node> 3]]
+;@param   actions-and-weights  List          [
+;                                              [
+;                                                [action-token heading patches]
+;                                                value
+;                                              ]
+;                                              [
+;                                                [action-token heading patches]
+;                                                value
+;                                              ]
+;                                            ]
 ;@return  -                    String        The action pattern to perform formatted as:
 ;                                            "[act-token heading patches]".
 ;
 ;@author  Martyn Lloyd-Kelly <martynlk@liverpool.ac.uk>  
-to-report roulette-selection [actions-and-optimality-ratings]
+to-report roulette-selection [actions-and-values]
  set debug-indent-level (debug-indent-level + 1)
  output-debug-message ("EXECUTING THE 'roulette-selection' PROCEDURE...") ("")
  set debug-indent-level (debug-indent-level + 1)
- output-debug-message (word "The actions and optimality ratings to work with are: " ( map ([ map ([ (chrest:ListPattern.get-as-string (chrest:Node.get-image (item (0) (?)))) ]) (?) ]) (actions-and-optimality-ratings) ) ) (who)
+ output-debug-message (word "The actions and values to work with are: " actions-and-values ) (who)
  
- let candidate-actions-and-optimality-ratings []
- foreach(actions-and-optimality-ratings)[
-   foreach(?)[
-     output-debug-message (word "Checking to see if " (item (1) (?)) " is greater than 0.0.  If so, I'll add it to the 'candidate-actions-and-weights' list...") (who)
-     if( (item (1) (?)) > 0.0 )[
-       output-debug-message (word (item (1) (?)) " is greater than 0.0, adding it to the 'candidate-actions-and-optimality-ratings' list...") (who)
-       set candidate-actions-and-optimality-ratings (lput (?) (candidate-actions-and-optimality-ratings))
-     ]
+ ;==============================================;
+ ;== CHECK FOR ACTIONS THAT HAVE VALUES > 0.0 ==;
+ ;==============================================;
+ 
+ ; The "roulette-selection" algorithm can not operate if the actions passed to it all have values of
+ ; 0 so at least one action must have a value greater than this.  A check is performed here for such 
+ ; a situation.
+ 
+ output-debug-message (word "Adding actions that have a value > 0.0 to a local 'candidate-actions-and-values' list." ) (who)
+ let candidate-actions-and-values []
+ foreach(actions-and-values)[
+   if( (item (1) (?)) > 0.0 )[
+     output-debug-message (word (item (1) (?)) " is greater than 0.0, adding it to the 'candidate-actions-and-values' list...") (who)
+     set candidate-actions-and-values (lput (?) (candidate-actions-and-values))
    ]
  ]
  
- output-debug-message (word "Checking to see if the 'candidate-actions-and-optimality-ratings' list is empty (" (empty? candidate-actions-and-optimality-ratings) ").") (who)
- ifelse(empty? candidate-actions-and-optimality-ratings)[
-   output-debug-message ("The 'candidate-actions-and-optimality-ratings' list is empty, reporting an empty list...") (who)
+ ifelse(empty? candidate-actions-and-values)[
+   output-debug-message ("The 'candidate-actions-and-values' list is empty, reporting an empty list...") (who)
    set debug-indent-level (debug-indent-level - 2)
    report []
  ]
  [
-   output-debug-message ("The 'candidate-actions-and-optimality-ratings' list is not empty, processing its items...") (who)
-   output-debug-message (word "The 'candidate-actions-and-optimality-ratings' list contains: " ( map ([ (list ( chrest:ListPattern.get-as-string (chrest:Node.get-image (item (0) (?))) ) (item (1) (?) )) ]) (candidate-actions-and-optimality-ratings) ) ".") (who)
+   output-debug-message ("The 'candidate-actions-and-values' list is not empty, processing its items...") (who)
+   output-debug-message (word "The 'candidate-actions-and-values' list contains: " candidate-actions-and-values ".") (who)
    
-   output-debug-message ("First, I'll sum together the weights of all actions in 'candidate-actions-and-optimality-ratings'") (who)
-   let sum-of-weights 0
-   foreach(candidate-actions-and-optimality-ratings)[
-     set sum-of-weights ( sum-of-weights + (item (1) (?)) )
+   ;=========================;
+   ;== SUM TOGETHER VALUES ==;
+   ;=========================;
+   
+   output-debug-message ("First, I'll sum together the values in 'candidate-actions-and-values'") (who)
+   let sum-of-values 0
+   foreach(candidate-actions-and-values)[
+     set sum-of-values ( sum-of-values + (item (1) (?)) )
    ]
-   output-debug-message (word "The sum of all weights is: " sum-of-weights ".")  (who)
+   output-debug-message (word "The sum of all values is: " sum-of-values ".")  (who)
    
-   output-debug-message ("Now, I need to build normalised ranges of values for the actions in the 'candidate-actions-and-optimality-ratings' list...") (who)
+   output-debug-message ("Now, I need to build normalised ranges of values for the actions in the 'candidate-actions-and-values' list...") (who)
    let action-value-ranges []
    let range-min 0
-   foreach(candidate-actions-and-optimality-ratings)[
-     output-debug-message (word "The minimum range for action " (chrest:ListPattern.get-as-string (chrest:Node.get-image (item (0) (?)))) " is currently set to: " range-min "...") (who)
-     let range-max (range-min + ( (item (1) (?)) / sum-of-weights) )
-     output-debug-message (word "The max range for action " (chrest:ListPattern.get-as-string (chrest:Node.get-image (item (0) (?)))) " is currently set to: " range-max "...") (who) 
+   foreach(candidate-actions-and-values)[
+     output-debug-message (word "The minimum range for action " (item (0) (?)) " is currently set to: " range-min "...") (who)
+     let range-max (range-min + ( (item (1) (?)) / sum-of-values) )
+     output-debug-message (word "The max range for action " (item (0) (?)) " is currently set to: " range-max "...") (who) 
      set action-value-ranges (lput (list (item (0) (?)) (range-min) (range-max) ) (action-value-ranges) )
      set range-min (range-max)
    ]
-   output-debug-message (word "After processing each 'candidate-actions-and-optimality-ratings' item, the 'action-value-ranges' variable is equal to: " (map ([ (list (chrest:ListPattern.get-as-string (chrest:Node.get-image (item (0) (?)))) (item (1) (?)) (item (2) (?))) ]) (action-value-ranges)) "...") (who)
+   output-debug-message (word "After processing each 'candidate-actions-and-values' item, the 'action-value-ranges' variable is equal to: " action-value-ranges "...") (who)
    
    output-debug-message (word "The maximum max range value should be equal to 1.0 (" (item (2) (last action-value-ranges)) "), checking if this is the case...") (who)
    ifelse((item (2) (last action-value-ranges)) = 1.0)[
@@ -4486,14 +4519,14 @@ to-report roulette-selection [actions-and-optimality-ratings]
      
      output-debug-message ("Checking each item in the 'action-value-ranges' variable to see if 'r' is between its min and max range.  If it is, that action will be selected...") (who)
      foreach(action-value-ranges)[
-       output-debug-message (word "Processing item: " ( list (chrest:ListPattern.get-as-string (chrest:Node.get-image (item (0) (?)))) (item (1) (?)) (item (2) (?)) ) "...") (who)
+       output-debug-message (word "Processing item: " ? "...") (who)
        output-debug-message (word "Checking if 'r' (" r ") is >= " (item (1) (?)) " and < " (item (2) (?)) "...") (who)
        if( ( r >= (item (1) (?)) ) and ( r < (item (2) (?)) ) )[
-         output-debug-message (word "'r' is in the range of values for action " (chrest:ListPattern.get-as-string (chrest:Node.get-image (item (0) (?)))) ", reporting this as the action to perform..." ) (who)
+         output-debug-message (word "'r' is in the range of values for action " (item (0) (?)) ", reporting this as the action to perform..." ) (who)
          set debug-indent-level (debug-indent-level - 2)
          report (item (0) (?))
        ]
-       output-debug-message (word "'r' is not in the range of values for action " (chrest:ListPattern.get-as-string (chrest:Node.get-image (item (0) (?)))) ".  Processing next item...") (who)
+       output-debug-message (word "'r' is not in the range of values for action " (item (0) (?)) ".  Processing next item...") (who)
      ]
    ]
    [

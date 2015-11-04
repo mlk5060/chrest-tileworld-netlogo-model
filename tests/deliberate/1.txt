@@ -160,7 +160,7 @@
 
 			;Note that the values int the list passed ensures that the production rating is > 0 so that the action will be selected using "roulette-selection"
 			;during the "deliberate" procedure execution (if a rating is not > 0 it will not be selected).
-			chrest:reinforce-action-link 
+			chrest:reinforce-production 
 				(visual-list-pattern) 
 				(action-list-pattern) 
 				(list (1) (0.9) (report-current-time) (report-current-time - 1))
