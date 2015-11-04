@@ -993,8 +993,8 @@ to-report deliberate [scene]
     output-debug-message (word "If 'scene' isn't empty and I can use pattern-recognition (" pattern-recognition? "), I'll use pattern-recognition to select an action to perform...") (who)
     if( pattern-recognition? and (not empty? scene) )[
       
-      output-debug-message (word "My 'pattern-recognition?' variable is set to 'true' and 'scene' isn't empty so I'll get any action-patterns associated with chunks I recognise in the scene, along with their optimality ratings...") (who)
-      let action-chunks-and-weights-associated-with-recognised-visual-chunks []
+      output-debug-message (word "My 'pattern-recognition?' variable is set to 'true' and 'scene' isn't empty so I'll get any productions for visual chunks I recognise in the scene, along with their optimality ratings...") (who)
+      let productions-for-recognised-visual-chunks-in-scene []
       
       output-debug-message (word "My visual STM will be cleared before the scene is scanned so that any visual chunks recognised definitely originate from the scene passed.") (who)
       let recognised-scene (chrest:scan-scene(chrest-scene) (number-fixations) (true) (report-current-time) (false))
@@ -1002,28 +1002,28 @@ to-report deliberate [scene]
       set scanned-scene-during-pattern-recognition (true)
       
       let visual-stm (chrest:get-stm-contents-by-modality ("visual"))
-      output-debug-message (word "I've recognised the following visual chunks: " (map ([ chrest:ListPattern.get-as-string (chrest:Node.get-image (?)) ]) (visual-stm))) (who)
+      output-debug-message (word "I've recognised the following visual chunks by scanning the scene: " (map ([ chrest:ListPattern.get-as-string (chrest:Node.get-image (?)) ]) (visual-stm))) (who)
 
       foreach(visual-stm)[
         let visual-chunk ( chrest:Node.get-image (?) )
         
-        output-debug-message (word "Getting any actions and optimality ratings associated with the recognised visual chunk: " ( chrest:ListPattern.get-as-string (visual-chunk) ) "..." ) (who)
-        let associated-action-chunks-and-weights (chrest:recognise-list-pattern-and-return-nodes-with-modality (visual-chunk) ("action") (report-current-time))
+        output-debug-message (word "Getting any productions associated with the recognised visual chunk: " ( chrest:ListPattern.get-as-string (visual-chunk) ) "..." ) (who)
+        let productions (chrest:get-productions (visual-chunk) (report-current-time))
         
-        output-debug-message (word "Associated actions and optimality ratings: " map ([ ( list (chrest:ListPattern.get-as-string (chrest:Node.get-image (item (0) (?)))) (item (1) (?)) ) ]) (associated-action-chunks-and-weights) ".") (who)
+        output-debug-message (word "Productions found: " map ([ ( list (chrest:ListPattern.get-as-string (chrest:Node.get-image (item (0) (?)))) (item (1) (?)) ) ]) (productions) ".") (who)
         
-        if(not empty? associated-action-chunks-and-weights)[ 
-          output-debug-message (word "There are actions associated with the visual chunk in question.  Adding them to the list of actions associated with recognised visual chunks...") (who)
-          set action-chunks-and-weights-associated-with-recognised-visual-chunks (lput (associated-action-chunks-and-weights) (action-chunks-and-weights-associated-with-recognised-visual-chunks))
+        if(not empty? productions)[ 
+          output-debug-message (word "There are productions associated with the visual chunk in question.  Adding them to the list of productions associated with recognised visual chunks...") (who)
+          set productions-for-recognised-visual-chunks-in-scene (lput (productions) (productions-for-recognised-visual-chunks-in-scene))
         ]
       ]
       
-      output-debug-message (word "Checking to see if the list of actions associated with recognised visual chunks is empty.  If the list is empty, pattern-recognition is impossible so I won't continue to do so...") (who)
-      if(not empty? action-chunks-and-weights-associated-with-recognised-visual-chunks)[
-        output-debug-message (word "The list of actions isn't empty so I'll continue pattern-recognition...") (who)
+      output-debug-message (word "Checking to see if there are any productions recognised.  If not, pattern-recognition is impossible so I won't continue with pattern-recognition...") (who)
+      if(not empty? productions-for-recognised-visual-chunks-in-scene)[
+        output-debug-message (word "I have recognised some productions so I'll continue pattern-recognition...") (who)
         
-        output-debug-message (word "Selecting an action to perform from the list of actions associated with the chunks recognised using the specified action-selection procedure (" action-selection-procedure ")...") (who)        
-        let action-chunk ( runresult (word action-selection-procedure "( action-chunks-and-weights-associated-with-recognised-visual-chunks )" ) )
+        output-debug-message (word "Selecting an action to perform from the productions recognised using the specified action-selection procedure (" action-selection-procedure ")...") (who)        
+        let action-chunk ( runresult (word action-selection-procedure "( productions-for-recognised-visual-chunks-in-scene )" ) )
 
         output-debug-message (word "Checking to see if the action returned is a list(" is-list? action-chunk "), if it is then I won't continue with pattern-recognition...") (who)
         if( not is-list? action-chunk )[
@@ -1245,7 +1245,7 @@ to execute-next-planned-action
             if( item (1) (result-of-performing-action) )[
               
               output-debug-message ( word "The second element of the local 'result-of-performing-action' variable is 'true' so I'll reinforce all episodes in my 'episodic-memory'..." ) (who)
-              reinforce-visual-action-links
+              reinforce-productions
             ]
           ]
         ]
@@ -3539,17 +3539,17 @@ to-report perform-action [ action-info current-view ]
         )[
           output-debug-message (word "I'm to create a problem-solving production and I can reinforce explicit actions so if such a production already exists for the visual list-pattern generated I'll create a production with the explicit action instead...") (who)
           
-          let associated-action-nodes-and-link-values (chrest:recognise-list-pattern-and-return-nodes-with-modality (visual-list-pattern) ("action") (report-current-time))
-          output-debug-message (word "Actions associated with " chrest:ListPattern.get-as-string (visual-list-pattern) ": " map ([chrest:ListPattern.get-as-string (chrest:Node.get-image (item (0) (?)))]) (associated-action-nodes-and-link-values)) (who)
+          let productions (chrest:get-productions (visual-list-pattern) (report-current-time))
+          output-debug-message (word "Productions associated with " chrest:ListPattern.get-as-string (visual-list-pattern) ": " map ([chrest:ListPattern.get-as-string (chrest:Node.get-image (item (0) (?)))]) (productions)) (who)
           
-          foreach(associated-action-nodes-and-link-values)[
-            let associated-action-node (item (0) (?))
-            let associated-action-node-contents ( chrest:ListPattern.get-as-netlogo-list (chrest:Node.get-image (associated-action-node)) )
-            foreach(associated-action-node-contents)[
-              let associated-action (chrest:ItemSquarePattern.get-item (?))
-              output-debug-message (word "Checking if '" associated-action "' is equal to '" problem-solving-token "'" ) (who)
-              if(associated-action = problem-solving-token)[
-                output-debug-message (word "Action '" associated-action "' is equal to '" problem-solving-token "' so there is already a problem-solving production for " chrest:ListPattern.get-as-string (visual-list-pattern) "!") (who)
+          foreach(productions)[
+            let action-node (item (0) (?))
+            let action-node-contents ( chrest:ListPattern.get-as-netlogo-list (chrest:Node.get-image (action-node)) )
+            foreach(action-node-contents)[
+              let action (chrest:ItemSquarePattern.get-item (?))
+              output-debug-message (word "Checking if '" action "' is equal to '" problem-solving-token "'" ) (who)
+              if(action = problem-solving-token)[
+                output-debug-message (word "Action '" action "' is equal to '" problem-solving-token "' so there is already a problem-solving production for " chrest:ListPattern.get-as-string (visual-list-pattern) "!") (who)
                 output-debug-message (word "Setting the action for the production to " chrest:ListPattern.get-as-string (explicit-action) " instead...") (who)
                 set action-for-production (explicit-action)
               ]
@@ -3913,6 +3913,8 @@ to print-and-run [string-to-be-run]
  output-debug-message (word "NETLOGO COMMAND TO BE PASSED TO 'run' PRIMITIVE: '" string-to-be-run "'.") ("")
  set debug-indent-level (debug-indent-level - 2)
  run string-to-be-run
+ 
+ 
 end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -4192,85 +4194,143 @@ end
 ; report heading-to-rectify
 ;end
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;;; "REINFORCE-VISUAL-ACTION-LINKS" PROCEDURE ;;;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;; "REINFORCE-PRODUCTIONS" PROCEDURE ;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;Uses a turtle's reinforcement learning theory to reinforce all visual-action 
-;links in episodic memory if the turtle is able to do so.
+;CHREST turtles only.
 ;
-;The procedure also reinforces heruistic deliberation if the turtle is able to
-;do so and the action pattern in the visual-action link in question was generated
-;using heuristic deliberation. 
+;Uses a CHREST turtle's reinforcement learning theory to reinforce productions
+;identified by using the current contents of the turtle's episodic memory.
 ;
 ;@author  Martyn Lloyd-Kelly <martynlk@liverpool.ac.uk>
-to reinforce-visual-action-links
+to reinforce-productions
   set debug-indent-level (debug-indent-level + 1)
-  output-debug-message ("EXECUTING THE 'reinforce-visual-action-links' PROCEDURE...") ("")
+  output-debug-message ("EXECUTING THE 'reinforce-productions' PROCEDURE...") ("")
   set debug-indent-level (debug-indent-level + 1)
   
-  if(breed = chrest-turtles)[
+  if(breed = chrest-turtles and (reinforce-problem-solving? or reinforce-actions?))[
     let rlt ("null")
     set rlt (chrest:get-reinforcement-learning-theory)
   
     output-debug-message (word "Checking to see if my reinforcement learning theory is set to 'null' (" rlt ").  If so, I won't continue with this procedure...") (who)
     if(rlt != "null")[
       
-      output-debug-message ("Retrieving each of the items in my 'visual-action-time-heuristics' list and reinforcing the links between the patterns...") (who)
+      output-debug-message ("Retrieving each of the items in my 'episodic-memory'and reinforcing relevant productions...") (who)
       output-debug-message (word "Time that reward was awarded: " report-current-time "s.") (who)
-      output-debug-message (word "The contents of my 'episodic-memory' list is: " episodic-memory) (who)
+      output-debug-message (word "The contents of my 'episodic-memory' list is: " map ([ 
+        (list
+          (chrest:ListPattern.get-as-string (item (0) (?)))
+          (chrest:ListPattern.get-as-string (item (1) (?)))
+          (item (2) (?)) 
+          (item (3) (?)) 
+        )
+      ]) 
+      (episodic-memory)) (who)
       
       foreach(episodic-memory)[
-        output-debug-message (word "Processing the following item: " ? "...") (who)
-        output-debug-message (word "Visual pattern is: " (item (0) (?))) (who)
-        output-debug-message (word "Action pattern is: " (item (1) (?))) (who)
-        output-debug-message (word "Action pattern was performed at time " (item (2) (?)) "s") (who)
-        output-debug-message (word "Was pattern-recognition used to determine that this action pattern should be performed: " (item (3) (?))) (who)
+        output-debug-message (word "Processing episode: " 
+            (chrest:ListPattern.get-as-string (item (0) (?))) " "
+            (chrest:ListPattern.get-as-string (item (1) (?))) " "
+            (item (2) (?)) " "
+            (item (3) (?))
+        "...") (who)
         
-        ;ADDED THIS COMMENT ON THE 23RD OCTOBER 2015: ORIGINALLY LOCATED IN "perform-action" PROCEDURE BUT I HAD GOTTEN CONFUSED AND
-        ;REALISED THAT WHAT I WAS TRYING TO FIGURE OUT IS WHETHER PROBLEM-SOLVING OR PATTERN-RECOGNITION SHOULD BE REINFORCED.  ESSENTIALLY,
-        ;YOU SHOULD ASSUME THAT THE ACTUAL ACTION IS TO BE REINFORCED AND JUST CHECK THAT THE TWO CONDITIONS LEADING TO PROBLEM-SOLVING
-        ;BEING REINFORCED INSTEAD APPLY.  IF SO, OVERWRITE THE ACTION TO BE REINFORCED WITH THE PROBLEM-SOLVING ACTION. I COMMENTED OUT
-        ;THE REMAINDER OF THE CONDITIONAL CODE BELOW TO PREVENT CONFUSION TOO.
+        let visual-pattern (item (0) (?))
+        let action-pattern (item (1) (?))
+        let time-episode-performed (item (2) (?))
+        let episode-generated-using-pattern-recognition? (item (3) (?))
+        
+        output-debug-message (word "Visual pattern is: " chrest:ListPattern.get-as-string (visual-pattern)) (who)
+        output-debug-message (word "Action pattern is: " chrest:ListPattern.get-as-string (action-pattern)) (who)
+        output-debug-message (word "Episode was performed at time " time-episode-performed) (who)
+        output-debug-message (word "Was pattern-recognition used to generate this episode: " episode-generated-using-pattern-recognition?) (who)
+        
+        ; When reinforcing a production, it may be the case that a problem-solving production is viable for reinforcement;
+        ; the following table indicates when this should occur.  Note that rows where both the "Reinf PS?" and "Reinf Action?"
+        ; columns are equal to "No" are not shown since the CHREST turtle must be capable of reinforcing either problem-solving
+        ; or pattern-recognition to get to this point.
         ;
-        ; | Reinf PS? | Reinf Action? | PS Generate Action? | Outcome
-        ; | Yes       | Yes           | Yes                 | Choice between PS and action
-        ; |           |               | No                  | Reinforce action
-        ; |           | No            | Yes                 | Reinforce PS
-        ; |           |               | No                  | -
-        ; | No        | Yes           | Yes                 | Reinforce action
-        ; |           |               | No                  | Reinforce action
-        ; |           | No            | Yes                 | -
-        ; |           |               | No                  | Impossible since if PS not used to generate action, PR must have been but turtle can't reinforce PS or action so PS can't be used!
+        ; |----------------------|-----------|---------------|----------------------------------------------------|
+        ; | PS Generate Episode? | Reinf PS? | Reinf Action? | Outcome                                            |
+        ; |----------------------|-----------|---------------|----------------------------------------------------|
+        ; | Yes                  | Yes       | Yes           | Choice between reinforcing PS or action production |
+        ; |                      |           | No            | Reinforce PS production                            |
+        ; |                      | No        | Yes           | Reinforce action production                        |
+        ; | No                   | Yes       | Yes           | Reinforce action production                        |
+        ; |                      |           | No            | Checked below                                      |
+        ; |                      | No        | Yes           | Reinforce action                                   |
+        ; |----------------------|-----------|---------------|----------------------------------------------------|
+        ;
+        ; If it is the case that the turtle should reinforce a problem-solving production but can also reinforce actions
+        ; then the CHREST turtle checks to see if it has learned the problem-solving production for the visual pattern 
+        ; yet.  If it hasn't, it will fall-back to try and reinforce the explicit action production instead (if the 
+        ; explicit action production doesn't exist then nothing is reinforced). 
         
-        ;      output-debug-message (word chrest:ListPattern.get-as-string (item (0) (?)) "'s action links before reinforcement: " (chrest:recognise-list-pattern-and-return-nodes-with-modality (item (0) (?)) ("action") (report-current-time)) ) (who)
-        ;     
-        ;      output-debug-message (word "Checking to see if I am able to reinforce problem-solving (" reinforce-problem-solving? ") and if this action was generated by pattern-recognition (" (item (3) (?)) ")...") (who)
-        ;      if( (reinforce-problem-solving?) and not (item (3) (?)) )[
-        ;        output-debug-message (word "Since I am able to reinforce problem-solving and this action was not generated by pattern-recognition, I'll reinforce the link between this visual pattern and problem-solving...") (who)
-        ;        chrest:reinforce-action-link
-        ;          (item (0) (?)) 
-        ;          (chrest:ListPattern.new ("action") (chrest:ItemSquarePattern.new (problem-solving-token) (0) (0)))
-        ;          (list (reward-value) (discount-rate) (report-current-time) (item (2) (?)))
-        ;          (report-current-time)
-        ;      ]
-        ;      
-        ;      output-debug-message (word "Checking to see if I am able to reinforce actions (" reinforce-actions? ")...") (who)
-        ;      if( reinforce-actions? )[
-        ;        output-debug-message (word "I can reinforce actions so I will...") (who)
-        ;        chrest:reinforce-action-link 
-        ;          (item (0) (?)) 
-        ;          (item (1) (?)) 
-        ;          (list (reward-value) (discount-rate) (report-current-time) (item (2) (?)))
-        ;          (report-current-time)
-        ;      ]
-        ;      
-        ;      output-debug-message (word chrest:ListPattern.get-as-string (item (0) (?)) "'s action links after reinforcement: " ( chrest:recognise-list-pattern-and-return-nodes-with-modality (item (0) (?)) ("action") (report-current-time) ) ) (who)
+        if(not (episode-generated-using-pattern-recognition? and not reinforce-actions?))[
+          output-debug-message ("Its not the case that the current episode contains an explicit action generated using pattern-recognition and I can't reinforce explicit actions so I'll try to reinforce the production indicated by this episode...") (who) 
+
+          let problem-solving-pattern (chrest:ListPattern.new ("action") (list chrest:ItemSquarePattern.new (problem-solving-token) (0) (0)))
+          let action-pattern-to-reinforce (action-pattern)
+          
+          if(not episode-generated-using-pattern-recognition?)[
+            if(reinforce-problem-solving?)[
+              ifelse(reinforce-actions?)[
+                if( (random-float 1.0) < 0.5)[
+                  set action-pattern-to-reinforce (problem-solving-pattern)
+                ]
+              ]
+              [
+                set action-pattern-to-reinforce (problem-solving-pattern)
+              ]
+            ]
+          ]
+          output-debug-message (word "The action pattern to reinforce is: " chrest:ListPattern.get-as-string (action-pattern-to-reinforce)) (who)
+          
+          if(
+            (chrest:ListPattern.get-as-string (action-pattern-to-reinforce) = chrest:ListPattern.get-as-string (problem-solving-pattern)) and 
+            reinforce-actions?
+          )[
+            output-debug-message (word "Since the action pattern to reinforce is the problem-solving action and I can reinforce explicit actions too, I'll check to see if a production exists between the visual pattern in this episode and the problem-solving action") (who)
+            let problem-solving-production-learned? (false)
+            let productions (chrest:get-productions (visual-pattern) (report-current-time))
+          
+            foreach (productions)[
+              let production (?)
+              let production-action-pattern (chrest:Node.get-image ((item (0) (production))))
+              let production-value (item (1) (production))
+              output-debug-message (word "Processing production with action " chrest:ListPattern.get-as-string (production-action-pattern)) (who)
+              
+              if( chrest:ListPattern.get-as-string (production-action-pattern) = chrest:ListPattern.get-as-string (problem-solving-pattern) )[
+                output-debug-message ("This is a problem-solving action so I've learned a problem-solving production for the visual pattern in the episode") (who)
+                set problem-solving-production-learned? (true)
+              ]
+            ]
+          
+            if(not problem-solving-production-learned?)[
+              output-debug-message ("I've not learned a problem-solving production for the visual pattern in this episode and I was supposed to reinforce such a production so I'll try to reinforce the explicit action instead") (who)
+              set action-pattern-to-reinforce (action-pattern)
+            ]
+          ]
+          
+          output-debug-message (word "Attempting to reinforce production between visual pattern " chrest:ListPattern.get-as-string (visual-pattern) " and action pattern " chrest:ListPattern.get-as-string (action-pattern-to-reinforce)) (who)
+          output-debug-message (word "The variables used to calculate the reinforcement value are as follows: 'reward-value' = '" reward-value "', 'discount-rate' = '" discount-rate "', current-time = '" report-current-time "' and 'time-episode-performed' = '" time-episode-performed "'") (who)
+          chrest:reinforce-production 
+            (visual-pattern) 
+            (action-pattern-to-reinforce) 
+            (list 
+              (reward-value) 
+              (discount-rate) 
+              (report-current-time) 
+              (time-episode-performed) 
+            )
+            (report-current-time)
+        ]
       ]
       
-      output-debug-message ("Reinforcement of visual-action patterns complete.  Clearing my 'visual-action-time-heuristics' list...") (who)
+      output-debug-message ("Reinforcement of productions indicated my episodes in 'episodic-memory' complete.  Clearing my 'episodic-memory'...") (who)
       set episodic-memory []
-      output-debug-message (word "My 'episodic-memory' list is now equal to: " episodic-memory "...") (who)
+      output-debug-message (word "My 'episodic-memory' is now equal to: " episodic-memory "...") (who)
     ]
   ]
   
