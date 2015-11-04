@@ -3626,7 +3626,7 @@ to place-randomly
   ]
   [
     output-debug-message ("THERE ARE NO PATCHES FREE, ASKING THE CALLING TURTLE TO DIE...") ("")
-    ask myself [
+    ask self [
       die
     ]
   ]

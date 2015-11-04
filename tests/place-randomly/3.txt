@@ -1,15 +1,32 @@
-;Given a situation where:
+;==============================
+;========== TEST AIM ==========
+;==============================
+; 
+; To establish if the "place-randomly" procedure operates correctly when a turtle invokes "place-randomly"
+; in an environment that contains visible turtles on every patch.
 ;
-; - The environment is full of visible objects.
-; - A turtle is created and calls the 'place-randomly' procedure.
+;======================================
+;========== TEST DESCRIPTION ==========
+;====================================== 
 ;
-;This tests to see if:
+; - Visible turtles are created on every patch in the environment.
+; - A turtle is created and invokes "place-randomly".
 ;
-; - The newly created turtle has died i.e. it is not in the environment.
-
+;=====================================
+;========== TESTS PERFORMED ==========
+;=====================================
+;
+; - The newly created turtle does not exist after invoking "place-randomly", i.e. it is not present in the
+;   environment.
+;
 <test>
+
+	;==============================================;
+	;== POPULATE ENVIRONMENT WITH HIDDEN TURTLES ==;
+	;==============================================;
+
 	create-chrest-turtles (world-width * world-height)[
-		set hidden? true
+		set hidden? false
 	]
 
 	let xcoord (min-pxcor)
@@ -32,9 +49,20 @@
 		set turtle-id (turtle-id + 1)
 	]
 	
+	;====================================================;
+	;== CREATE LAST TURTLE AND INVOKE "place-randomly" ==;
+	;====================================================;
+
 	create-chrest-turtles 1[ 
 		place-randomly 
 	]
 
-	check-equal (count turtles with [who = (turtle-id + 1)]) (0)
+	;==========;
+	;== TEST ==;
+	;==========;
+
+	check-equal 
+		(count turtles with [who = (turtle-id + 1)]) 
+		(0)
+		("when checking if the turtle of interest exists in the environment")
 </test>
