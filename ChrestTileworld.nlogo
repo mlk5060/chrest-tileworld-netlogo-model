@@ -3083,23 +3083,28 @@ to-report move [heading-to-move-along patches-to-move]
   set heading (heading-to-move-along)
   output-debug-message ( word "My 'heading' turtle variable is now equal to: " heading "." ) (who)
   
-  output-debug-message ( word "Setting a local 'move-successful' variable to boolean true.  This will be used to indicate whether I was able to complete the move sequence..." ) (who)
-  let move-successful (true)
-  output-debug-message ( word "The local 'move-successful' variable is now set to: '" move-successful "'..." ) (who)
+  let original-location (list (xcor) (ycor))
   
-  ifelse( not (any? (turtles-on (patch-ahead (1))) with [hidden? = false]) )[
-    output-debug-message (word "The patch immediately ahead of me along heading " heading " is clear (no visible turtles on it) so I'll move onto it...") (who)
-    forward 1
-  ]
-  [
-    output-debug-message (word "The patch immediately ahead of me along heading " heading " is not clear (visible turtles on it) so I'll set the local 'move-successful' variable to boolean false...") (who)
-    set move-successful (false)
-    output-debug-message (word "The local 'move-successful' variable is now equal to: '" move-successful "'...") (who)
+  let patches-moved 0
+  while [patches-moved < patches-to-move][
+    
+    ifelse( not (any? (turtles-on (patch-ahead (1))) with [hidden? = false]) )[
+      output-debug-message (word "The patch immediately ahead of me along heading " heading " is clear (no visible turtles on it) so I'll move onto it...") (who)
+      forward 1
+    ]
+    [
+      output-debug-message (word "Move was unsuccessful since there is something blocking me along the heading specified, resetting my location and reporting that this is the case...") (who)
+      setxy (item (0) (original-location)) (item (1) (original-location))
+      set debug-indent-level (debug-indent-level - 2)
+      report false
+    ]
+    
+    set patches-moved (patches-moved + 1)
   ]
   
-  output-debug-message (word "Reporting whether the move was successful or not...") (who)
+  output-debug-message (word "Move was successful, reporting that this is the case...") (who)
   set debug-indent-level (debug-indent-level - 2)
-  report move-successful
+  report true
 end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

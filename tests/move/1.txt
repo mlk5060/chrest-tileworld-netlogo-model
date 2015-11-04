@@ -1,13 +1,26 @@
-;Given the following situation:
+;==============================
+;========== TEST AIM ==========
+;==============================
+;
+; To determine if the "move" procedure operates correctly when a turtle is not obstructed from moving along
+; the heading specified.
+;
+;======================================
+;========== TEST DESCRIPTION ==========
+;====================================== 
 ;
 ; - The calling turtle attempts to move 1 patch along each heading in the global 'movement-heading' list.
-; - A hidden turtle is on the patch immediately adjacent to the calling turtle along the heading specified.
+; - A hidden turtle is on the patch immediately adjacent to the calling turtle along the heading specified 
+;   (ensures that hidden turtles do not obstruct movement since they can exist if a player "finishes" playing
+;   in the domain before others).
 ;
-;This tests that the following conditions are true:
+;=====================================
+;========== TESTS PERFORMED ==========
+;=====================================
 ;
 ; - For each heading, the 'move' procedure reports boolean 'true' indicating that the move was successful.
 ; - The calling turtle is now located on the patch that it should have moved to.
-
+;
 <test>
 	create-chrest-turtles 1
 
@@ -18,8 +31,15 @@
 				sprout-chrest-turtles 1 [set hidden? true]
 			]
 
-			check-equal (move (?) (1)) (true)
-			check-equal ( member? (turtle 0) (turtles-on (patch-to-move-to)) ) (true)
+			check-equal 
+				(move (?) (1)) 
+				(true) 
+				("when checking the output of the 'move' procedure")
+
+			check-equal 
+				( member? (turtle 0) (turtles-on (patch-to-move-to)) ) 
+				(true) 
+				("when checking the location of the turtle requesting movement")
 		]
 	] 
 </test>
