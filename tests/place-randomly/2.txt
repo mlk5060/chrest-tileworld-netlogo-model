@@ -63,5 +63,5 @@
 	check-equal 
 		(count turtles with [hidden? = false]) 
 		(1)
-		("when checking if the visible turtle is placed in the environment")
+		("when checking if the visible turtle exists in the environment")
 </test>
