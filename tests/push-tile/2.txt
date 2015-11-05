@@ -1,16 +1,42 @@
-;Given a situation where:
+;==============================
+;========== TEST AIM ==========
+;==============================
 ;
-; - A turtle calls the 'push-tile' procedure and each value in the global 'movement-headings' variable is passed.
-; - There is a tile adjacent to the turtle along the heading specified.
+; To determine if the "push-tile" procedure generates the expected output if
+; a player turtle, P, runs the "push-tile" procedure and a tile exists on the 
+; patch immediately ahead of the player turtle along the heading passed to the 
+; "push-tile" procedure.
 ;
-;This tests to see if the following conditions are true:
-; 
-; - The 'push-tile' procedure reports boolean 'true' for each heading specified with respect to whether the action was performed 
-;   successfully.
-; - The 'push-tile' procedure reports boolean 'false' for each heading specified with respect to whether a hole was filled.
-; - The calling turtle is located on the patch that is 1 patch from its original location along the heading specified.
-; - The tile is located 1 patch along from its original location along the heading specified.
-
+;======================================
+;========== TEST DESCRIPTION ==========
+;====================================== 
+;
+; - A player turtle is created.
+; - For each value in the global 'movement-headings' list:
+;   ~ A tile is created immediately ahead of the player turtle along the heading 
+;     specified.
+;   ~ The player turtle invokes the "push-tile" procedure and passes the heading
+;     specified as input.
+;
+; NOTE: The tile created is destoyed before a new 'movement-headings' variable is
+;       tested.
+;
+;=====================================
+;========== TESTS PERFORMED ==========
+;=====================================
+;
+; - For each 'movement-headings' value:
+;   ~ The result of the "push-tile" procedure is checked:
+;     + Boolean true should always be reported with respect to whether the action was 
+;       performed successfully.
+;     + Boolean false should always be reported with respect to whether a hole was
+;       filled as a result of the action being performed.
+;
+;   ~ The calling turtle is located 1 patch along the heading specified from the patch
+;     it was on before the "push-tile" procedure was invoked.
+;   ~ The tile is located 1 patch along the heading specified from the patch
+;     it was on before the "push-tile" procedure was invoked.
+;
 <test>
 	create-chrest-turtles 1
 	let chrest-turtle-new-patch 0
@@ -43,12 +69,23 @@
 		]
 
 		ask turtle 0 [
-			check-equal (push-tile (?)) ( list (true) (false) )
-			check-equal (patch-here) (chrest-turtle-new-patch)
+			check-equal 
+				(push-tile (?)) 
+				( list (true) (false) ) 
+				("when checking the output of the 'push-tile' procedure")
+
+			check-equal 
+				(patch-here) 
+				(chrest-turtle-new-patch) 
+				("when checking the location of the 'pusher'")
 		]
 
 		ask tiles[
-			check-equal (patch-here) (tile-new-patch) 
+			check-equal 
+				(patch-here) 
+				(tile-new-patch) 
+				("when checking the location of the tile")
+
 			die
 		]
 	]

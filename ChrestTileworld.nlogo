@@ -1258,10 +1258,11 @@ to execute-next-planned-action
           output-debug-message ( word "Checking to see if the local 'result-of-performing-action' variable is a list.  If it is then the action performed must have been a 'push-tile' action so the first element of the list will be whether the action was performed successfully whilst the second element will indicate whether or not a hole was filled...") (who)
           if( is-list? (result-of-performing-action) ) [
             
-            output-debug-message ( word "The local 'result-of-performing-action' variable is a list so I'll check the value of its second element (" item (1) (result-of-performing-action) ").  If this is 'true' I'll reinforce the episodes in my 'episodic-memory'..." ) (who)
+            output-debug-message ( word "The local 'result-of-performing-action' variable is a list so I'll check the value of its second element (" item (1) (result-of-performing-action) ").  If this is 'true' I'll increment my score and reinforce the episodes in my 'episodic-memory'..." ) (who)
             if( item (1) (result-of-performing-action) )[
               
               output-debug-message ( word "The second element of the local 'result-of-performing-action' variable is 'true' so I'll reinforce all episodes in my 'episodic-memory'..." ) (who)
+              set score (score + 1)
               reinforce-productions
             ]
           ]
@@ -3943,49 +3944,33 @@ end
     
 ;Enables the calling agent (the pusher) to push a tile by setting the pusher's heading 
 ;to face its closest-tile, T, and T is asked to do the same so that it moves along the 
-;same heading as the pusher.  
-;
-;If the pusher's breed indicates that it is a CHREST turtle, it will attempt to associate 
-;the current visual pattern and the action-pattern it is currently performing together in 
-;its LTM.  The CHREST turtle will then update its 'visual-action-time-heuristics' list so that links
-;between its contents can be reinforced if T fills a hole.
+;same heading as the pusher.
 ;
 ;The procedure then branches in one of two ways depending on whether there is a hole 
 ;on the patch ahead of T:
 ;
-;  1. If there is a hole on the patch immediately ahead of T then:
-;     a. T moves forward by 1 patch (simulates the first pat of the tile being 
-;        pushed).
-;     b. The hole is asked to die (simulates the first part of the tile filling the 
-;        hole). 
-;     c. The pusher's score is incremented by the value of the global "reward-value" 
-;        variable.
-;     d. The pusher's breed is checked, if it is a CHREST turtle then the pusher's
-;        'visual-action-time-heuristics' list is iterated through and the pusher attempts to
-;        reinforce each visual-action pair.  Following this, the pusher then clears
-;        the 'visual-action-time-heuristics' list.
-;     e. T dies (simulating the second part of the simulated hole fill).
+;  1. There is a hole on the patch immediately ahead of T:
+;     a. T moves forward by 1 patch.
+;     b. The hole is asked to die.
+;     e. T is asked to die.
 ;
-;  2. If there isn't a hole on the patch immediately ahead of T, T checks to see if
-;     there are any other turtles on the patch ahead.
-;     a. There is something on the patch ahead of T so T does not move.
-;     b. There is nothing on the patch ahead of T so T moves forward 1 patch (simulates
-;        the first part of the tile being pushed).
+;  2. There isn't a hole on the patch immediately ahead of T. A check is made to see if 
+;     there are any other visible turtles on the patch ahead of T.
+;     a. There is a visible turtle on the patch ahead of T so T does not move.
+;     b. There is no visible turtle on the patch ahead of T so T moves forward 1 patch.
 ;
-;Following this branch, the pusher checks to see if T is directly in on the patch 
-;immediately ahead.
+;The pusher then checks to see if T has moved.
 ;
-;  1. If T is on the patch immediately ahead then the pusher does not move.
-;  2. If T is not on the patch immediately ahead then it must have been pushed so
-;     the pusher also moves forward one patch (simulates the second part of the 
-;     push).
+;  1. T has not moved so the pusher remains stationary.
+;  2. T has moved so it must have been pushed; pusher also moves forward one patch.
 ;
 ;         Name              Data Type     Description
 ;         ----              ---------     -----------
 ;@param   push-heading      Number        The heading that the pusher should set its heading
 ;                                         to in order to push the tile in question.
-;@return  -                 Boolean       True if the move was completed successfully, false
-;                                         otherwise.
+;@return  -                 List          Contains two boolean values:
+;                                         1) Whether the tile was pushed successfully.
+;                                         2) Whether a hole was filled.
 ;
 ;@author  Martyn Lloyd-Kelly <martynlk@liverpool.ac.uk>  
 to-report push-tile [push-heading]
@@ -3993,41 +3978,33 @@ to-report push-tile [push-heading]
   output-debug-message ("EXECUTING THE 'push-tile' PROCEDURE...") ("")
   set debug-indent-level (debug-indent-level + 1)
   
-  output-debug-message ("Setting two local variables: 'push-tile-successful' and 'hole-filled' to boolean false...") (who)
   let push-tile-successful (false)
   let hole-filled (false)
-  output-debug-message ( word "The local 'push-tile-successful' and 'hole-filled' variables are now set to: '" push-tile-successful "' and '" hole-filled "'..." ) (who)
+  output-debug-message ( word "Two local 'push-tile-successful' and 'hole-filled' variables are set to: '" push-tile-successful "' and '" hole-filled "'..." ) (who)
   
   output-debug-message( word "Setting my heading to the value contained in the local 'push-heading' variable: " push-heading "...") (who)
   set heading (push-heading)
   output-debug-message (word "My 'heading' variable is now set to:" heading ".  Checking to see if there is a tile immediately ahead...") (who)
   
-  ifelse(any? tiles-on patch-at-heading-and-distance (heading) (1))[
+  if(any? tiles-on patch-at-heading-and-distance (heading) (1))[
     output-debug-message (word "There is a tile immediately ahead along heading " heading ".  Pushing this tile...") (who)
     
     ask tiles-on patch-at-heading-and-distance (heading) (1)[
       output-debug-message ("I am the tile to be pushed.") (who)
       output-debug-message (word "Setting my 'heading' variable value to that of the pusher (" [heading] of myself ")...") (who)
-      set heading [heading] of myself ;The tile's heading used to be set to 'heading-to-tile' which was a parameter passed.
+      set heading [heading] of myself
       output-debug-message (word "My 'heading' variable value is now set to: " heading ".") (who)
-      output-debug-message (word "Checking to see if there are any holes immediately ahead of me with this heading (" any? holes-on patch-ahead 1 ")...") (who)
+      output-debug-message (word "Checking to see if there are any visible holes immediately ahead of me with this heading...") (who)
     
-      ifelse( any? holes-on patch-ahead 1 )[
-        output-debug-message (word "There is a hole 1 patch ahead with my current heading (" heading ") so I'll move onto that patch, the hole will die, turtle " [who] of myself "'s 'score' will increase by 1 and I will die.") (who)
+      ifelse( any? (holes-on (patch-ahead (1))) with [hidden? = false] )[
+        output-debug-message (word "There is a visible hole 1 patch ahead with my current heading (" heading ") so I'll move onto that patch, the hole will die, the 'hole-filled' variable will be set to true and I will die.") (who)
         forward 1
-        ask holes-here[ die ]
-        
-        ask myself [
-          output-debug-message (word "Since I have successfully pushed a tile into a hole I should increase my current score (" score ") by the 'reward-value' variable value (" reward-value ") and set the local 'hole-filled' variable to boolean true...") (who)
-          set score (score + reward-value)
-          set hole-filled (true)
-          output-debug-message (word "My score is now equal to: " score " and the local 'hole-filled' variable is set to '" hole-filled "'.") (who)
-        ]
-        
+        ask holes-here with [hidden? = false][ die ]
+        set hole-filled (true)
         die
       ]
       [
-        output-debug-message ("There are no holes ahead so I'll check to see if there are any other visible turtles ahead, if there is, I won't move...") (who)
+        output-debug-message ("There are no visible holes ahead so I'll check to see if there are any other visible turtles ahead, if there is, I won't move...") (who)
         if(not any? (turtles-on (patch-ahead (1))) with [hidden? = false])[
           output-debug-message (word "There are no turtles on the patch immediately ahead of me with heading " heading " so I'll move forward by 1 patch...") (who)
           forward 1
@@ -4041,10 +4018,6 @@ to-report push-tile [push-heading]
       forward 1
       set push-tile-successful (true)
     ]
-  ]
-  [
-    output-debug-message ("There isn't a tile immediately ahead so I can't push a tile therefore the action has failed.  Setting the local 'push-tile-successful' variable to boolean false...") (who)
-    set push-tile-successful (false)
   ]
   
   output-debug-message (word "The local 'push-tile-successful' and 'hole-filled' variables are set to: '" push-tile-successful "' and '" hole-filled "'. Reporting these as a list...") (who)

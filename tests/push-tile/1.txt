@@ -1,23 +1,49 @@
-;Given a situation where:
-;
-; - A turtle calls the 'push-tile' procedure and each value in the global 'movement-headings' variable is passed.
-; - There is no tile adjacent to the turtle along the heading specified.
-;
-;This tests to see if the following conditions are true:
+;==============================
+;========== TEST AIM ==========
+;==============================
 ; 
-; - The 'push-tile' procedure reports boolean 'false' for each heading specified with respect to whether the action was performed 
-;   successfully.
-; - The 'push-tile' procedure reports boolean 'false' for each heading specified with respect to whether a hole was filled.
+; To determine if the "push-tile" procedure generates the expected output if
+; a player turtle runs the "push-tile" procedure but no tiles exist in the
+; environment.
+;
+;======================================
+;========== TEST DESCRIPTION ==========
+;====================================== 
+;
+; - A player turtle, P, is created.
+; - P invokes the "push-tile" procedure and each value in the global 'movement-headings' 
+;   variable is passed as input.
+;
+;=====================================
+;========== TESTS PERFORMED ==========
+;=====================================
+; 
+; - The result of the "push-tile" procedure is checked:
+;   ~ Boolean false should always be reported with respect to whether the action was 
+;     performed successfully.
+;   ~ Boolean false should always be reported with respect to whether a hole was
+;     filled as a result of the action being performed.
+;
 ; - The calling turtle is located on the patch it was originally placed on.
-
+;
 <test>
-	let initial-patch 0
-	create-chrest-turtles 1[ set initial-patch (patch-here) ]
+	let initial-patch ""
+	
+	create-chrest-turtles 1 [ 
+		set initial-patch (patch-here) 
+	]
 
 	foreach(movement-headings)[
 		ask turtle 0 [ 
-			check-equal (push-tile (?)) ( list (false) (false) )
-			check-equal (patch-here) (initial-patch)
+			check-equal 
+				(push-tile (?)) 
+				( list (false) (false) ) 
+				("when checking the output of the 'push-tile' procedure")
+			
+			check-equal 
+				(patch-here) 
+				(initial-patch) 
+				("when checking the location of the 'pusher'")
 		]
 	]
 </test>
