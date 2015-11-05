@@ -1,15 +1,33 @@
-;Given a situation where:
+;==============================
+;========== TEST AIM ==========
+;==============================
 ;
-; - One of each turtle breed in the global 'breeds' list is created and all are visible.
+; To determine if the "player-turtles-finished?" procedure evaluates to false as expected.
 ;
-;This tests to see if the following conditions are true:
+;======================================
+;========== TEST DESCRIPTION ==========
+;====================================== 
 ;
-; - The 'player-turtles-finished?' procedure reports boolean false.
-
+; - One turtle of each breed in the global 'breeds' list are created.
+; - All turtles are asked to set their 'hidden' turtle variable to false.
+;
+;=====================================
+;========== TESTS PERFORMED ==========
+;=====================================
+;
+; - The "player-turtles-finished?"" procedure reports boolean false after invocation.
+;
 <test>
 	foreach(breeds)[
 		run (word "create-" ? " 1")
 	]
 
-	check-equal (player-turtles-finished?) (false)
+	ask turtles [
+		set hidden? (false)
+	]
+
+	check-equal 
+		(player-turtles-finished?) 
+		(false)
+		("when checking the output of the 'player-turtles-finished?' procedure")
 </test>

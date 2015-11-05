@@ -1,14 +1,26 @@
-;Given a situation where:
+;==============================
+;========== TEST AIM ==========
+;==============================
 ;
-; - There are visible tiles and holes in the environment.
-; - All turtles that aren't of the breeds 'tiles' and 'holes' are visible.
+; To determine if the "player-turtles-finished?" procedure evaluates to true as expected.
 ;
-;This tests to see if the following conditions are true:
+;======================================
+;========== TEST DESCRIPTION ==========
+;====================================== 
 ;
-; - The 'player-turtles-finished?' procedure reports boolean true.
-
+; - One turtle of each breed in the global 'breeds' list are created.
+; - All turtles that aren't of the breeds 'tiles' and 'holes' are asked to set their 
+;   'hidden' turtle variable to true.
+; - The "player-turtles-finished?" procedure is then invoked.
+;
+;=====================================
+;========== TESTS PERFORMED ==========
+;=====================================
+;
+; - The "player-turtles-finished?"" procedure reports boolean true after invocation.
+;
 <test>
-	foreach(breeds)[
+	foreach (breeds)[
 		run (word "create-" ? " 1")
 
 		if(? != "holes" and ? != "tiles")[
@@ -16,5 +28,8 @@
 		]
 	]
 
-	check-equal (player-turtles-finished?) (true)
+	check-equal 
+		(player-turtles-finished?) 
+		(true) 
+		("when checking the output of the 'player-turtles-finished?' procedure")
 </test>
