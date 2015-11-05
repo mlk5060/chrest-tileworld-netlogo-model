@@ -122,21 +122,24 @@
 				(false)
 				(false)
 
+			;=================================================================================;
+			;== INVOKE 'generate-visual-spatial-field-moves' AND PREPARE OUTPUT FOR TESTING ==;
+			;=================================================================================;
+
 			;Skip time ahead to when visual-spatial field instantiation finishes.
 			set current-training-time (chrest:get-attention-clock)
 			
 			let action-to-perform (chrest:ItemSquarePattern.new (push-tile-token) (heading-to-use) (1))
 
 			let non-reversal (generate-visual-spatial-field-moves (action-to-perform) (false))
-			set non-reversal (map 
-				([map 
-					([ chrest:ItemSquarePattern.get-as-string (?) ])
-				(?)]) 
-				(non-reversal)
-			)
+			set non-reversal (map ([map ([ chrest:ItemSquarePattern.get-as-string (?) ]) (?)]) (non-reversal))
 
 			let reversal (generate-visual-spatial-field-moves (action-to-perform) (true))
 			set reversal (map ([map ([ chrest:ItemSquarePattern.get-as-string (?) ]) (?)]) (reversal))
+
+			;=========================;
+			;== SET EXPECTED VALUES ==;
+			;=========================;
 
 			let self-start-point (chrest:ItemSquarePattern.get-as-string (chrest:ItemSquarePattern.new (word who) (2) (2)))
 			let self-move-to-non-reversal ""
