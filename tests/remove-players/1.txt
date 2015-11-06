@@ -1,20 +1,89 @@
+;==============================
+;========== TEST AIM ==========
+;==============================
+;
+; To determine if player turtles are "removed" correctly in both a training and
+; real game context.
+;
+;======================================
+;========== TEST DESCRIPTION ==========
+;======================================
+;
+; - Two CHREST turtles are created and their 'training-time' and 'play-time' 
+;   turtle variables are set to known values.  The second CHREST turtle's
+;   variables are set to 1 greater than the first CHREST turtle's.
+; - The model is set-up in a training context and model time is set to the value
+;   of the first CHREST turtle's 'training-time' variable.
+; - The "remove-players" procedure is called.
+; - The CHREST turtles are placed back in the environment.
+; - The model is then set-up in a non-training context and model time is set
+;   to the value of the first CHREST turtle's 'play-time' variable.
+; - The "remove-players" procedure is called.  
+;
+; Two CHREST turtles are used since this faciliatates a robust check of the
+; correctness of the "remove-players" procedure.
+;
+;=====================================
+;========== TESTS PERFORMED ==========
+;=====================================
+;
+; Following each "remove-players" procedure invocation, the CHREST turtle's 
+; 'hidden?' turtle variable values are checked.  In each context, turtle 0's
+; 'hidden?' turtle variable should be modified to 'true' and turtle 1's should
+; not have been modified.
+;
 <test>
-	create-chrest-turtles 1 [
+	
+	;=========================;
+	;== CREAT CHREST TURTLE ==;
+	;=========================;
+
+	create-chrest-turtles 2
+
+	ask turtle 0 [
 		set training-time 1
 		set play-time 2 
 	]
 
-	set current-training-time 1
+	ask turtle 1 [
+		set training-time 2
+		set play-time 3
+	]
+
+	;============================;
+	;== TRAINING CONTEXT CHECK ==;
+	;============================;
+
+	set training? (true)
+	set current-training-time (1)
 	remove-players
 	
-	check-equal (count turtles with [hidden? = false]) (0)
-	check-equal (count turtles with [hidden? = true]) (1)
+	check-equal 
+		([hidden?] of turtle 0) 
+		(true) 
+		("when the model is in a training context and value of turtle 0's 'hidden?' turtle variable is checked")
+	
+	check-equal 
+		([hidden?] of turtle 1)
+		(false)
+		("when the model is in a training context and value of turtle 1's 'hidden?' turtle variable is checked")
 
-	ask turtle 0 [set hidden? false]
-	set training? false
-	set current-game-time 2
+	;================================;
+	;== NON-TRAINING CONTEXT CHECK ==;
+	;================================;
+
+	ask chrest-turtles [set hidden? (false)]
+	set training? (false)
+	set current-game-time (2)
 	remove-players
 
-	check-equal (count turtles with [hidden? = false]) (0)
-	check-equal (count turtles with [hidden? = true]) (1)
+	check-equal 
+		([hidden?] of turtle 0) 
+		(true) 
+		("when the model is in a non-training context and value of turtle 0's 'hidden?' turtle variable is checked")
+	
+	check-equal 
+		([hidden?] of turtle 1)
+		(false)
+		("when the model is in a non-training context and value of turtle 1's 'hidden?' turtle variable is checked")
 </test>
