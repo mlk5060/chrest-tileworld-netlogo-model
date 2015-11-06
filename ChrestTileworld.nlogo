@@ -1190,8 +1190,10 @@ to execute-next-planned-action
   set debug-indent-level (debug-indent-level + 1)
   
   if(breed = chrest-turtles)[
+    let reset-variables (false)
+    
     output-debug-message ( word "Checking to see if my 'plan' turtle variable is empty (contents: '" plan "')...") (who)
-    if( not (empty? (plan)) )[
+    ifelse( not (empty? (plan)) )[
       
       output-debug-message ( word "My 'plan' turtle variable isn't empty so I'll check to see if I am still deliberating i.e. is the current time (" report-current-time ") greater or equal to than the value of my 'deliberation-finished-time' turtle variable (" deliberation-finished-time ")...") (who)
       if(report-current-time >= deliberation-finished-time)[
@@ -1262,28 +1264,32 @@ to execute-next-planned-action
             if( item (1) (result-of-performing-action) )[
               
               output-debug-message ( word "The second element of the local 'result-of-performing-action' variable is 'true' so I'll reinforce all episodes in my 'episodic-memory'..." ) (who)
-              set score (score + 1)
               reinforce-productions
+              set reset-variables (true)
             ]
           ]
         ]
         [
-          output-debug-message ( word "The action was not performed successfully so I should abandon this plan and construct a new one.  Setting my 'plan' turtle variable to an empty list..." ) (who)
-          set plan []
-          output-debug-message ( word "My 'plan' turtle variable is now set to '" plan "'..." ) (who)
+          output-debug-message ( word "The action was not performed successfully so I should abandon this plan and construct a new one..." ) (who)
+          set reset-variables (true)
         ]
       ]
+    ]
+    [
+      output-debug-message ("My 'plan' turtle variable is empty.") (who)
+      set reset-variables (true)
     ]
     
     ;===========================================;
     ;== RESET VARIABLES TO RE-ENABLE PLANNING ==;
     ;===========================================;
     
-    if(empty? plan)[
-      output-debug-message ( word "My 'plan' turtle variable is empty so I'll set my 'generate-plan?' turtle variable to 'true' and my 'construct-visual-spatial-field?' variable to 'true' so that I can re-plan correctly..." ) (who)
+    if(reset-variables)[
+      output-debug-message ( word "Resetting my 'generate-plan?' and 'construct-visual-spatial-field?' turtle variables to 'true' along with my episodic memory and plan to empty so that I can re-plan correctly..." ) (who)
       set generate-plan? (true)
       set construct-visual-spatial-field? (true)
-      output-debug-message ( word "My 'generate-plan?' turtle variable is now set to '" generate-plan? "' and my 'construct-visual-spatial-field?' variable is set to '" construct-visual-spatial-field? "'..." ) (who)
+      set plan ([])
+      set episodic-memory ([])
     ]
   ]
   
@@ -1614,38 +1620,29 @@ to generate-plan
         ;++ CHECK FOR TILE BEING PUSHED STILL EXISTING IN VISUAL-SPATIAL FIELD OR BEING PUSHED ONTO SAME COORDINATE AS HOLE ++;
         ;+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++;
         
-        if(not end-plan-generation?)[
+        if(not end-plan-generation?)[  
+          output-debug-message (word "Checking to see if I was pushing a tile that has been pushed into a hole or no longer exists in my visual-spatial field. The latter may be true if:\n"
+             "1. The tile has been pushed out of the visual-spatial field\n" 
+             "2. Its visual-spatial field object representation has decayed\n"
+             "If this isn't checked, further planning may occur which should not be done since, when planning. I should be fixated on a tile and if it disappears or fills a hole I should execute the plan as-is..."
+          ) (who)
           
-          output-debug-message (word "Checking to see if my last planned action pushed a tile out of my visual-spatial field in my last plan generation episode...")  (who)
-          output-debug-message ("Checking to see if my 'plan' turtle variable is currently empty.  If not, I'll retrieve the last action in the plan...") (who)
-          output-debug-message ("If the last action was to push a tile, I can no longer see the tile pushed in my visual-spatial field or the tile is on the same coordinates as a hole, I'll set the local 'end-plan-generation?' variable to 'true'") (who)
-          output-debug-message ("If this isn't checked, further planning may occur which should not be done...") (who)
-          if( (not empty? plan) and (not empty? who-of-tile-last-pushed-in-plan) )[
+          if( (not empty? who-of-tile-last-pushed-in-plan) )[
             
-            output-debug-message (word "My plan isn't empty and I've been pushing a tile so I'll check to see if it still exists or has been pushed onto a hole") (who)
-            output-debug-message ("Setting two local variables: 'last-action-in-plan-identifier' and 'last-action-in-plan-heading' to the relevant parts of the last action in my 'plan' turtle variable...") (who)
-            let last-action-in-plan-info ( item (0) (last (plan)) )
-            let last-action-in-plan-identifier ( chrest:ItemSquarePattern.get-item (last-action-in-plan-info) )
-            let last-action-in-plan-heading ( chrest:ItemSquarePattern.get-column (last-action-in-plan-info) )
-            output-debug-message ( word "The 'last-action-in-plan-identifier' and 'last-action-in-plan-heading' variables are now set to '" last-action-in-plan-identifier "' and '" last-action-in-plan-heading "'..." ) (who)
-            
-            if( last-action-in-plan-identifier = push-tile-token )[
-              output-debug-message (word "My last planned action was to push a tile. I'll check to see if the pushed tile (who = " who-of-tile-last-pushed-in-plan ") still exists in my visual-spatial field") (who)
+            output-debug-message (word "I've been pushing a tile so I'll check to see if it still exists or has been pushed onto a hole") (who)
+            let locations-of-tile-last-pushed (chrest:VisualSpatialField.get-object-locations (report-current-time) (who-of-tile-last-pushed-in-plan) (true))
+            ifelse(empty? locations-of-tile-last-pushed)[
+              output-debug-message (word "There is no tile with a 'who' value of " who-of-tile-last-pushed-in-plan " in my visual-spatial field so the 'end-plan-generation?' turtle variable should be set to true") (who)
+              set end-plan-generation? (true)
+            ]
+            [
+              let location-of-tile-last-pushed ( item (0) (locations-of-tile-last-pushed) )
+              output-debug-message (word "There is a tile with a 'who' value of " who-of-tile-last-pushed-in-plan " on coordinates " location-of-tile-last-pushed " in my visual-spatial field so I'll check to see if there is also a hole on this location...")  (who)
               
-              let locations-of-tile-last-pushed (chrest:VisualSpatialField.get-object-locations (report-current-time) (who-of-tile-last-pushed-in-plan) (true))
-              ifelse(empty? locations-of-tile-last-pushed)[
-                output-debug-message (word "There is no tile with a 'who' value of " who-of-tile-last-pushed-in-plan " in my visual-spatial field so the 'end-plan-generation?' turtle variable should be set to true") (who)
+              if(chrest:VisualSpatialField.is-object-on-square? (report-current-time) (hole-token) (item (0) (location-of-tile-last-pushed)) (item (1) (location-of-tile-last-pushed)) (false))[
+                output-debug-message (word "There is a hole on the same coordinates as the tile so the local 'end-plan-generation?' variable will be set to true...")  (who)
                 set end-plan-generation? (true)
-              ]
-              [
-                let location-of-tile-last-pushed ( item (0) (locations-of-tile-last-pushed) )
-                output-debug-message (word "There is a tile with a 'who' value of " who-of-tile-last-pushed-in-plan " on coordinates " location-of-tile-last-pushed " in my visual-spatial field so I'll check to see if there is also a hole on this location...")  (who)
-                
-                if(chrest:VisualSpatialField.is-object-on-square? (report-current-time) (hole-token) (item (0) (location-of-tile-last-pushed)) (item (1) (location-of-tile-last-pushed)) (false))[
-                  output-debug-message (word "There is a hole on the same coordinates as the tile so the local 'end-plan-generation?' variable will be set to true...")  (who)
-                  set end-plan-generation? (true)
-                ]  
-              ]
+              ]  
             ]
           ]
         ]
@@ -2430,15 +2427,14 @@ to-report generate-visual-spatial-field-moves [ action-pattern reverse? ]
     ifelse(action-identifier = push-tile-token)[
       output-debug-message (word "The action identifier indicates that I should push/pull a tile so a tile's location in scene should also be modified.") (who)
 
-      
-
       output-debug-message (word "If this is a reversal of a 'push-tile' move, I need to see if the specific tile to be pulled still exists (its object representation may have decayed in my visual-spatial field") (who)
       let search-using-id? (false)
       let object (tile-token)
       if(not empty? who-of-tile-last-pushed-in-plan)[
         set search-using-id? (true)
         set object (who-of-tile-last-pushed-in-plan)
-      ]      output-debug-message (word "Checking to see if " object " is on coordinates " tile-location " in my visual-spatial field...") (who)
+      ]      
+      output-debug-message (word "Checking to see if " object " is on coordinates " tile-location " in my visual-spatial field...") (who)
       if( chrest:VisualSpatialField.is-object-on-square? (time-to-get-visual-spatial-field-at) (object) (item (0) (tile-location)) (item (1) (tile-location)) (search-using-id?) )[
         
         output-debug-message ( word "Object " object " is on coordinates " tile-location " in my visual-spatial field so I'll continue to generate a push/pull move...") (who)
@@ -2460,6 +2456,8 @@ to-report generate-visual-spatial-field-moves [ action-pattern reverse? ]
               ) 
             )
           )
+          
+          output-debug-message (word "My 'who-of-tile-last-pushed-in-plan' variable is now equal to: " who-of-tile-last-pushed-in-plan) (who)
         ]
         
         let tile-moves ( list (chrest:ItemSquarePattern.new (who-of-tile-last-pushed-in-plan) (current-xcor-of-tile) (current-ycor-of-tile)) )
@@ -3317,8 +3315,11 @@ end
 ;                                                    If the turtle is not capable of production creation 
 ;                                                    or is not able to produce such visual information, 
 ;                                                    pass an empty list.
-;@return  -                 Boolean                  True if the action was performed successfully,
-;                                                    false if not.
+;@return  -                 List/Boolean             If the action was not a "push-tile" action then a boolean 
+;                                                    value is returned (true if the action was performed 
+;                                                    successfully, false if not).  If the action is a "push-tile"
+;                                                    action then a list is returned (see documentation for the
+;                                                    "push-tile" procedure to see what is returned and why).
 ;
 ;@author  Martyn Lloyd-Kelly <martynlk@liverpool.ac.uk>  
 to-report perform-action [ action-info current-view ]
@@ -3341,8 +3342,7 @@ to-report perform-action [ action-info current-view ]
   let pattern-rec-used? (item (1) (action-info))
   output-debug-message ( word "Was pattern-recognition used to generate this action? '" pattern-rec-used? "'..." ) (who)
   
-  let action-performed-successfully (false)
-  output-debug-message (word "Assuming that the action will be performed unsuccessfully since the action specified may not be a valid action.  Checking this now...") (who)
+  let action-performance-result []
   
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;; CHECK FOR VALID ACTION ;;;
@@ -3357,22 +3357,26 @@ to-report perform-action [ action-info current-view ]
   
     ifelse(action-identifier = push-tile-token)[
       output-debug-message (word "The local 'action-identifier' variable is equal to: '" action-identifier "' so I should execute the 'push-tile' procedure...") (who)
-        set action-performed-successfully ( push-tile (action-heading) )
+        set action-performance-result ( push-tile (action-heading) )
     ]
     [
       output-debug-message (word "The local 'action-identifier' variable is equal to: '" action-identifier "' so I should execute the 'move' procedure...") (who)
-        set action-performed-successfully ( move (action-heading) (action-patches) )
+        set action-performance-result ( move (action-heading) (action-patches) )
     ]
     
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     ;;; ASSIGN ACTION PERFORMANCE SUCCESS VARIABLE ;;;
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   
-    output-debug-message ( word "Checking to see if the local 'action-performed-successfully' variable is a list (" is-list? action-performed-successfully ").  If it is, the first element will be extracted and set as this variable's value" ) (who)
-    if( is-list? (action-performed-successfully) )[
-      output-debug-message ( word "The local 'action-performed-successfully' variable is a list so its value will be set to the first element (" ( item (0) (action-performed-successfully) ) ")..." ) (who)
-        set action-performed-successfully ( item (0) (action-performed-successfully) )
+    let action-performed-successfully (false)
+    ifelse( is-list? (action-performance-result) )[
+      set action-performed-successfully ( item (0) (action-performance-result) )
     ]
+    [
+      set action-performed-successfully (action-performance-result)
+    ]
+    
+    output-debug-message (word "Was the action performed successfully: " action-performed-successfully) (who)
     
     ;;;;;;;;;;;;;;;;;;;;;;;;;;
     ;;; CHREST TURTLE CODE ;;;
@@ -3598,9 +3602,9 @@ to-report perform-action [ action-info current-view ]
     error (word "The action to perform specified by turtle " who " is not a valid action (does not occur in the global 'possible-actions' list: " possible-actions ").")
   ]
   
-  output-debug-message ( word "Reporting the value of the local 'action-performed-successfully' variable (" action-performed-successfully ")..." ) (who)
+  output-debug-message ( word "Reporting the result of performing the action (" action-performance-result ")..." ) (who)
   set debug-indent-level (debug-indent-level - 2)
-  report action-performed-successfully
+  report action-performance-result
 end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3936,6 +3940,8 @@ to print-and-run [string-to-be-run]
  output-debug-message (word "NETLOGO COMMAND TO BE PASSED TO 'run' PRIMITIVE: '" string-to-be-run "'.") ("")
  set debug-indent-level (debug-indent-level - 2)
  run string-to-be-run
+ 
+ 
 end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3952,7 +3958,8 @@ end
 ;  1. There is a hole on the patch immediately ahead of T:
 ;     a. T moves forward by 1 patch.
 ;     b. The hole is asked to die.
-;     e. T is asked to die.
+;     c. T is asked to die.
+;     d. The pusher's 'score' turtle variable is incremented by 1.
 ;
 ;  2. There isn't a hole on the patch immediately ahead of T. A check is made to see if 
 ;     there are any other visible turtles on the patch ahead of T.
@@ -4000,7 +4007,7 @@ to-report push-tile [push-heading]
         output-debug-message (word "There is a visible hole 1 patch ahead with my current heading (" heading ") so I'll move onto that patch, the hole will die, the 'hole-filled' variable will be set to true and I will die.") (who)
         forward 1
         ask holes-here with [hidden? = false][ die ]
-        set hole-filled (true)
+        set hole-filled (true) 
         die
       ]
       [
@@ -4018,6 +4025,11 @@ to-report push-tile [push-heading]
       forward 1
       set push-tile-successful (true)
     ]
+  ]
+  
+  if(hole-filled)[
+    output-debug-message ("A hole has been filled so I'll increment by 'score' turtle variable by 1") (who)
+    set score (score + 1)
   ]
   
   output-debug-message (word "The local 'push-tile-successful' and 'hole-filled' variables are set to: '" push-tile-successful "' and '" hole-filled "'. Reporting these as a list...") (who)
@@ -4320,10 +4332,6 @@ to reinforce-productions
             (report-current-time)
         ]
       ]
-      
-      output-debug-message ("Reinforcement of productions indicated my episodes in 'episodic-memory' complete.  Clearing my 'episodic-memory'...") (who)
-      set episodic-memory []
-      output-debug-message (word "My 'episodic-memory' is now equal to: " episodic-memory "...") (who)
     ]
   ]
   

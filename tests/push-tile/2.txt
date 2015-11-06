@@ -3,7 +3,7 @@
 ;==============================
 ;
 ; To determine if the "push-tile" procedure generates the expected output if
-; a player turtle, P, runs the "push-tile" procedure and a tile exists on the 
+; a player turtle runs the "push-tile" procedure and a tile exists on the 
 ; patch immediately ahead of the player turtle along the heading passed to the 
 ; "push-tile" procedure.
 ;
@@ -11,11 +11,11 @@
 ;========== TEST DESCRIPTION ==========
 ;====================================== 
 ;
-; - A player turtle is created.
+; - A player turtle, the 'pusher' is created.
 ; - For each value in the global 'movement-headings' list:
-;   ~ A tile is created immediately ahead of the player turtle along the heading 
+;   ~ A tile is created immediately ahead of the pusher along the heading 
 ;     specified.
-;   ~ The player turtle invokes the "push-tile" procedure and passes the heading
+;   ~ The pusher invokes the "push-tile" procedure and passes the heading
 ;     specified as input.
 ;
 ; NOTE: The tile created is destoyed before a new 'movement-headings' variable is
@@ -32,61 +32,93 @@
 ;     + Boolean false should always be reported with respect to whether a hole was
 ;       filled as a result of the action being performed.
 ;
+;	~ The pusher's 'score' turtle variable is still equal to 0.
 ;   ~ The calling turtle is located 1 patch along the heading specified from the patch
 ;     it was on before the "push-tile" procedure was invoked.
 ;   ~ The tile is located 1 patch along the heading specified from the patch
 ;     it was on before the "push-tile" procedure was invoked.
+;   
 ;
 <test>
-	create-chrest-turtles 1
-	let chrest-turtle-new-patch 0
-	let tile-new-patch 0
 
 	foreach(movement-headings)[
+		let heading-specified (?)
 
-		if(? = 0)[
+		;====================;
+		;== CREATE TURTLES ==;
+		;====================;
+
+		create-chrest-turtles 1
+
+		if(heading-specified = 0)[
 			create-tiles 1 [ setxy ( ([pxcor] of turtle 0) ) ( ([pycor] of turtle 0) + 1 ) ]
 		]
 
-		if(? = 90)[
+		if(heading-specified = 90)[
 			create-tiles 1 [ setxy ( ([pxcor] of turtle 0) + 1 ) ( ([pycor] of turtle 0) ) ]
 		]
 
-		if(? = 180)[
+		if(heading-specified = 180)[
 			create-tiles 1 [ setxy ( ([pxcor] of turtle 0) ) ( ([pycor] of turtle 0) - 1 ) ]
 		]
 
-		if(? = 270)[
+		if(heading-specified = 270)[
 			create-tiles 1 [ setxy ( ([pxcor] of turtle 0) - 1 ) ( ([pycor] of turtle 0) ) ]
 		]
-		
+
+		;=====================================;
+		;== SET EXPECTED LOCATION VARIABLES ==;
+		;=====================================;
+
+		let pusher-expected-location []
+		let tile-expected-location []
+
 		ask turtle 0 [
-			set chrest-turtle-new-patch (patch-at-heading-and-distance (?) (1))
+			if (heading-specified = 0)[ set pusher-expected-location ( list ([xcor] of self) (([ycor] of self) + 1) ) ]
+			if (heading-specified = 90)[ set pusher-expected-location ( list (([xcor] of self) + 1) ([ycor] of self) ) ]
+			if (heading-specified = 180)[ set pusher-expected-location ( list ([xcor] of self) (([ycor] of self) - 1) ) ]
+			if (heading-specified = 270)[ set pusher-expected-location ( list (([xcor] of self) - 1) ([ycor] of self) ) ]
 		]
 
-		ask tiles [
-			set tile-new-patch (patch-at-heading-and-distance (?) (1))
+		ask turtle 1 [
+			if (heading-specified = 0)[ set tile-expected-location ( list ([xcor] of self) (([ycor] of self) + 1) ) ]
+			if (heading-specified = 90)[ set tile-expected-location ( list (([xcor] of self) + 1) ([ycor] of self) ) ]
+			if (heading-specified = 180)[ set tile-expected-location ( list ([xcor] of self) (([ycor] of self) - 1) ) ]
+			if (heading-specified = 270)[ set tile-expected-location ( list (([xcor] of self) - 1) ([ycor] of self) ) ]
 		]
+
+		;===========;
+		;== TESTS ==;
+		;===========;
 
 		ask turtle 0 [
 			check-equal 
-				(push-tile (?)) 
+				(push-tile (heading-specified)) 
 				( list (true) (false) ) 
 				("when checking the output of the 'push-tile' procedure")
 
-			check-equal 
-				(patch-here) 
-				(chrest-turtle-new-patch) 
-				("when checking the location of the 'pusher'")
+			check-equal
+				(score)
+				(0)
+				("when checking the 'score' of the 'pusher'")
 		]
 
-		ask tiles[
-			check-equal 
-				(patch-here) 
-				(tile-new-patch) 
-				("when checking the location of the tile")
+		check-equal 
+			( 
+				([xcor] of turtle 0) = (item (0) (pusher-expected-location)) and 
+				([ycor] of turtle 0) = (item (1) (pusher-expected-location)) 
+			) 
+			(true)
+			("when checking the location of the 'pusher'")
 
-			die
-		]
+		check-equal 
+			( 
+				([xcor] of turtle 1) = (item (0) (tile-expected-location)) and 
+				([ycor] of turtle 1) = (item (1) (tile-expected-location)) 
+			)
+			(true) 
+			("when checking the location of the tile")
+
+		reset (true)
 	]
 </test>

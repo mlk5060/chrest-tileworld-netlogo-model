@@ -99,13 +99,38 @@
 ;
 <test>
 	create-chrest-turtles 1 [
+		set action-performance-time (10000)
+		set action-selection-procedure ("roulette-selection")
+		set add-link-time (10000)
+		set discount-rate (0.5)
+		set discrimination-time (10000)
+		set familiarisation-time (2000)
+		set max-length-of-episodic-memory (6)
+		set max-search-iteration (5)
+		set number-fixations (4)
+		set pattern-recognition? (true)
+		set play-time (14400000.0)
+		set reinforce-actions? (true)
+		set reinforce-problem-solving? (true)
+		set reinforcement-learning-theory ("profit_sharing_with_discount_rate") 
+		set sight-radius (2)
+		set time-taken-to-use-pattern-recognition (200)
+		set time-taken-to-problem-solve (1000)
+		set visual-spatial-field-access-time (100)
+		set visual-spatial-field-empty-square-placement-time (10)
+		set visual-spatial-field-object-movement-time (50)
+		set visual-spatial-field-object-placement-time (25)
+		set visual-spatial-field-recognised-object-lifespan (10000)
+		set visual-spatial-field-unrecognised-object-lifespan (50000)
+	]
+	setup (true)
 
+	ask turtle 0[
+	
 		;==============================;
 		;== POPULATE EPISODIC MEMORY ==;
 		;==============================;
 
-		set episodic-memory []
-		set max-length-of-episodic-memory 6
 		let episode 1
 		while [episode <= 10][
 			set current-training-time (episode)

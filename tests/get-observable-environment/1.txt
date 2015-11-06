@@ -81,6 +81,6 @@
 			( list (2) (2) (empty-patch-token) (empty-patch-token) )
 		)
 
-		check-test-output (get-observable-environment) (expected)
+		check-test-output (get-observable-environment) (expected) ("")
 	]
 </test>

@@ -188,6 +188,25 @@
 		;== MODIFY EXPECTED VALUES ==;
 		;============================;
 
+		; If the action is to push a tile then the "perform-action" procedure will report a list since that is what is reported by
+		; the "push-tile" procedure when invoked.  The list will contain two elements, the first states whether the action was
+		; performed successfully or not and its expected value is dependent on the value of the 'action-performed-successfully?'
+		; scenario parameter.  The second element stipulates whether a hole was filled when a tile was pushed, in the case of this
+		; test, a hole is never created when a "push-tile" action is to be performed so the expected value for this element in the
+		; list should always be boolean 'false'.
+		;
+		; NOTE: a situation is never tested where a "push-tile" action is to be performed and the tile should/should not be pushed
+		;       into a hole since the second element in the list returned by the "push-tile" procedure is never used in the 
+		;       "perform-action" procedure.
+		if (action = push-tile-token)[
+			ifelse (action-performed-successfully?)[
+				set expected-success-of-action-performance (list (true) (false))
+			]
+			[
+				set expected-success-of-action-performance (list (false) (false))
+			]
+		]
+
 		; If problem-solving was used to generate the action to perform, the CHREST turtle should learn the 'problem-solving' action as well as 
 		; the explicit action so the number of nodes in LTM should be incremented by 1.
 		if(not action-generated-using-pattern-recognition?)[
@@ -468,9 +487,8 @@
 			; "perform-action" function.
 			let productions ( map 
 				([ chrest:ListPattern.get-as-string (chrest:Node.get-image (item (0) (?))) ]) 
-				( chrest:recognise-list-pattern-and-return-nodes-with-modality 
-					(observable-environment-list-pattern) 
-					("action") 
+				( chrest:get-productions
+					(observable-environment-list-pattern)
 					(report-current-time)
 				)
 			)

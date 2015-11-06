@@ -32,6 +32,7 @@
 ;   ~ Boolean true should always be reported with respect to whether a hole was
 ;     filled as a result of the action being performed.
 ;
+; - The pusher's 'score' turtle variable is incremented to 1.
 ; - The pusher is located 1 patch along the heading specified from its original 
 ;   location.
 ; - The tile and visible hole are no longer present in the environment but the hidden 
@@ -108,6 +109,11 @@
 				(push-tile (heading-specified)) 
 				(list (true) (true))
 				("when checking the output of the 'push-tile' procedure")
+
+			check-equal
+				(score)
+				(1)
+				("when checking the 'score' of the 'pusher'")
 		]
 
 		check-equal 

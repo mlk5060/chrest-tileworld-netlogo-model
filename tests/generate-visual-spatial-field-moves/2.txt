@@ -62,7 +62,7 @@
 			set reinforce-actions? (true)
 			set reinforce-problem-solving? (true)
 			set reinforcement-learning-theory ("profit_sharing_with_discount_rate")
-			set sight-radius (1)
+			set sight-radius (2)
 			set time-taken-to-use-pattern-recognition (200)
 			set time-taken-to-problem-solve (1000)
 			set visual-spatial-field-access-time (100)

@@ -31,6 +31,7 @@
 ;   ~ Boolean false should always be reported with respect to whether a hole was
 ;     filled as a result of the action being performed.
 ;
+; - The pusher's 'score' turtle variable is still equal to 0.
 ; - The pusher, tile and blocker are all located on the patches they were originally 
 ;   placed on.
 ;
@@ -119,6 +120,11 @@
 						(push-tile (heading-specified)) 
 						( list (false) (false) ) 
 						("when checking the output of the 'push-tile' procedure")
+
+					check-equal
+						(score)
+						(0)
+						("when checking the 'score' of the 'pusher'")
 				]
 
 				check-equal 

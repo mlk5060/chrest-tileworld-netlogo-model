@@ -10,9 +10,9 @@
 ;========== TEST DESCRIPTION ==========
 ;====================================== 
 ;
-; - A player turtle, P, is created.
-; - P invokes the "push-tile" procedure and each value in the global 'movement-headings' 
-;   variable is passed as input.
+; - A player turtle, the pusher, is created.
+; - The pusher invokes the "push-tile" procedure and each value in the global 
+;   'movement-headings' variable is passed as input.
 ;
 ;=====================================
 ;========== TESTS PERFORMED ==========
@@ -24,7 +24,8 @@
 ;   ~ Boolean false should always be reported with respect to whether a hole was
 ;     filled as a result of the action being performed.
 ;
-; - The calling turtle is located on the patch it was originally placed on.
+; - The pusher is located on the patch it was originally placed on.
+; - The pusher's 'score' turtle variable is still equal to 0.
 ;
 <test>
 	let initial-patch ""
@@ -44,6 +45,11 @@
 				(patch-here) 
 				(initial-patch) 
 				("when checking the location of the 'pusher'")
+
+			check-equal
+				(score)
+				(0)
+				("when checking the 'score' of the 'pusher'")
 		]
 	]
 </test>
