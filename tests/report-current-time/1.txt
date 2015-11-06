@@ -1,9 +1,49 @@
+;==============================
+;========== TEST AIM ==========
+;==============================
+;
+; To ensure the "report-current-time" procedure operates as expected when
+; the model is running in a training and non-training context.
+;
+;======================================
+;========== TEST DESCRIPTION ==========
+;======================================
+;
+; - The model's running context is set to training.
+; - The model's time is set to a known value.
+; - The "report-current-time" procedure is invoked.
+; - The model's running context is set to non-training.
+; - The model's time is set to a known value.
+; - The "report-current-time" procedure is invoked.
+;
+;=====================================
+;========== TESTS PERFORMED ==========
+;=====================================
+;
+; After invoking the "report-current-time" procedure, the value returned
+; should be what the model time was just set to.
+;
 <test>
-	set training? true
-	set current-training-time 1234546
-	check-equal (report-current-time) (1234546)
 
-	set training? false
-	set current-game-time 7890
-	check-equal (report-current-time) (7890)
+	;======================;
+	;== TRAINING CONTEXT ==;
+	;======================;
+
+	set training? (true)
+	set current-training-time (1234546)
+	check-equal 
+		(report-current-time) 
+		(1234546)
+		("when the model is running in a training context")
+
+	;==========================;
+	;== NON-TRAINING CONTEXT ==;
+	;==========================;
+
+	set training? (false)
+	set current-game-time (7890)
+	check-equal 
+		(report-current-time) 
+		(7890)
+		("when the model is running in a non-training context")
 </test>
