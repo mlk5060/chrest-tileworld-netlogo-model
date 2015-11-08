@@ -2,163 +2,136 @@
 ;========== TEST AIM ==========
 ;==============================
 ;
-; Checks that relevant paramaters are set correctly when a CHREST turtle successfully 
-; performs an action in its plan that doesn't entail it pushing a tile into a hole.
+; Checks the state of relevant parameters for a CHREST turtle when 'execute-next-planned-action'
+; is invoked by a CHREST turtle and an action is scheduled for performance but not actually
+; performed.
 ;
 ;======================================
 ;========== TEST DESCRIPTION ==========
 ;======================================
-;
-; A CHREST turtle is asked to perform each action in the global "possible-actions" list
-; and relevant turtle variables are set manually to contrive a state that the CHREST 
-; turtle should be in after generating a plan:
-;
+; 
+; A CHREST turtle is set-up and relevant turtle variables are set manually to contrive a state
+; that the CHREST turtle should be in after generating a plan:
+; 
 ; - 'construct-visual-spatial-field?' is set to false.
 ; - 'generate-plan?' is set to false.
 ; - 'deliberation-finished-time' is set to 100.
 ; - 'plan' is populated with expected values.
-; - 'episodic-memory' contains an episode (a string, not a real episode).
+; - 'episodic-memory' contains a episode (as a string, not a real episode).
 ;
-; Most actions will be performed successfully without the environment being modified.  However,
-; since one of the actions performed will be a "push-tile south by 1 patch" action, the 
-; environment will be modified so that a tile can be pushed.
-;
-; The domain time is then set to the value of the CHREST turtle's 'deliberation-finished-time' 
-; variable and the 'execute-next-planned-action' procedure is invoked.  Given that the domain
-; time is equal to the CHREST turtle's 'deliberation-finished-time' variable and the environment
-; is such that the action performed will be successful, the action should be performed.
+; The 'execute-next-planned-action' procedure is then invoked.  Since this procedure relies upon
+; the 'perform-action' procedure, the value returned by the 'perform-action' procedure dictates
+; the operation of the 'execute-next-planned-action' procedure. If an action is not performed due
+; to it being scheduled to occur later than the current time then the 'execute-next-planned-action' 
+; procedure should handle this correctly.
 ;
 ;=====================================
 ;========== TESTS PERFORMED ==========
 ;=====================================
 ;
-; A check is made on the state of all variables mentioned in the "TEST DESCRIPTION" section 
-; after the 'execute-next-planned-action' invocation.  The only variable whose value should 
-; have changed is the 'plan' variable: the first action should no longer be present.  All 
-; other variables should remain unchanged.
-;
-; NOTE: the exact contents of 'episodic-memory' are not checked.  This is because the
-; "perform-action" procedure has specific conditions regarding whether an episode is added 
-; to 'episodic-memory' and it is not the responsibility of this test to check those 
-; conditions.  So, for some actions performed here, an episode may be added to 
-; 'episodic-memory' for some other actions, no action may be added.  Therefore, the test 
-; imply checks that 'episodic-memory' has not been cleared after "execute-next-planned-action"
-; has been invoked.
+; Immediately following invocation of 'execute-next-planned-action' and before the model time is
+; greater than or equal to the time that the action is scheduled for performance, the values of 
+; the variables mentioned above are checked to see if they remain unchanged (which they should).
 ;
 <test>
-	foreach (possible-actions)[
-		let action (?)
+	
+	;==================================;
+	;== CREATE & SETUP CHREST-TURTLE ==;
+	;==================================;
 
-		;==================================;
-		;== CREATE & SETUP CHREST-TURTLE ==;
-		;==================================;
+	create-chrest-turtles 1 [
+		set action-performance-time (10000)
+		set action-selection-procedure ("roulette-selection")
+		set add-link-time (10000)
+		set can-plan? (true)
+		set discount-rate (0.5)
+		set discrimination-time (10000)
+		set familiarisation-time (2000)
+		set max-length-of-episodic-memory (5)
+		set max-search-iteration (5)
+		set number-fixations (4)
+		set pattern-recognition? (true)
+		set play-time (14400000.0)
+		set reinforce-actions? (true)
+		set reinforce-problem-solving? (true)
+		set reinforcement-learning-theory ("profit_sharing_with_discount_rate") 
+		set sight-radius (2)
+		set time-taken-to-use-pattern-recognition (200)
+		set time-taken-to-problem-solve (1000)
+		set visual-spatial-field-access-time (100)
+		set visual-spatial-field-empty-square-placement-time (10)
+		set visual-spatial-field-object-movement-time (50)
+		set visual-spatial-field-object-placement-time (25)
+		set visual-spatial-field-recognised-object-lifespan (10000)
+		set visual-spatial-field-unrecognised-object-lifespan (50000)
+	]
+	setup (true)
 
-		create-chrest-turtles 1 [
-			set action-performance-time (10000)
-			set action-selection-procedure ("roulette-selection")
-			set add-link-time (10000)
-			set discount-rate (0.5)
-			set discrimination-time (10000)
-			set familiarisation-time (2000)
-			set max-length-of-episodic-memory (5)
-			set max-search-iteration (5)
-			set number-fixations (4)
-			set pattern-recognition? (true)
-			set play-time (14400000.0)
-			set reinforce-actions? (true)
-			set reinforce-problem-solving? (true)
-			set reinforcement-learning-theory ("profit_sharing_with_discount_rate")
-			set sight-radius (1)
-			set time-taken-to-use-pattern-recognition (200)
-			set time-taken-to-problem-solve (1000)
-			set visual-spatial-field-access-time (100)
-			set visual-spatial-field-empty-square-placement-time (10)
-			set visual-spatial-field-object-movement-time (50)
-			set visual-spatial-field-object-placement-time (25)
-			set visual-spatial-field-recognised-object-lifespan (10000)
-			set visual-spatial-field-unrecognised-object-lifespan (50000)
-		]
-		setup (true)
+	ask turtle 0 [
 
-		;================================;
-		;== CREATE TILE (IF NECESSARY) ==;
-		;================================;
+		;===========================;
+		;== SET VARIABLES TO TEST ==;
+		;===========================;
 
-		if (action = push-tile-token)[
-			create-tiles 1 [
-				setxy ([pxcor] of turtle 0) ( ([pycor] of turtle 0) - 1)
-				set heading (0)
-			]
-		]
+		set construct-visual-spatial-field? (false)
+		set generate-plan? (false)
+		set deliberation-finished-time (100)
+		set plan (list 
+			(list (chrest:ItemSquarePattern.new (push-tile-token) (180) (1)) (false))
+			(list (chrest:ItemSquarePattern.new (push-tile-token) (180) (1)) (false))
+			(list (chrest:ItemSquarePattern.new (push-tile-token) (180) (1)) (false))
+			(list (chrest:ItemSquarePattern.new (push-tile-token) (180) (1)) (false))
+		)
+		set episodic-memory (list ("episode"))
+		
+		;============================;
+		;== SET EXPECTED VARIABLES ==;
+		;============================;
 
-		ask turtle 0 [
+		let expected-construct-visual-spatial-field? (false)
+		let expected-generate-plan? (false)
+		let expected-deliberation-finished-time (100)
+		let expected-plan (list 
+			(list (chrest:ItemSquarePattern.new (push-tile-token) (180) (1)) (false))
+			(list (chrest:ItemSquarePattern.new (push-tile-token) (180) (1)) (false))
+			(list (chrest:ItemSquarePattern.new (push-tile-token) (180) (1)) (false))
+			(list (chrest:ItemSquarePattern.new (push-tile-token) (180) (1)) (false))
+		)
+		let expected-episodic-memory (list ("episode"))
+		
+		;==========================================;
+		;== INVOKE 'execute-next-planned-action' ==;
+		;==========================================;
 
-			;===========================;
-			;== SET VARIABLES TO TEST ==;
-			;===========================;
+		execute-next-planned-action
+		
+		;===========;
+		;== TESTS ==;
+		;===========;
 
-			set construct-visual-spatial-field? (false)
-			set generate-plan? (false)
-			set deliberation-finished-time (100)
-			set episodic-memory (list ("episode"))
+		check-equal 
+			(construct-visual-spatial-field?) 
+			(expected-construct-visual-spatial-field?) 
+			("when checking 'construct-visual-spatial-field?'")
 
-			repeat (4)[
-				set plan (lput 
-					(list (chrest:ItemSquarePattern.new (action) (180) (1)) (false)) 
-					(plan)
-				)
-			]
+		check-equal 
+			(generate-plan?) 
+			(expected-generate-plan?) 
+			("when checking 'generate-plan?'")
 
-			;============================;
-			;== SET EXPECTED VARIABLES ==;
-			;============================;
+		check-equal 
+			(deliberation-finished-time) 
+			(expected-deliberation-finished-time) 
+			("when checking 'deliberation-finished-time'")
 
-			let expected-construct-visual-spatial-field? (false)
-			let expected-generate-plan? (false)
-			let expected-deliberation-finished-time (100)
-			let expected-plan []
+		check-equal 
+			(map ([list (chrest:ItemSquarePattern.get-as-string (item 0 ?)) (item 1 ?) ]) (plan)) 
+			(map ([list (chrest:ItemSquarePattern.get-as-string (item 0 ?)) (item 1 ?) ]) (expected-plan)) 
+			("when checking 'plan'")
 
-			repeat (3)[
-				set expected-plan (lput (list (chrest:ItemSquarePattern.new (action) (180) (1)) (false)) (expected-plan))
-			]
-			
-			;==========================================;
-			;== INVOKE 'execute-next-planned-action' ==;
-			;==========================================;
-			
-			set current-training-time (deliberation-finished-time)
-			execute-next-planned-action
-			
-			;===========;
-			;== TESTS ==;
-			;===========;
-
-			check-equal 
-				(construct-visual-spatial-field?) 
-				(expected-construct-visual-spatial-field?) 
-				("when checking 'construct-visual-spatial-field?'")
-
-			check-equal 
-				(generate-plan?) 
-				(expected-generate-plan?) 
-				("when checking 'generate-plan?'")
-
-			check-equal 
-				(deliberation-finished-time) 
-				(expected-deliberation-finished-time) 
-				("when checking 'deliberation-finished-time'")
-
-			check-equal 
-				(map ([list (chrest:ItemSquarePattern.get-as-string (item 0 ?)) (item 1 ?) ]) (plan)) 
-				(map ([list (chrest:ItemSquarePattern.get-as-string (item 0 ?)) (item 1 ?) ]) (expected-plan)) 
-				("when checking 'plan'")
-
-			check-equal
-				(not empty? episodic-memory)
-				(true)
-				("when checking 'episodic-memory'")
-		]
-
-		reset (true)
+		check-equal
+			(episodic-memory)
+			(expected-episodic-memory)
+			("when checking 'episodic-memory'")
 	]
 </test>

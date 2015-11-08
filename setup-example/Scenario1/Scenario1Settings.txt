@@ -1,94 +1,101 @@
-<run>create-chrest-turtles 2</run>
+<run>create-chrest-turtles 4</run>
 
 tile-lifespan
-80000
+300000
 
 hole-lifespan
-80000
+300000
 
 tile-birth-prob
-0.7
+0.9
 
 hole-birth-prob
-0.7
+0.9
 
 reward-value
 1.0
 
 tile-born-every
-2000
+500
 
 hole-born-every
-2000
+500
 
 action-performance-time
-(0-1):10000
+(0-3):0
 
 action-selection-procedure
-(0-1):roulette-selection
+(0-3):roulette-selection
 
 add-link-time
-(0-1):10000
+(0-3):10000
+
+can-plan?
+(0-1):true
+(2-3):false
 
 discount-rate
-(0-1):0.5
+(0-3):0.5
 
 discrimination-time
-(0-1):10000
+(0-3):10000
 
 familiarisation-time
-(0-1):2000
+(0-3):2000
 
 max-length-of-episodic-memory
-(0-1):30
+(0-3):30
 
-minds-eye-access-time
-(0-1):100
+max-search-iteration
+(0-3):3
 
-minds-eye-empty-square-placement-time
-(0-1):10
+visual-spatial-field-access-time
+(0-3):100
 
-minds-eye-object-movement-time
-(0-1):50
+visual-spatial-field-empty-square-placement-time
+(0-3):10
 
-minds-eye-object-placement-time
-(0-1):25
+visual-spatial-field-object-movement-time
+(0-3):50
 
-minds-eye-recognised-object-lifespan
-(0-1):10000
+visual-spatial-field-object-placement-time
+(0-3):25
 
-minds-eye-unrecognised-object-lifespan
-(0-1):50000
+visual-spatial-field-recognised-object-lifespan
+(0-3):10000
+
+visual-spatial-field-unrecognised-object-lifespan
+(0-3):50000
 
 number-fixations
-(0-1):4
+(0-3):4
 
 pattern-recognition?
-(0-1):true
+(0-3):true
 
 play-time
-(0-1):14400000.0
+(0-3):14400000.0
 
 reinforce-actions?
-(0-1):true
+(0-3):true
 
 reinforce-problem-solving?
-(0-1):true
+(0-3):true
 
 reinforcement-learning-theory
-(0-1):profit_sharing_with_discount_rate
+(0-3):profit_sharing_with_discount_rate
 
 sight-radius
-(0-1):2
+(0-3):2
 
 time-taken-to-act-randomly
-(0-1):500
+(0-3):500
 
 time-taken-to-use-pattern-recognition
-(0-1):200
+(0-3):200
 
 time-taken-to-problem-solve
-(0-1):1000
+(0-3):1000
 
 training-time
-(0-1):0.0
+(0-3):0.0

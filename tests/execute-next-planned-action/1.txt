@@ -39,6 +39,7 @@
 		set action-performance-time (10000)
 		set action-selection-procedure ("roulette-selection")
 		set add-link-time (10000)
+		set can-plan? (true)
 		set discount-rate (0.5)
 		set discrimination-time (10000)
 		set familiarisation-time (2000)

@@ -61,7 +61,7 @@
 		let scenario (word xcor-value " " ycor-value)
 
 		while[
-			(member? scenario scenarios-tested) and 
+			(member? scenario scenarios-tested) or 
 			(xcor-value = 0 and ycor-value = 0)
 		][
 			set xcor-value (one-of (xcor-values))
@@ -131,7 +131,7 @@
 		    ;== TEST ==;
 		    ;==========;
 
-			let scenario-description (word "When xcor-value = " xcor-value ", ycor-value = " ycor-value ", generated action = " action-generated " and expected actions = " expected-actions-generated)
+			let scenario-description (word "When xcor-value = " xcor-value ", ycor-value = " ycor-value)
 		    check-equal 
 		    	(member? (generate-action-when-tile-can-be-seen (xcor-value) (ycor-value)) (expected-actions-generated))
 		    	(true)

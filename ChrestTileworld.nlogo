@@ -112,7 +112,7 @@ chrest-turtles-own [
   current-scene                                         ;Stores an instance of jchrest.lib.Scene that represents the current scene.  Used by CHREST Netlogo extension.
   current-search-iteration                              ;Stores the number of search iterations the turtle has made in the current planning cycle.
   current-visual-pattern                                ;Stores the current visual pattern that has been generated as a string.
-  deliberation-finished-time                            ;Stores the time (in milliseconds) that the CHREST turtle will finish deliberation on the current plan. Controls plan execution.
+  deliberation-finished-time                            ;Stores the time (in milliseconds) that the CHREST turtle will finish deliberation on the current plan. Controls plan execution for planning agents and action execution for non-planning agents.
   discount-rate                                         ;Stores the discount rate used for the "profit-sharing-with-discount-rate" reinforcement learning algorithm.
   discrimination-time                                   ;Stores the length of time (in milliseconds) that it takes to discriminate a new node in LTM of the CHREST architecture.
   episodic-memory                                       ;Stores visual patterns generated, action patterns performed in response to that visual pattern, the time the action was performed and whether problem-solving was used to determine the action in a FIFO list data structure.
@@ -123,7 +123,9 @@ chrest-turtles-own [
   generate-plan?                                        ;Stores a boolean value that indicates whether the turtle should generate a plan.
   max-length-of-episodic-memory                         ;Stores the maximum length of the turtle's "episodic-memory" list.  
   max-search-iteration                                  ;Stores the maximum number of search iterations the turtle can make in any planning cycle.
-  next-action-to-perform                                ;Stores the action-pattern that the turtle is to perform next.
+  next-action-to-perform                                ;Stores a list and is only used for non-planning CHREST turtles: 
+                                                        ; - First element contains the action-pattern that the turtle is to perform
+                                                        ; - Second element contains whether the action-pattern was generated using pattern-recognition.
   number-fixations                                      ;Stores the number of fixations the turtle should perform when learning/scanning the current scene.  Used by CHREST Netlogo extension. 
   pattern-recognition?                                  ;Stores a boolean value that indicates whether pattern-recognition can be used or not.
   plan                                                  ;Stores a series of moves generated using the current state of the visual-spatial field and heuristics that should be executed by the CHREST turtle.
@@ -249,77 +251,6 @@ to age
   
   set debug-indent-level (debug-indent-level - 2)
 end
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;; "ALTER-HEADING-RANDOMLY-BY-ADDING-OR-SUBTRACTING-90" PROCEDURE ;;; - MAY NO LONGER BE NEEDED
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;
-;;Alters the value of the heading passed by non-deterministically adding 
-;;or subtracting 90.  So, if the heading indicates:
-;; - North (0): resultant heading will be west (270) or east (90).
-;; - East (90): resultant heading will be north (0) or south (180).
-;; - South (180): resultant heading will be east (90) or west (270).
-;; - West (270): resultant heading will be south (180) or north (0).
-;;
-;;         Name              Data Type     Description
-;;         ----              ---------     -----------
-;;@param   current-heading   Number        The heading to be altered.
-;;@return  -                 Number        The altered heading (see description above).
-;;
-;;@author  Martyn Lloyd-Kelly <martynlk@liverpool.ac.uk>  
-;to-report alter-heading-randomly-by-adding-or-subtracting-90 [current-heading]
-;  set debug-indent-level (debug-indent-level + 1)
-;  output-debug-message ("EXECUTING THE 'alter-heading-randomly-by-adding-or-subtracting-90' PROCEDURE...") ("")
-;  set debug-indent-level (debug-indent-level + 1)
-;  
-;  output-debug-message (word "The heading to alter is: '" current-heading "'.") (who)
-;  ifelse( (random 2) = 0)[
-;    output-debug-message ("Altering current heading by adding 90.") (who)
-;    set current-heading ( current-heading + 90 )
-;  ]
-;  [ 
-;    output-debug-message ("Altering current heading by subtracting 90.") (who)
-;    set current-heading ( current-heading - 90 )
-;  ]
-;  
-;  output-debug-message (word "The heading after alteration is now set to: '" current-heading "'.") (who)
-;  set debug-indent-level (debug-indent-level - 2)
-;  report ( rectify-heading (current-heading) )
-;end
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;; "ANY-TILES-ON-PATCH-AHEAD?" PROCEDURE ;;; - THIS COULD BE REMOVED!
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;
-;;Reports boolean true or false depending upon whether or not there is a tile
-;;on the patch immediately ahead of the calling turtle along its current heading.
-;;
-;;         Name              Data Type     Description
-;;         ----              ---------     -----------
-;;@returns -                 Boolean       True if there is a turtle whose 'breed'
-;;                                         variable value is equal to 'tiles' on 
-;;                                         the patch immediately ahead of the 
-;;                                         calling turtle along its current heading.
-;;                                         False is reported if not.
-;;
-;;@author  Martyn Lloyd-Kelly <martynlk@liverpool.ac.uk>  
-;to-report any-tiles-on-patch-ahead?
-;  set debug-indent-level (debug-indent-level + 1)
-;  output-debug-message ("EXECUTING THE 'any-tiles-on-patch-ahead?' PROCEDURE...") ("")
-;  set debug-indent-level (debug-indent-level + 1)
-;  
-;  output-debug-message(word "Checking to see if there are any tiles on the patch immediately ahead with heading: " heading "...") (who)
-;  ifelse(any? tiles-on patch-at-heading-and-distance (heading) (1))[
-;    output-debug-message(word "There are tiles on the patch immediately ahead with heading: " heading ".  Reporting true...") (who)
-;    set debug-indent-level (debug-indent-level - 2)
-;    report true
-;  ]
-;  [
-;    output-debug-message(word "There aren't any tiles on the patch immediately ahead with heading: " heading ".  Reporting false...") (who)
-;    set debug-indent-level (debug-indent-level - 2)
-;    report false
-;  ] 
-;end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;; "CHECK-BOOLEAN-VARIABLES" PROCEDURE ;;;;;
@@ -631,6 +562,7 @@ to check-variable-values
     
     ;Boolean type variables
     let boolean-type-chrest-turtle-variables (list
+      ( list ("can-plan?") )
       ( list ("generate-plan?") )
       ( list ("pattern-recognition?") )
       ( list ("reinforce-actions?") )
@@ -673,7 +605,7 @@ to chrest-turtles-act
      ;=====================;
      ;== TURTLE CAN PLAN ==;
      ;=====================;
-     if(can-plan?)[
+     ifelse(can-plan?)[
        output-debug-message (word "Checking to see if my 'generate-plan?' turtle variable is set to true, if so, I should plan if not, I should execute the next action in my plan...") (who)
        ifelse(generate-plan?)[
          output-debug-message (word "My 'generate-plan?' turtle variable is set to 'true' so I should plan...") (who)
@@ -681,12 +613,97 @@ to chrest-turtles-act
        ]
        [
          output-debug-message (word "My 'generate-plan?' turtle variable is set to 'false' so I should execute the next action in my 'plan' turtle variable...") (who)
+         chrest:learn-scene (chrest:Scene.new (get-observable-environment) ("")) (number-fixations) (report-current-time) 
          execute-next-planned-action
        ]
      ]
      ;=========================;
      ;== TURTLE CAN NOT PLAN ==;
      ;=========================;
+     [
+       chrest:learn-scene (chrest:Scene.new (get-observable-environment) ("")) (number-fixations) (report-current-time)
+       
+       ifelse(deliberation-finished-time = -1)[
+         let action-deliberationTime-patternRecUsed (deliberate (get-observable-environment))
+         set next-action-to-perform (list (item (0) (action-deliberationTime-patternRecUsed)) (item (2) (action-deliberationTime-patternRecUsed)))
+         set deliberation-finished-time (item (1) (action-deliberationTime-patternRecUsed))
+       ]
+       [
+         if(report-current-time >= deliberation-finished-time)[
+           set deliberation-finished-time (-1)
+           
+           ;=========================================;
+           ;== PREPARE ACTION FOR "perform-action" ==;
+           ;=========================================;
+           
+           let action-to-perform (item (0) (next-action-to-perform))
+           
+           ;=========================================;
+           ;== PREPARE VISION FOR "perform-action" ==;
+           ;=========================================;
+           
+           let observable-environment (get-observable-environment)
+        
+           output-debug-message (word "Removing object ID's from what I can currently see since this information is not required by the action performance procedure...") (who)
+           foreach (observable-environment)[
+             let patch-info-with-object-id (?)
+             let patch-info-without-object-id (remove-item (2) (patch-info-with-object-id))
+             set observable-environment (replace-item 
+               (position (patch-info-with-object-id) (observable-environment)) 
+               (observable-environment) 
+               (patch-info-without-object-id)
+               )
+           ]
+           output-debug-message (word "What I can see after removing object ID's: " observable-environment) (who)
+           
+           let result-of-performing-action (perform-action (list (action-to-perform) (item (1) (next-action-to-perform))) (observable-environment))
+           let action-performed-successfully (false)
+           
+           if (
+             ;An empty list is reported by 'perform-action' if the action is scheduled for performance but hasn't been performed yet.
+             (is-list? result-of-performing-action and not empty? result-of-performing-action) or
+             (not is-list? result-of-performing-action)
+           )[
+        
+             output-debug-message ( word "Checking to see if the local 'result-of-performing-action' variable is a list.  If this is the case then the action was performed and the action must have been a 'push-tile' action so the first element of the list will be whether the action was performed successfully whilst the second element will indicate whether or not a hole was filled..." ) (who)
+             ifelse( is-list? (result-of-performing-action))[
+          
+               output-debug-message ( word "The local 'result-of-performing-action' variable is a list so I'll set the first element of this list to the local 'action-performed-successfully' variable..." ) (who)
+               set action-performed-successfully ( item (0) (result-of-performing-action) )
+             ]
+             [
+               output-debug-message ( word "The local 'result-of-performing-action' variable is not a list so I'll set the local 'action-performed-successfully' variable to its value..." ) (who)
+               set action-performed-successfully (result-of-performing-action)
+             ]
+        
+             ;=========================================;
+             ;== CHECK SUCCESS OF ACTION PERFORMANCE ==;
+             ;=========================================;
+        
+             output-debug-message ( word "Checking the value of the local 'action-performed-successfully' variable (" action-performed-successfully ")..." ) (who)
+             ifelse( action-performed-successfully )[
+          
+               output-debug-message ( word "Checking to see if the local 'result-of-performing-action' variable is a list.  If it is then the action performed must have been a 'push-tile' action so the first element of the list will be whether the action was performed successfully whilst the second element will indicate whether or not a hole was filled...") (who)
+               if( is-list? (result-of-performing-action) ) [
+            
+                 output-debug-message ( word "The local 'result-of-performing-action' variable is a list so I'll check the value of its second element (" item (1) (result-of-performing-action) ").  If this is 'true' I'll increment my score and reinforce the episodes in my 'episodic-memory'..." ) (who)
+                 if( item (1) (result-of-performing-action) )[
+              
+                   output-debug-message ( word "The second element of the local 'result-of-performing-action' variable is 'true' so I'll reinforce all episodes in my 'episodic-memory'..." ) (who)
+                   reinforce-productions
+                   set episodic-memory ([])
+                 ]
+               ]
+             ]
+             [
+               output-debug-message ( word "The action was not performed successfully..." ) (who)
+               set episodic-memory ([])
+             ]
+           ]
+         ]
+       ]
+       
+     ]
      
      output-debug-message ("Updating my plots...") (who)
      update-plot-no-x-axis-value ("Scores") (score)
@@ -704,77 +721,6 @@ to chrest-turtles-act
    ]
  ]
 end
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;; "CLOSEST-OBJECT-IN-SET-TO-SPECIFIED-OBJECT-AND-MANHATTAN-DISTANCE" PROCEDURE ;;; - MAY NO LONGER BE NECESSARY
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;
-;;Determines the manhattan distance from each element in the object set specified 
-;;to the object specified.  If only one object in the set specified is closest then
-;;this object is reported otherwise, one of the objects in the set with the shortest
-;;manhattan distance is randomly reported.  The manhattan distance of this object
-;;is also reported. 
-;;
-;;         Name              Data Type     Description
-;;         ----              ---------     -----------
-;;@param   object-from       String        The location of the object that is to be used as the 
-;;                                         source point of the manhattan distance calculations.
-;;                                         String should be formatted as the string representation
-;;                                         of a CHREST-compatible "ItemSquarePattern" instance.
-;;@param   objects-to        List          A list of strings representing the locations of the
-;;                                         objects that are to be used as the terminal points 
-;;                                         in the manhattan distance calculations. Strings should 
-;;                                         be formatted as the string representation of a 
-;;                                         CHREST-compatible "ItemSquarePattern" instance, i.e.
-;;                                         "[object-id xcor ycor]"
-;;@return  -                 List          Two elements:
-;;                                         1) The location of the object from the set of terminal 
-;;                                            locations specified that has the shortest manhattan 
-;;                                            distance from the source object.
-;;                                         2) The manhattan distance between the source and reported
-;;                                            terminal object.
-;;
-;;@author  Martyn Lloyd-Kelly <martynlk@liverpool.ac.uk>
-;to-report closest-object-in-set-to-specified-object-and-manhattan-distance [object-from objects-to]
-;  set debug-indent-level (debug-indent-level + 1)
-;  output-debug-message ("EXECUTING THE 'closest-object-in-set-to-specified-object' PROCEDURE...") ("")
-;  set debug-indent-level (debug-indent-level + 1)
-;  
-;  output-debug-message (word "Calculating the manhattan distance of each item in (" objects-to ") relative to the specified object (" object-from ")...") (who)
-;  let manhattan-distances []
-;  
-;  let object-from-xcor ( chrest:ItemSquarePattern.get-column (object-from) )
-;  let object-from-ycor ( chrest:ItemSquarePattern.get-row (object-from) )
-;  
-;  foreach(objects-to)[
-;    let abs-num-patches-between-objects-along-xcor ( abs( (chrest:ItemSquarePattern.get-column (?)) - object-from-xcor) )
-;    let abs-num-patches-between-objects-along-ycor ( abs( (chrest:ItemSquarePattern.get-row (?)) - object-from-ycor) )
-;    output-debug-message (word "The absolute distance between " ? " and " object-from " is " abs-num-patches-between-objects-along-xcor " patches along the x-axis and " abs-num-patches-between-objects-along-ycor " patches along the y-axis.") (who) 
-;    
-;    let manhattan-distance (abs-num-patches-between-objects-along-xcor + abs-num-patches-between-objects-along-ycor)
-;    output-debug-message (word "The manhattan distance between " ? " and " object-from " is: " manhattan-distance ".  Adding it to the local 'manhattan-distances' list...") (who)
-;    set manhattan-distances ( lput (manhattan-distance) (manhattan-distances) )
-;    output-debug-message (word "The 'manhattan-distances' list is now equal to: '" manhattan-distances "'...") (who)
-;  ]
-;  
-;  let min-manhattan-distance ( min (manhattan-distances) )
-;  let i (0)
-;  let positions-of-objects-with-min-manhattan-distance-from-specified-object []
-;  foreach(manhattan-distances)[
-;    output-debug-message (word "Checking to see if the manhattan distance " ? " is equal to the minimum manhattan distance calculated: " min-manhattan-distance "...") (who)
-;    if(? = min-manhattan-distance)[
-;      output-debug-message (word "This manhattan distance (" ? ") is equal to the minimum manhattan distance specified so the position of this manhattan distance in 'manhattan-distances' (" i ") will be added to the local 'positions-of-objects-with-min-manhattan-distance-from-specified-object' variable...") (who)
-;      set positions-of-objects-with-min-manhattan-distance-from-specified-object (lput (i) (positions-of-objects-with-min-manhattan-distance-from-specified-object))
-;    ]
-;    set i (i + 1)
-;  ]
-;  
-;  output-debug-message (word "Selecting one of the elements in 'positions-of-objects-with-min-manhattan-distance-from-specified-object' (" positions-of-objects-with-min-manhattan-distance-from-specified-object ") to define the object to return in the local 'objects-to' variable (" objects-to ") as the closest object to '" object-from "'") (who)
-;  let closest-object ( item (one-of (positions-of-objects-with-min-manhattan-distance-from-specified-object)) (objects-to) )
-;  output-debug-message (word "The closest object to " object-from " from " objects-to " has been set to " closest-object ".  Reporting this along with the minimum manhattan distance calculated (" min-manhattan-distance ") as a list ..." ) (who)
-;  set debug-indent-level (debug-indent-level - 2)
-;  report (list (closest-object) (min-manhattan-distance) )
-;end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; "CONSTRUCT-VISUAL-SPATIAL-FIELD" PROCEDURE ;;;
@@ -815,43 +761,6 @@ to construct-visual-spatial-field
   
   set debug-indent-level (debug-indent-level - 2)
 end
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;; "CONVERT-MILLISECONDS-TO-SECONDS" PROCEDURE ;;; - MAY NO LONGER BE NEEDED SINCE TIME IS ALL IN MS NOW: CHECK IF THIS IS OK WITH FERNAND
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;
-;;Primarily used to convert CHREST architecture times in CHREST turtles 
-;;into Netlogo model time.
-;;
-;;         Name              Data Type     Description
-;;         ----              ---------     -----------
-;;@param   milliseconds      Number        A measure of time in milliseconds.
-;;@returns -                 Number        The value of "milliseconds" in seconds with one 
-;;                                         significant figure.
-;;
-;;@author  Martyn Lloyd-Kelly <martynlk@liverpool.ac.uk>  
-;to-report convert-milliseconds-to-seconds [milliseconds]
-;  report (precision (milliseconds / 1000) (1))
-;end
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;; "CONVERT-SECONDS-TO-MILLISECONDS" PROCEDURE ;;; - MAY NO LONGER BE NEEDED SINCE TIME IS ALL IN MS NOW: CHECK IF THIS IS OK WITH FERNAND
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;
-;;Primarily used to enable the CHREST architectures in CHREST turtles 
-;;to be able to perform their operations based upon the time kept by 
-;;this Netlogo model.
-;;
-;;         Name              Data Type     Description
-;;         ----              ---------     -----------
-;;@param   seconds           Number        A measure of time in seconds.
-;;@returns -                 Number        The value of "seconds" in milliseconds with no 
-;;                                         significant figures.
-;;
-;;@author  Martyn Lloyd-Kelly <martynlk@liverpool.ac.uk>  
-;to-report convert-seconds-to-milliseconds [seconds]
-;  report (precision (seconds * 1000) (0))
-;end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;; "CREATE-NEW-TILES-AND-HOLES" PROCEDURE ;;;;;
@@ -985,6 +894,7 @@ to-report deliberate [scene]
     let scanned-scene-during-pattern-recognition (false)
     
     let chrest-scene (chrest:Scene.new (scene) (""))
+    output-debug-message (word "Scene to scan: " chrest:Scene.get-as-netlogo-list (chrest-scene)) (who)
 
     ;=========================;
     ;== PATTERN-RECOGNITION ==;
@@ -1235,43 +1145,51 @@ to execute-next-planned-action
         )
         let result-of-performing-action ( perform-action (list (action-to-perform) (action-generated-using-pattern-recognition?)) (observable-environment) )
         
-        output-debug-message ( word "Checking to see if the local 'result-of-performing-action' variable is a list or not.  If it is then the action performed must have been a 'push-tile' action so the first element of the list will be whether the action was performed successfully whilst the second element will indicate whether or not a hole was filled..." ) (who)
-        ifelse( is-list? (result-of-performing-action) )[
-          
-          output-debug-message ( word "The local 'result-of-performing-action' variable is a list so I'll set the first element of this list to the local 'action-performed-successfully' variable..." ) (who)
-          set action-performed-successfully ( item (0) (result-of-performing-action) )
-        ]
-        [
-          output-debug-message ( word "The local 'result-of-performing-action' variable is not a list so I'll set the local 'action-performed-successfully' variable to its value..." ) (who)
-          set action-performed-successfully (result-of-performing-action)
-        ]
+        output-debug-message ( word "Checking to see if the action has been performed.  If it has, this procedure will continue otherwise the action is scheduled for performance but hasn't been performed yet so this procedure will exit") (who)
+        if (
+          ;An empty list is reported by 'perform-action' if the action is scheduled for performance but hasn't been performed yet.
+          (is-list? result-of-performing-action and not empty? result-of-performing-action) or
+          (not is-list? result-of-performing-action)
+        )[
         
-        ;=========================================;
-        ;== CHECK SUCCESS OF ACTION PERFORMANCE ==;
-        ;=========================================;
+          output-debug-message ( word "Checking to see if the local 'result-of-performing-action' variable is a list.  If this is the case then the action was performed and the action must have been a 'push-tile' action so the first element of the list will be whether the action was performed successfully whilst the second element will indicate whether or not a hole was filled..." ) (who)
+          ifelse( is-list? (result-of-performing-action))[
+          
+            output-debug-message ( word "The local 'result-of-performing-action' variable is a list so I'll set the first element of this list to the local 'action-performed-successfully' variable..." ) (who)
+            set action-performed-successfully ( item (0) (result-of-performing-action) )
+          ]
+          [
+            output-debug-message ( word "The local 'result-of-performing-action' variable is not a list so I'll set the local 'action-performed-successfully' variable to its value..." ) (who)
+            set action-performed-successfully (result-of-performing-action)
+          ]
         
-        output-debug-message ( word "Checking the value of the local 'action-performed-successfully' variable (" action-performed-successfully ")..." ) (who)
-        ifelse( action-performed-successfully )[
+          ;=========================================;
+          ;== CHECK SUCCESS OF ACTION PERFORMANCE ==;
+          ;=========================================;
+        
+          output-debug-message ( word "Checking the value of the local 'action-performed-successfully' variable (" action-performed-successfully ")..." ) (who)
+          ifelse( action-performed-successfully )[
           
-          output-debug-message ( word "The local 'action-performed-successfully' variable value is set to 'true' so the action was performed successfully. remove the action from 'plan' and continue plan execution..." ) (who)
-          set plan (remove-item (0) (plan))
-          output-debug-message ( word "After removing the action from 'plan', this variable is now equal to: '" plan "'..." ) (who)
+            output-debug-message ( word "The local 'action-performed-successfully' variable value is set to 'true' so the action was performed successfully. remove the action from 'plan' and continue plan execution..." ) (who)
+            set plan (remove-item (0) (plan))
+            output-debug-message ( word "After removing the action from 'plan', this variable is now equal to: '" plan "'..." ) (who)
           
-          output-debug-message ( word "Checking to see if the local 'result-of-performing-action' variable is a list.  If it is then the action performed must have been a 'push-tile' action so the first element of the list will be whether the action was performed successfully whilst the second element will indicate whether or not a hole was filled...") (who)
-          if( is-list? (result-of-performing-action) ) [
+            output-debug-message ( word "Checking to see if the local 'result-of-performing-action' variable is a list.  If it is then the action performed must have been a 'push-tile' action so the first element of the list will be whether the action was performed successfully whilst the second element will indicate whether or not a hole was filled...") (who)
+            if( is-list? (result-of-performing-action) ) [
             
-            output-debug-message ( word "The local 'result-of-performing-action' variable is a list so I'll check the value of its second element (" item (1) (result-of-performing-action) ").  If this is 'true' I'll increment my score and reinforce the episodes in my 'episodic-memory'..." ) (who)
-            if( item (1) (result-of-performing-action) )[
+              output-debug-message ( word "The local 'result-of-performing-action' variable is a list so I'll check the value of its second element (" item (1) (result-of-performing-action) ").  If this is 'true' I'll increment my score and reinforce the episodes in my 'episodic-memory'..." ) (who)
+              if( item (1) (result-of-performing-action) )[
               
-              output-debug-message ( word "The second element of the local 'result-of-performing-action' variable is 'true' so I'll reinforce all episodes in my 'episodic-memory'..." ) (who)
-              reinforce-productions
-              set reset-variables (true)
+                output-debug-message ( word "The second element of the local 'result-of-performing-action' variable is 'true' so I'll reinforce all episodes in my 'episodic-memory'..." ) (who)
+                reinforce-productions
+                set reset-variables (true)
+              ]
             ]
           ]
-        ]
-        [
-          output-debug-message ( word "The action was not performed successfully so I should abandon this plan and construct a new one..." ) (who)
-          set reset-variables (true)
+          [
+            output-debug-message ( word "The action was not performed successfully so I should abandon this plan and construct a new one..." ) (who)
+            set reset-variables (true)
+          ]
         ]
       ]
     ]
@@ -1423,134 +1341,6 @@ to-report generate-action-when-tile-can-be-seen [tile-xcor tile-ycor]
   set debug-indent-level (debug-indent-level - 2)
   report action
 end
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;; "GENERATE-MOVE-TO-OR-PUSH-CLOSEST-TILE-ACTION" PROCEDURE ;;; - MAY NO LONGER BE NEEDED DUE TO SIMPLIFIED PROBLEM-SOLVING IN "deliberate" PROCEDURE
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;
-;;Generates a "push-tile" action pattern for the calling turtle that enables it to push 
-;;the calling turtle's closest tile along the heading of the calling turtle after it has 
-;;turned to face its closest tile.  Note that this procedure does not ensure that the 
-;;turtle pushes its closest tile towards a hole.
-;;
-;;If the path of the calling turtle's closest tile along this heading is not clear, the 
-;;calling turtle will alter its current heading by +/- 90 and a "move-around-tile" action 
-;;pattern will be generated instead of a "push-tile" action pattern.  
-;;
-;;         Name              Data Type          Description
-;;         ----              ---------          -----------
-;;@param   scene             jchrest.lib.Scene  The scene to be evaluated.
-;;@return  -                 String             The action to perform as an "item-square" 
-;;                                              CHREST-compatible pattern.
-;;
-;;@author  Martyn Lloyd-Kelly <martynlk@liverpool.ac.uk>  
-;to-report generate-move-to-or-push-closest-tile-action [scene]
-;  set debug-indent-level (debug-indent-level + 1)
-;  output-debug-message ("EXECUTING THE 'generate-move-to-or-push-closest-tile-action' PROCEDURE...") ("")
-;  set debug-indent-level (debug-indent-level + 1)
-;  
-;  output-debug-message ("Three local variables will be instantiated: 'location-of-self', 'remain-stationary' and 'action-pattern'...") (who)
-;  output-debug-message ("The local 'location-of-self' variable stores my location in the scene passed...") (who)
-;  output-debug-message ("The local 'remain-stationary' variable stores a boolean value that indicates if the calling turtle should remain stationary...") (who)
-;  output-debug-message ("The local 'action-pattern' variable stores the action generated by this procedure and will be reported...") (who)
-;  let location-of-self ( item (0) (get-locations-of-object-in-scene (self-token) (scene)) )
-;  let remain-stationary (false)
-;  let action-pattern []
-;  
-;  output-debug-message ("Checking to see if I am currently surrounded...") (who)
-;  ifelse(not surrounded? (scene) )[
-;    
-;    output-debug-message ("I'm not surrounded so I need to determine if I can see any tiles (the result of this check will be set to the local 'tile-locations' variable) since I may have invoked this function without consulting visual information...") (who)
-;    let tile-locations ( get-locations-of-object-in-scene (tile-token) (scene) )
-;    output-debug-message (word "The local 'tile-locations' variable is set to: '" tile-locations "'.  Checking to see if this is empty...") (who)
-;    
-;    ifelse(not empty? tile-locations)[
-;      output-debug-message (word "The local 'tile-locations' variable is not empty so I will now set a local variable 'closest-tile-location-and-manhattan-distance' to the location of the tile in the scene passed with minimum manhattan distance from my location in scene and this manhattan distance...") (who)
-;      
-;      let closest-tile-location-and-manhattan-distance (closest-object-in-set-to-specified-object-and-manhattan-distance (location-of-self) (tile-locations))
-;      let closest-tile-location ( item (0) (closest-tile-location-and-manhattan-distance) )
-;      let closest-tile-distance ( item (1) (closest-tile-location-and-manhattan-distance) )
-;      output-debug-message (word "The following tile has been determined to be the closest one to my location in the scene passed: " closest-tile-location "...") (who)
-;      
-;      output-debug-message (word "I'll calculate what heading I need to adopt to face the tile indicated in my 'closest-tile' variable and then rectify this heading to one of " movement-headings "...") (who)
-;      let heading-to-face (rectify-heading( (heading-that-gives-shortest-distance-from-location-to-location (location-of-self) (closest-tile-location)) ))
-;      
-;      output-debug-message (word "The manhattan distance between this tile and my location in the scene passed is: " closest-tile-distance ".  Checking this distance to determine my next move...") (who)
-;      
-;      ifelse(closest-tile-distance > 1)[
-;        output-debug-message ("My closest tile is more than 1 patch away so I need to move closer to it...") (who)
-;        
-;        ;Only need to check for visible opponents since if there were a tile adjacent to the calling
-;        ;turtle, this would be the tile being pushed.  For example: there would never be a situation 
-;        ;where the turtle decides to move north to be adjacent to a tile that is north-east of it and 
-;        ;there is a tile immediately north of it which would need to be moved out of the way.  In this 
-;        ;case, the tile to the north would be the one that would be pushed in the first place.
-;        ;Also, holes do not need to be checked for since, if the calling turtle could see a tile and a
-;        ;hole, this procedure wouldn't be run.
-;        
-;        ;let patch-ahead-contents ( item (0) ( string:rex-split ( get-object-and-patch-coordinates-ahead-of-location-in-scene (scene) (location-of-self) (heading-to-face) (1) ) (";") ) )
-;        while[ patch-ahead-blocked? (scene) (heading-to-face) ][
-;          output-debug-message (word "The patch ahead along heading '" heading-to-face "' is blocked so I'll alter this value by +/- 90 to try and find a free patch...") (who)
-;          set heading-to-face ( alter-heading-randomly-by-adding-or-subtracting-90 (heading-to-face) )
-;        ]
-;        output-debug-message (word "The patch ahead with heading " heading-to-face " is free, so I'll move towards the tile there...") (who)
-;        set action-pattern ( chrest:create-item-square-pattern (move-to-tile-token) (heading-to-face) (1) )
-;      ]
-;      [
-;        output-debug-message ("My closest tile is 1 patch away from me so I'll attempt to push it if it isn't blocked (checking this now)...")(who)
-;        
-;        ifelse( patch-ahead-blocked? (scene) (heading-to-face) )[
-;          output-debug-message (word "The tile I intend to push is blocked along the proposed heading (" heading-to-face ") so I'll have to move around the tile to try and push it from another direction...") (who)
-;          
-;          set heading-to-face (alter-heading-randomly-by-adding-or-subtracting-90 (heading-to-face))
-;          output-debug-message (word "Checking to see if the patch immediately ahead along heading " heading-to-face " is clear: no opponents or holes or tiles that are blocked along this heading...") (who)
-;          
-;          let patch-ahead-contents ( item (0) ( string:rex-split ( get-object-and-patch-coordinates-ahead-of-location-in-scene (scene) (heading-to-face) (1) ) (";") ) )
-;          let patch-ahead-of-patch-ahead-contents ( item (0) ( string:rex-split ( get-object-and-patch-coordinates-ahead-of-location-in-scene (scene) (heading-to-face) (2) ) (";") ) )
-;          while[ patch-ahead-blocked? (scene) (heading-to-face) ][
-;            output-debug-message (word "The patch ahead along heading '" heading-to-face "' is blocked so I'll alter this value by +/- 90 and check again...") (who)
-;            set heading-to-face (alter-heading-randomly-by-adding-or-subtracting-90 (heading-to-face))
-;          ]
-;          output-debug-message (word "The patch ahead with heading " heading-to-face " is either free or has a tile that can be pushed on it.  Checking to see if I need to push a tile or not...") (who)
-;          
-;          set patch-ahead-contents ( get-object-and-patch-coordinates-ahead-of-location-in-scene (scene) (heading-to-face) (1) )
-;          let patch-ahead-object ( item (0) (string:rex-split (patch-ahead-contents) (";")) )
-;          
-;          ifelse( patch-ahead-object = tile-token )[
-;            output-debug-message (word "Since there is a tile on the patch adjacent to me along heading " heading-to-face", I'll push it out of the way..." ) (who)
-;            set action-pattern ( chrest:create-item-square-pattern (push-tile-token) (heading-to-face) (1) )
-;          ]
-;          [
-;            output-debug-message (word "There isn't a tile on the patch adjacent to me along heading " heading-to-face " so I'll move around the tile to try and push it from a heading where its not blocked...") (who)
-;            set action-pattern ( chrest:create-item-square-pattern (move-around-tile-token) (heading-to-face) (1) )
-;          ]
-;        ]
-;        [
-;          output-debug-message (word "The tile I intend to push isn't blocked along heading '" heading-to-face "' so I'll push it...") (who)
-;          set action-pattern ( chrest:create-item-square-pattern (push-tile-token) (heading-to-face) (1) )
-;        ]
-;      ]
-;    ]
-;    [
-;      output-debug-message ("I can't see any tiles so my 'visually-informed-problem-solving?' turtle variable must be 'false' and I've run this procedure at random.  Returning a 'procedure-not-applicable' action-pattern...") (who)
-;      set action-pattern (chrest:create-item-square-pattern (procedure-not-applicable-token) (0) (0)) 
-;    ]
-;  ]
-;  [
-;    output-debug-message ("Since I'm surrounded I'll set the local 'remain-stationary' variable to 'true'...") (who)
-;    set remain-stationary (true)
-;  ]
-;  
-;  output-debug-message (word "Checking the value of the local 'remain-stationary' variable, it its set to 'true' I should set the local 'action-pattern' variable to a 'remain-stationary' action pattern...") (who)
-;  if(remain-stationary)[
-;    output-debug-message (word "The local 'remain-stationary' variable is set to true so I should set the local 'action-pattern' variable to a 'remain-stationary' action pattern...") (who)
-;    set action-pattern ( chrest:create-item-square-pattern (remain-stationary-token) (0) (0) )
-;  ]
-;  
-;  output-debug-message (word "The local 'action-pattern' variable is set to '" action-pattern "'.  Reporting this...") (who)
-;  set debug-indent-level (debug-indent-level - 2)
-;  report (action-pattern)
-;end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; "GENERATE-PLAN" PROCEDURE ;;;
@@ -1770,7 +1560,7 @@ to generate-plan
           ;==============================;
           ;== ADD VALID ACTION TO PLAN ==;
           ;==============================;
-          [
+          [ 
             output-debug-message ("Appending the action to perform and whether I used pattern-recognition to generate it to my plan...") (who)
             set plan ( lput ( list (action-to-perform) (used-pattern-recognition) ) (plan) )
             output-debug-message ( word "My plan turtle variable is now equal to: '" map ([list ( chrest:ItemSquarePattern.get-as-string (item (0) (?)) ) (item (1) (?))]) (plan) "'..." ) (who)
@@ -1796,7 +1586,7 @@ to generate-plan
           set who-of-tile-last-pushed-in-plan ""
           
           output-debug-message (word "My 'generate-plan?', 'deliberation-finished-time' and 'time-spent-deliberating-on-plan' turtle variables are now set to: '" generate-plan? "', '" deliberation-finished-time "' and '" time-spent-deliberating-on-plan "' respectively...") (who)
-          output-debug-message (word "The final plan is set to: '" plan "'.") (who)
+          output-debug-message (word "The final plan is set to: '" map ([ (list (chrest:ItemSquarePattern.get-as-string item (0) (?)) (item (1) (?)))  ]) (plan) "'.") (who)
         ]
       ];construct-visual-spatial-field? check
     ];attention check
@@ -1804,489 +1594,6 @@ to generate-plan
   
   set debug-indent-level (debug-indent-level - 2)
 end
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;; "GENERATE-PUSH-CLOSET-TILE-TO-CLOSEST-HOLE" PROCEDURE ;;; - MAY NO LONGER BE REQUIRED DUE TO THE "DUMBING DOWN" OF AGENTS.
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;
-;;Enables a turtle to push its closest tile to its closest hole if it is possible
-;;to do so.  The procedure will generate one of four action pattern classes for 
-;;execution:
-;;
-;; 1. push-tile
-;; 2. move-to-tile
-;; 3. move-around-tile
-;; 3. remain-stationary
-;;
-;;The procedure is complex and is broken into stages.  The stages are as follows:
-;;
-;; 1. The calling turtle checks to see if it is surrounded by immoveable objects
-;;    in the scene passed.
-;;
-;;    1.1. The turtle is surrounded, report 'remain-stationary' action pattern. 
-;;
-;;    1.2  The turtle is not surrounded, go to step 2. 
-;;
-;; 2. All holes and their locations in the scene passed are retrieved.  Since this 
-;;    procedure may be called by a turtle without first considering the scene passed, 
-;;    a check is performed to see if any holes are retrieved.  The procedure may then 
-;;    branch in two ways:
-;;
-;;    2.1. No holes are retrieved, report 'remain-stationary' action pattern.
-;;    
-;;    2.2. Holes are retrieved, so all tiles and their locations in the scene are 
-;;         retrieved and the tile closest to the hole closest to the calling turtle's
-;;         location in the scene passed is determined.  Go to step 3.
-;;
-;; 3. The calling turtle checks the distance between itself and the tile closest to the
-;;    closest hole to the calling turtle's location in the scene passed. The procedure 
-;;    may then branch in two ways:
-;;
-;;    3.1. If there is more than 1 patch seperating the closest tile and the calling turtle
-;;         then the calling turtle will determine what heading needs to be adopted so that 
-;;         it is facing the closest tile in the scene passed.  The calling turtle will then 
-;;         check to see if it can move 1 patch forward along this heading in the scene passed.
-;;         If there is some immovable object (a non-tile or a tile that is blocked from being 
-;;         pushed along the heading being considered) on the patch ahead of the calling 
-;;         turtle in the scene passed, the turtle will alter the heading by +/- 90.  This is 
-;;         repeated until the patch immediately ahead along the heading is clear or has a 
-;;         moveable tile on it.  The procedure can then branch in two ways:
-;;
-;;         3.1.1. There is a tile on the patch ahead.  In this case, a 'push-tile' action 
-;;                pattern is reported so that the tile can be moved out of the way and the 
-;;                calling turtle can reduce the distance between itself and the tile closest
-;;                to the hole closest to the calling turtle in the scene passed.  Go to
-;;                step 4.
-;;
-;;         3.1.2. There is nothing on the patch ahead.  In this case, a 'move-to-tile' action 
-;;                pattern is generated so that the calling turtle can reduce the distance between
-;;                itself and the tile closest to the hole closest to the calling turtle in the 
-;;                scene passed.  Go to step 4.
-;;
-;;    3.2. If there is only 1 patch seperating the closest tile and the calling turtle in the 
-;;         scene passed then the heading from the tile closest to the closest hole to the 
-;;         calling turtle in the scene passed is determined.  This heading is compared against
-;;         the heading from the calling turtle to the tile under consideration in the scene passed
-;;         to determine if the calling turtle is already positioned correctly in the scene passed
-;;         to push the tile towards the closest hole along the shortest distance. The procedure can 
-;;         then branch in two ways:
-;;
-;;         3.2.1. The turtle is positioned correctly to push the tile being considered towards
-;;                the closest hole along the heading that gives the shortest distance between 
-;;                the tile and hole.  The calling turtle then checks to see if there is another
-;;                turtle blocking the tile from being pushed along this heading.  The procedure 
-;;                can then branch in two ways:
-;;
-;;                3.2.1.1. There is another turtle blocking the tile from being pushed.  In this
-;;                         case, a 'remain-stationary' action pattern is reported.
-;;
-;;                3.2.1.2. There is nothing blocking the tile from being pushed.  In this case, 
-;;                         a 'push-tile' action pattern is reported.
-;;
-;;         3.2.2. The turtle is not positioned correctly to push the tile being considered towards
-;;                the closest hole along the heading that gives the shortest distance between 
-;;                the tile and hole.  In this case, go to step 3.1 ignoring the distance check.
-;;
-;;         Name                   Data Type     Description
-;;         ----                   ---------     -----------
-;;@param   locations-of-tiles     List          A list of "jchrest.lib.Fixation" instances
-;;                                              denoting the patches with tiles on that 
-;;                                              should be considered.
-;;@param   locations-of-holes     List          A list of "jchrest.lib.Fixation" instances
-;;                                              denoting the patches with holes on that 
-;;                                              should be considered.
-;;@return  -                      String        The action to perform as an "item-square" 
-;;                                              CHREST-compatible pattern.
-;;
-;;@author  Martyn Lloyd-Kelly <martynlk@liverpool.ac.uk>  
-;to-report generate-push-closest-tile-to-closest-hole-action [locations-of-tiles locations-of-holes]
-;  set debug-indent-level (debug-indent-level + 1)
-;  output-debug-message ("EXECUTING THE 'generate-push-closest-tile-to-closest-hole-action' PROCEDURE...") ("")
-;  set debug-indent-level (debug-indent-level + 1)
-;  
-;  output-debug-message ("Three local variables will be instantiated: 'location-of-self', 'remain-stationary' and 'action-pattern'...") (who)
-;  output-debug-message ("The local 'location-of-self' variable will store my location in the scene passed...") (who)
-;  output-debug-message ("The local 'remain-stationary' variable stores a boolean value that indicates if the calling turtle should remain stationary...") (who)
-;  output-debug-message ("The local 'action-pattern' variable stores the action to be performed...") (who)
-;  let location-of-self ( item (0) (get-locations-of-object-in-scene (self-token) (scene)) )
-;  let remain-stationary (false)
-;  let action-pattern ("")
-; 
-;  output-debug-message ("Checking to see if I'm surrounded, if I am, I can't push one of my closest tiles towards one of my closest holes...") (who)
-;  ifelse( not (surrounded? (scene)) )[
-;    
-;    ;============================;
-;    ;== DETERMINE CLOSEST HOLE ==;
-;    ;============================;
-;    
-;    output-debug-message ("I'm not surrounded, I'll now calculate what tile(s) is(are) closest to the closest hole(s) I can see...") (who)
-;    let hole-locations ( get-locations-of-object-in-scene (hole-token) (scene) )
-;    
-;    output-debug-message (word "Checking to see if I can see any holes since I may not be able to use visual-information to guide problem-solving.  If so I'll continue with this procedure...") (who)
-;    ifelse(not empty? hole-locations)[
-;    
-;      output-debug-message (word "I can see holes in the scene passed, determining which one is the closest to me...") (who)
-;      let closest-hole-location-and-manhattan-distance ( closest-object-in-set-to-specified-object-and-manhattan-distance (location-of-self) (hole-locations))
-;      let closest-hole-location ( item (0) (closest-hole-location-and-manhattan-distance) )
-;      output-debug-message (word "My closest hole is located at: '" closest-hole-location "'. I'll push the tile closest to this hole towards it or move towards the tile.  If more than one tile is a candidate I'll pick the tile closest to myself to push...") (who)
-;      
-;      output-debug-message ("Determing tile locations in scene passed...") (who)
-;      let tile-locations ( get-locations-of-object-in-scene (tile-token) (scene) )
-;
-;      output-debug-message (word "Determining which tile (" tile-locations ") is closest to my closest-hole (" closest-hole-location ")...") (who)
-;      let closest-tile-to-closest-hole-location-and-manhattan-distance ( closest-object-in-set-to-specified-object-and-manhattan-distance (closest-hole-location) (tile-locations) )
-;      let closest-tile-to-closest-hole-location ( item (0) (closest-tile-to-closest-hole-location-and-manhattan-distance) )
-;      
-;      output-debug-message (word "Checking to see how far the closest tile to my closest hole (" closest-tile-to-closest-hole-location ") is from me...") (who)
-;      let distance-from-me-to-closest-tile-to-closest-hole ( shortest-distance-from-location-to-location (location-of-self) (closest-tile-to-closest-hole-location) )
-;      
-;      output-debug-message (word "The distance between me and the tile closest to my closest hole is " distance-from-me-to-closest-tile-to-closest-hole ", checking to see if this is greater than 1...") (who)
-;        
-;        ifelse( distance-from-me-to-closest-tile-to-closest-hole > 1)[
-;          output-debug-message ("The closest tile to my closest hole is more than 1 patch away so I need to move closer to it.") (who)
-;          
-;          ;==================================================================;
-;          ;== SET HEADING DEPENDING UPON HEADING OF MYSELF TO CLOSEST TILE ==;
-;          ;==================================================================;
-;          
-;          output-debug-message ("I'll face the tile indicated in my 'closest-tile' variable and then rectify my heading from there...") (who)
-;          let heading-to-face (rectify-heading( (heading-that-gives-shortest-distance-from-location-to-location (location-of-self) (closest-tile-to-closest-hole-location)) ))
-;          output-debug-message (word "Checking to see if there are any objects other than tiles on the patch ahead, if there is a tile, I'll check to see if it is blocked from being pushed...") (who)
-;          
-;          ;===================================================================================;
-;          ;== CHECK TO SEE IF THERE IS AN UNMOVEABLE OBSTACLE ALONG HEADING TO CLOSEST TILE ==;
-;          ;===================================================================================;
-;          
-;          while[ ( patch-ahead-blocked? (scene) (heading-to-face) ) ][
-;            output-debug-message (word "The patch ahead with heading '" heading-to-face "' is blocked so I'll this heading by +/- 90 and check again...") (who)
-;            set heading-to-face ( alter-heading-randomly-by-adding-or-subtracting-90 (heading-to-face) )
-;          ]
-;          output-debug-message (word "The patch ahead with heading " heading-to-face " isn't blocked.  Checking to see if the patch contains a tile, if so, I'll need to push it...") (who)
-;          
-;          let patch-ahead-contents ( get-object-and-patch-coordinates-ahead-of-location-in-scene (scene) (heading-to-face) (1) )
-;          let patch-ahead-object ( chrest:get-item-from-item-square-pattern (patch-ahead-contents) )
-;          output-debug-message (word "The patch ahead contains a '" patch-ahead-object "'...") (who)
-;          
-;          ifelse(patch-ahead-object = tile-token)[
-;            output-debug-message (word "There is a moveable tile on the patch adjacent to me along heading '" heading-to-face "' so I'll push it along this heading..." ) (who)
-;            set action-pattern (chrest:create-item-square-pattern (push-tile-token) (heading-to-face) (1))
-;          ]
-;          [
-;            output-debug-message (word "The patch adjacent to me along heading '" heading-to-face "' is free so I'll move onto it..." ) (who)
-;            set action-pattern (chrest:create-item-square-pattern (move-to-tile-token) (heading-to-face) (1))
-;          ]
-;        ]
-;        ;====================================;
-;        ;== CLOSEST TILE IS ADJACENT TO ME ==;
-;        ;====================================;
-;        [
-;          output-debug-message ("My closest tile is adjacent to me (one patch away) so I should decide whether to push it into my closest hole (if possible), wait or re-position myself...") (who)
-;          
-;          ;===================================================================;
-;          ;== CALCULATING LOCATION OF CLOSEST HOLE RELATIVE TO CLOSEST TILE ==;
-;          ;===================================================================;
-;          
-;          output-debug-message ("Setting a local variable 'heading-from-closest-tile-to-closest-hole' to the heading that the tile closest to my closest hole would have to face to take the shortest path to my closest hole...")(who)
-;          let heading-from-closest-tile-to-closest-hole ( heading-that-gives-shortest-distance-from-location-to-location (closest-tile-to-closest-hole-location) (closest-hole-location) )
-;          
-;          output-debug-message (word "The local 'heading-from-closest-tile-to-closest-hole' variable value is now set to: " heading-from-closest-tile-to-closest-hole ".  If this is less than 0 I'll convert it to its positive equivalent...") (who)
-;          if(heading-from-closest-tile-to-closest-hole < 0)[
-;            output-debug-message ("The local 'heading-from-closest-tile-to-closest-hole' variable is less than 0, converting it to its positive equivalent...") (who)
-;            set heading-from-closest-tile-to-closest-hole (heading-from-closest-tile-to-closest-hole + 360)
-;          ]
-;          output-debug-message (word "The local 'heading-from-closest-tile-to-closest-hole' variable value is now set to: " heading-from-closest-tile-to-closest-hole"...") (who)
-;          
-;          output-debug-message (word "Setting the heading that I'd have to adopt to face the tile closest to my closest hole along the shortest distance between me and the tile...") (who)
-;          let heading-from-me-to-tile-closest-to-my-closest-hole ( heading-that-gives-shortest-distance-from-location-to-location (location-of-self) (closest-tile-to-closest-hole-location) )
-;          output-debug-message (word "The heading that I'd have to adopt to face the tile closest to my closest hole along the shortest distance between me and the tile is '" heading-from-me-to-tile-closest-to-my-closest-hole "'...") (who)
-;          
-;          output-debug-message ("Setting the local 'positioned-correctly?' variable to boolean false...") (who)
-;          let positioned-correctly? false
-;          
-;          ;====================================================================;
-;          ;== CLOSEST TILE IS DIRECTLY NORTH/EAST/SOUTH/WEST OF CLOSEST HOLE ==;
-;          ;====================================================================;
-;          
-;          output-debug-message ("Checking to see if the tile closest to my closest hole is directly north/east/south/west of my closest hole...") (who)
-;          ifelse(
-;            (heading-from-closest-tile-to-closest-hole = 0) or
-;            (heading-from-closest-tile-to-closest-hole = 90) or
-;            (heading-from-closest-tile-to-closest-hole = 180) or
-;            (heading-from-closest-tile-to-closest-hole = 270) 
-;            )
-;          [
-;            output-debug-message ("The closest tile to my closest hole is directly north/east/south/west of my closest hole...") (who)
-;            output-debug-message (word "Checking to see if I am positioned correctly to push the closest tile to my closest hole towards my closest hole without altering the current position of myself in 'scene' (is my heading to the tile along the shortest distance '" heading-from-me-to-tile-closest-to-my-closest-hole "', equal to the heading of the tile to my closest hole along the shortest distance '" heading-from-closest-tile-to-closest-hole "'?)...") (who)
-;            if( heading-from-me-to-tile-closest-to-my-closest-hole = heading-from-closest-tile-to-closest-hole )[
-;              set positioned-correctly? true
-;            ]
-;          ]
-;          ;========================================================================;
-;          ;== CLOSEST TILE IS NOT DIRECTLY NORTH/EAST/SOUTH/WEST OF CLOSEST HOLE ==;
-;          ;========================================================================;
-;          [
-;            output-debug-message ("The tile closest to my closest hole is not directly north/east/south/west of my closest hole.  Determining where my closest hole is in relation to its closest tile...") (who)
-;            output-debug-message ("I can push the tile closest to my closest hole in one of two directions in this case if I am positioned correctly in scene...") (who)
-;            
-;            if(
-;              ( heading-from-closest-tile-to-closest-hole > 0 ) and 
-;              ( heading-from-closest-tile-to-closest-hole < 90 )
-;            )[
-;              output-debug-message ("My closest hole is north-east of its closest tile...") (who)
-;              output-debug-message ("Checking to see if the closest tile is adjacent to me to the north or east, if it is I can push it without adjusting my position...") (who)
-;              
-;              if(
-;                ( heading-from-me-to-tile-closest-to-my-closest-hole = 0 ) or
-;                ( heading-from-me-to-tile-closest-to-my-closest-hole = 90 )
-;              )[
-;                set positioned-correctly? true
-;              ]
-;            ]
-;            
-;            if(
-;              ( heading-from-closest-tile-to-closest-hole > 90 ) and 
-;              ( heading-from-closest-tile-to-closest-hole < 180 )
-;            )[
-;              output-debug-message ("My closest hole is south-east of its closest tile") (who)
-;              output-debug-message ("Checking to see if the closest tile is adjacent to me to the east or south, if it is I can push it without adjusting my position...") (who)
-;              
-;              if(
-;                ( heading-from-me-to-tile-closest-to-my-closest-hole = 90 ) or
-;                ( heading-from-me-to-tile-closest-to-my-closest-hole = 180 )
-;              )[
-;                set positioned-correctly? true
-;              ]
-;            ]
-;            
-;            if(
-;              ( heading-from-closest-tile-to-closest-hole > 180 ) and 
-;              ( heading-from-closest-tile-to-closest-hole < 270 )
-;            )[
-;              output-debug-message ("My closest hole is south-west of its closest tile") (who)
-;              output-debug-message ("Checking to see if the closest tile is adjacent to me to the south or west, if it is I can push it without adjusting my position...") (who)
-;              
-;              if(
-;                ( heading-from-me-to-tile-closest-to-my-closest-hole = 180 ) or
-;                ( heading-from-me-to-tile-closest-to-my-closest-hole = 270 )
-;              )[
-;                set positioned-correctly? true
-;              ]
-;            ]
-;            
-;            if(
-;              ( heading-from-closest-tile-to-closest-hole > 270 ) and 
-;              ( heading-from-closest-tile-to-closest-hole < 360 )
-;            )[
-;              output-debug-message ("My closest hole is north-west of its closest tile") (who) 
-;              output-debug-message ("Checking to see if the closest tile is adjacent to me to the west or north, if it is I can push it without adjusting my position...") (who)
-;              
-;              if(
-;                ( heading-from-me-to-tile-closest-to-my-closest-hole = 270 ) or
-;                ( heading-from-me-to-tile-closest-to-my-closest-hole = 0 )
-;              )[
-;                set positioned-correctly? true
-;              ]
-;            ]
-;          ]
-;          
-;          ;====================================;
-;          ;== TURTLE IS POSITIONED CORRECTLY ==;
-;          ;====================================;
-;          
-;          ifelse(positioned-correctly?)[
-;            output-debug-message (word "I'm positioned correctly to push the tile closest to my closest hole towards my closest hole without changing position...") (who)
-;            
-;            ;============================================================================================;
-;            ;== CHECK TO SEE IF THE TILE CLOSEST TO MY CLOSEST HOLE CAN BE PUSHED ALONG HEADING OR NOT ==;
-;            ;============================================================================================;
-;            output-debug-message (word "Checking to see if there is anything blocking the tile from being pushed along the heading I am to adopt to push so that the closest tile to my closest hole moves towards my closest hole (" heading-from-me-to-tile-closest-to-my-closest-hole ")...") (who)
-;            ifelse( patch-ahead-blocked? (scene) (heading-from-me-to-tile-closest-to-my-closest-hole) )[
-;              output-debug-message(word "There is something blocking the tile closest to my closest hole from being pushed along heading '" heading-from-me-to-tile-closest-to-my-closest-hole "'. This could only be another agent so I'll remain stationary (set the local 'remain-stationary' variable to true) and hope it moves...") (who)
-;              set remain-stationary (true)
-;            ]
-;            [
-;              output-debug-message(word "There is nothing blocking the tile closest to my closest hole from being pushed along heading '" heading-from-me-to-tile-closest-to-my-closest-hole "' so I'll push it along this heading...") (who)
-;              set action-pattern (chrest:create-item-square-pattern (push-tile-token) (heading-from-me-to-tile-closest-to-my-closest-hole) (1))
-;            ]
-;          ]
-;          ;========================================;
-;          ;== TURTLE IS NOT POSITIONED CORRECTLY ==;
-;          ;========================================;
-;          [
-;            output-debug-message ("I am not positioned correctly so I'll alter the value of 'heading-from-me-to-tile-closest-to-my-closest-hole' by +/- 90 to try and move into a correct position...") (who)
-;            set heading-from-me-to-tile-closest-to-my-closest-hole ( alter-heading-randomly-by-adding-or-subtracting-90 (heading-from-me-to-tile-closest-to-my-closest-hole) )
-;            
-;            while[ patch-ahead-blocked? (scene) (heading-from-me-to-tile-closest-to-my-closest-hole) ][ 
-;              output-debug-message (word "The patch ahead with heading " heading-from-me-to-tile-closest-to-my-closest-hole " is blocked so I'll alter the 'heading-from-me-to-tile-closest-to-my-closest-hole' value by +/- 90 and check again...") (who)
-;              set heading-from-me-to-tile-closest-to-my-closest-hole ( alter-heading-randomly-by-adding-or-subtracting-90 (heading-from-me-to-tile-closest-to-my-closest-hole) )
-;            ]
-;            output-debug-message (word "The patch ahead with heading " heading-from-me-to-tile-closest-to-my-closest-hole " is either free or has a tile that can be pushed on it.  Checking to see if I need to push a tile or not...") (who)
-;            
-;            ;========================================================================;
-;            ;== CHECK TO SEE IF I NEED TO PUSH A TILE TO MOVE ALONG HEADING OR NOT ==;
-;            ;========================================================================;
-;            let patch-ahead-contents ( get-object-and-patch-coordinates-ahead-of-location-in-scene (scene) (heading-from-me-to-tile-closest-to-my-closest-hole) (1) )
-;            let object-on-patch-ahead ( chrest:get-item-from-item-square-pattern (patch-ahead-contents) )
-;            
-;            ifelse(object-on-patch-ahead = tile-token)[
-;              output-debug-message (word "There is a moveable tile on the patch adjacent to me along heading '" heading-from-me-to-tile-closest-to-my-closest-hole "' so I'll push it..." ) (who)
-;              set action-pattern ( chrest:create-item-square-pattern (push-tile-token) (heading-from-me-to-tile-closest-to-my-closest-hole) (1) )
-;            ]
-;            [
-;              output-debug-message (word "The patch adjacent to me along heading '" heading-from-me-to-tile-closest-to-my-closest-hole "' is free so I'll move around the tile closest to my closest hole onto it..." ) (who)
-;              set action-pattern (chrest:create-item-square-pattern (move-around-tile-token) (heading-from-me-to-tile-closest-to-my-closest-hole) (1))
-;            ] 
-;          ]
-;        ]
-;    ]
-;    [
-;      output-debug-message ("I can't see any holes so my 'visually-informed-problem-solving?' turtle variable must be 'false' and I've run this procedure at random.  Returning a 'procedure-not-applicable' action-pattern...") (who)
-;      set action-pattern (chrest:create-item-square-pattern (procedure-not-applicable-token) (0) (0)) 
-;    ]
-;  ]
-;  [
-;    output-debug-message ("Since I'm surrounded I'll set the local 'remain-stationary' variable to 'true'...") (who)
-;    set remain-stationary (true) 
-;  ]
-;  
-;  output-debug-message (word "Checking to see if the 'remain-stationary' value (" remain-stationary ") is equal to 'true'...") (who)
-;  if(remain-stationary)[
-;    output-debug-message ("The local 'remain-stationary' value is set to 'true' so I'll remain stationary...") (who)
-;    set action-pattern (chrest:create-item-square-pattern (remain-stationary-token) (0) (0))
-;  ]
-;  
-;  output-debug-message (word "Reporexpected-visual-spatial-field-state-after-plan-generation-endsting the local 'action-pattern' variable that is set to: '" action-pattern "'...") (who)
-;  set debug-indent-level (debug-indent-level - 2)
-;  report (action-pattern)
-;end
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;; "GENERATE-RANDOM-MOVE-ACTION" PROCEDURE ;;; - NOT REQUIRED SINCE A TURTLE CAN JUST INVOKE "one-of (movement-headings)" SINCE THERE'S NO NEED TO CHECK IF TURTLE IS SURROUNDED.
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;
-;;If the calling turtle is not surrounded, this procedure selects a heading at 
-;;random from the global "movement-headings" variable with a 1 in n probablity 
-;;where n is the number of elements in the global "movement-headings" variable.
-;;If the calling turtle is surrounded a 'remain-stationary' action pattern will
-;;be produced instead.
-;;
-;;If the patch immediately ahead with the randomly selected heading is blocked, 
-;;this heading will no longer be able to be selected for this run of the procedure 
-;;and a heading from those remaining will then be randomly selected with a 1 in
-;;n probability where n is the number of headings still available.
-;;
-;;When a free patch has been found, an action pattern is created that indicates 
-;;that the calling turtle will move 1 patch along this heading.
-;;
-;;         Name              Data Type     Description
-;;         ----              ---------     -----------
-;;@param   scene             List          A list of strings representing the environment to be used
-;;                                         by this procedure.  Strings should be formatted as:
-;;                                         "objectIdentifier;xcor;ycor".
-;;@return  -                 String        The action to perform as an "item-square" 
-;;                                         CHREST-compatible pattern.
-;;
-;;@author  Martyn Lloyd-Kelly <martynlk@liverpool.ac.uk>     
-;to-report generate-random-move-action [scene]
-;  set debug-indent-level (debug-indent-level + 1)
-;  output-debug-message ("EXECUTING THE 'generate-random-move-action' PROCEDURE...") ("")
-;  set debug-indent-level (debug-indent-level + 1)
-;  
-;  output-debug-message ( word "Instantiating two local variables: 'location-of-self' and 'action-pattern'...") (who)
-;  output-debug-message ( word "The 'location-of-self' variable will store my location in the scene passed..." ) (who)
-;  output-debug-message ( word "The 'action-pattern' variable will store the action generated by this procedure and will be reported..." ) (who)
-;  let location-of-self ( item (0) (get-locations-of-object-in-scene (self-token) (scene)) )
-;  let action-pattern ""
-;  
-;  output-debug-message ("Checking to see if I'm surrounded, if not, I'll continue...") (who)
-;  ifelse(not surrounded? (scene))[
-;    output-debug-message ("Since I'm not surrounded I'll continue trying to move randomly...") (who)
-;    
-;    let headings-available (movement-headings)
-;    output-debug-message (word "Selecting a heading at random from those available in the local 'headings-available' list (" headings-available ") with a 1 in " (length headings-available) " probability...") (who)
-;    let heading-to-face (one-of (headings-available))
-;    
-;    output-debug-message (word "Checking to see if the patch ahead with heading '" heading-to-face "' is blocked and whether I have any headings still available...") (who)
-;    while[ not patch-ahead-empty? (scene) (heading-to-face) ][
-;      
-;      output-debug-message (word "Patch ahead with heading '' is blocked so I'll remove this heading from the local 'headings-available' list...") (who)
-;      set headings-available (remove (heading-to-face) (headings-available) )
-;      output-debug-message (word "The local 'headings-available' list is now equal to: '" headings-available "', picking a new heading with a 1 in " (length headings-available) " probability from this list if it isn't empty...") (who)
-;        
-;      ifelse( not empty? headings-available )[
-;        set heading-to-face (one-of (headings-available))
-;        output-debug-message (word "Checking to see if the patch ahead with heading '" heading-to-face "' is blocked...") (who)
-;      ]
-;      [
-;        report (chrest:create-item-square-pattern (procedure-not-applicable-token) (0) (0) )
-;      ]
-;    ]
-;    
-;    set action-pattern (chrest:create-item-square-pattern (move-randomly-token) (heading-to-face) (1) )
-;  ]
-;  [
-;    output-debug-message ("Since I'm surrounded I'll generate a 'remain-stationary' action...") (who)
-;    set action-pattern (chrest:create-item-square-pattern (remain-stationary-token) (0) (0))
-;  ]
-;  
-;  output-debug-message (word "Reporting the contents of the local 'action-pattern' variable: '" action-pattern "'...") (who)
-;  set debug-indent-level (debug-indent-level - 2)
-;  report (action-pattern)
-;end
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;; "GENERATE-VISUAL-CHUNK-FROM-SCENE" PROCEDURE ;;; - NOT REQUIRED DUE TO CHREST EXTENSION PRIMITIVES
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;
-;;Reports a CHREST-compatible visual chunk as a string containing "item-on-square" 
-;;CHREST-compatible patterns for object information.
-;;
-;;Since each element in the "scene" list passed represents a patch in the environment, 
-;;if that patch does not have an object-identifier or is set to "null" (indicating a 
-;;"blind spot" in a mind's eye scene), then information about this patch is not added to
-;;the string reported since such information is not useful to a turtle's LTM.
-;;
-;;         Name              Data Type     Description
-;;         ----              ---------     -----------
-;;@param   scene             List          A list of strings representing the environment to be used
-;;                                         by this procedure.  Strings should be formatted as:
-;;                                         "objectIdentifier;xcor;ycor".
-;;@return  -                 String        A CHREST-compatible visual chunk formatted as:
-;;                                         "[objectIdentifier xcor ycor] [...]".
-;;
-;;@author  Martyn Lloyd-Kelly <martynlk@liverpool.ac.uk> 
-;to-report generate-visual-chunk-from-scene [scene]
-;  set debug-indent-level (debug-indent-level + 1)
-;  output-debug-message ("EXECUTING THE 'generate-visual-pattern-from-scene' PROCEDURE...") ("")
-;  set debug-indent-level (debug-indent-level + 1)
-;  
-;  output-debug-message ("Setting a local 'visual-pattern' variable to be an empty string.  This variable will contain all relevant object information in the scene passed, formatted as 'item-on-square' patterns...") (who)
-;  let visual-pattern ""
-;
-;  output-debug-message (word "Processing the contents of the 'scene' variable passed: " scene "...") (who)
-;  foreach(scene)[
-;    output-debug-message (word "Processing item: '" ? "'.  Splitting string on semi-colons (;) first...") (who)
-;    let patch-info string:rex-split (?) (";")
-;    output-debug-message (word "Result of split: '" patch-info "'...") (who)
-;  
-;    output-debug-message (word "Removing all white space from the object identifier extracted...") (who)
-;    let object-identifier ( string:rex-replace-all (" ") (item (0) (patch-info)) ("") )
-;    output-debug-message (word "Checking to see if the object identifier (" object-identifier ") is not empty or equal to 'null' (a blind-spot) since these patches are not used in LTM...") (who)
-;    if( (object-identifier != "") and (object-identifier != "null") )[
-;      
-;      output-debug-message ("Splitting object identifier on occurrence of commas and processing each one...") (who)
-;      foreach( string:rex-split (object-identifier) (",") )[
-;        output-debug-message (word "Generating an item-square-pattern for object '" ? "' and appending this to the local 'minds-eye-scene' variable...") (who)
-;        set visual-pattern ( word visual-pattern " " ( chrest:create-item-square-pattern (?) ( read-from-string(item (1) (patch-info)) ) ( read-from-string(item (2) (patch-info)) ) ) )
-;      ]
-;    ]
-;  ]
-;
-;  set visual-pattern (string:rex-replace-all ("^\\s+") (visual-pattern) ("") )
-;  output-debug-message (word "After processing all 'scene' items, the local 'visual-pattern' variable is equal to: '" visual-pattern "', this should be a string (" is-string? visual-pattern ").") (who)
-;  set debug-indent-level (debug-indent-level - 2)
-;  report visual-pattern
-;end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; "GENERATE-VISUAL-SPATIAL-FIELD-MOVES" PROCEDURE ;;;
@@ -2535,98 +1842,6 @@ to-report generate-visual-spatial-field-moves [ action-pattern reverse? ]
   report object-moves
 end
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;; "GET-OBJECT-AND-PATCH-COORDINATES-AHEAD-OF-LOCATION-IN-SCENE" PROCEDURE ;;; - MAY NO LONGER BE NEEDED
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;
-;;Reports information regarding the object located on the patch ahead 
-;;with the heading and location specified in the scene passed.
-;;
-;;NOTE: This procedure does not support environment wrapping and therefore care
-;;      should be used when passing a scene consisting of absolute coordinates
-;;      rather than a scene consisting of coordinates that are relative to the
-;;      agent's current location.
-;;
-;;         Name              Data Type          Description
-;;         ----              ---------          -----------
-;;@param   scene             jchrest.lib.Scene  The scene to be evaluated.        
-;;@param   heading-to-check  Number             The heading from the location specified
-;;                                              to check.
-;;@param   patches-ahead     Number             The number of patches from from the source
-;;                                              to check along the heading specified.
-;;@return  -                 List               Contains 4 elements:
-;;
-;;                                                1. The ID of the object on the target patch.
-;;                                                2. The class of the object on the target patch.
-;;                                                3. The xcor of the target patch
-;;                                                4. The ycor of the target patch
-;;
-;;                                              If the patch specified is not in the scene then
-;;                                              elements 1 and 2 will be empty strings.
-;;
-;;@author  Martyn Lloyd-Kelly <martynlk@liverpool.ac.uk> 
-;to-report get-object-and-patch-coordinates-ahead-of-location-in-scene [scene heading-to-check patches-ahead]
-;  set debug-indent-level (debug-indent-level + 1)
-;  output-debug-message ("EXECUTING THE 'get-object-and-patch-coordinates-ahead-of-location-in-scene' PROCEDURE...") ("")
-;  set debug-indent-level (debug-indent-level + 1)
-;  
-;  output-debug-message (word "Getting location of self in 'scene' passed and setting x/ycor values to local variables 'source-location-xcor' and 'source-location-ycor'...") (who)   
-;  let source-location ( chrest:Scene.get-location-of-creator (scene) )      
-;  let source-location-xcor ( item (0) (source-location) )       
-;  let source-location-ycor ( item (1) (source-location) )         
-;  output-debug-message (word "The local 'source-location-xcor' and 'source-location-ycor' variables are equal to '" source-location-xcor "' and '" source-location-ycor "', respectively...") (who)      
-;  
-;  output-debug-message (word "Calculating target patch x/ycor by determining the heading along which to check (" heading-to-check ") and setting these values to 'target-location-xcor' and 'target-location-ycor'...") (who)   
-;  let target-location-xcor 0   
-;  let target-location-ycor 0      
-;  
-;  ifelse(heading-to-check = 0)[     
-;    set target-location-xcor (source-location-xcor)     
-;    set target-location-ycor (source-location-ycor + patches-ahead)   
-;  ]   
-;  [     
-;    ifelse(heading-to-check = 90)[       
-;      set target-location-xcor (source-location-xcor + patches-ahead)       
-;      set target-location-ycor (source-location-ycor)     
-;    ]     
-;    [       
-;      ifelse(heading-to-check = 180)[         
-;        set target-location-xcor (source-location-xcor)         
-;        set target-location-ycor (source-location-ycor - patches-ahead)       
-;      ]       
-;      [         
-;        ifelse(heading-to-check = 270)[           
-;          set target-location-xcor (source-location-xcor - patches-ahead)           
-;          set target-location-ycor (source-location-ycor)         
-;        ]         
-;        [           
-;          error (word "The heading specified (" heading-to-check ") is not supported by the 'get-object-and-patch-coordinates-ahead-of-location-in-scene' procedure.")         
-;        ]       
-;      ]     
-;    ]   
-;  ]   
-;  output-debug-message (word "The local 'target-location-xcor' and 'target-location-ycor' variables are set to '" target-location-xcor "' and '" target-location-ycor "', respectively...") (who)      
-;  
-;  let target-patch-contents ( chrest:Scene.get-square-contents-as-netlogo-list (scene) (target-location-xcor) (target-location-ycor) )
-;  output-debug-message (word "Result of getting contents of the target location from scene: " target-patch-contents) (who)
-;  
-;  let list-to-report (list
-;    ("") 
-;    ("") 
-;    (target-location-xcor) 
-;    (target-location-ycor)
-;  )
-;  
-;  if(not empty? target-patch-contents)[
-;    set list-to-report ( replace-item (0) (list-to-report) (item (0) (target-patch-contents)) )
-;    set list-to-report ( replace-item (1) (list-to-report) (item (1) (target-patch-contents)) )
-;  ]
-;  
-;  output-debug-message (word "Reporting: " list-to-report) (who)
-;  set debug-indent-level (debug-indent-level - 2)
-;  report list-to-report
-;end
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; "GET-OBSERVABLE-ENVIRONMENT" PROCEDURE ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2749,164 +1964,6 @@ to-report get-observable-environment
   report (observable-environment)
 end
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;; "GET-OBSERVABLE-ENVIRONMENT-AS-LIST-PATTERN" PROCEDURE ;;; - PROBABLY NO LONGER REQUIRED DUE TO "get-observable-environment" NOW BEING USED (CAN GET RESULT OF THAT AS LIST PATTERN USING EXTENSION PRIMITIVES)
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;Enables the calling turtle to look at and report what it can "see" in
-;the environment.  
-;
-;         Name              Data Type     Description
-;         ----              ---------     -----------
-;@return  -                 List          A CHREST-compatible "ListPattern" instance containing 
-;                                         "ItemSquarePattern" instances that represent what the
-;                                         calling turtle can currently "see".  The "xcor" and 
-;                                         "ycor" values of these "ItemSquarePattern" instances 
-;                                         are relative to the calling turtle's current location.
-;
-;@author  Martyn Lloyd-Kelly <martynlk@liverpool.ac.uk>  
-;to-report get-observable-environment-as-list-pattern
-;  set debug-indent-level (debug-indent-level + 1)
-;  output-debug-message ("EXECUTING THE 'get-observable-environment-as-list-pattern' PROCEDURE...") ("")
-;  set debug-indent-level (debug-indent-level + 1)
-;  
-;  let observable-environment []
-;  
-;  ;Set 'xCorOffset' and 'yCorOffset' to the south-western point of the calling
-;  ;turtle's sight radius by converting the 'sight-radius' variable into its
-;  ;negative value i.e. 3 becomes -3.
-;  output-debug-message (word "My max xCorOffset and yCorOffset is: '" sight-radius "'.  This is how many patches north, east, south and west of my current location that I can 'see'.") (who)
-;  output-debug-message ("Setting the value of the local 'xCorOffset' and 'yCorOffset' variables (should be the negative value of my 'sight-radius' variable value)...") (who)
-;  let xCorOffset (sight-radius * -1)
-;  let yCorOffset (sight-radius * -1)
-;  
-;  while[ycorOffset <= sight-radius][
-;    output-debug-message (word "Checking for turtles at patch with xCorOffset '" xCorOffset "' and yCorOffset '" yCorOffset "' from the patch I'm on...") (who)
-;    
-;    ;If the "debug?" global variable is set to true then ask the current patch
-;    ;to set its colour to that stored in the calling turtle's "sight-radius-colour'
-;    ;variable.  This will result in the calling turtle's sight-radius being displayed
-;    ;graphically in the environment. 
-;    if(debug?)[
-;      ask patch-at xCorOffset yCorOffset [
-;        set pcolor ([sight-radius-colour] of myself)
-;      ]
-;    ]
-;    
-;    let objects (list (empty-patch-token) )
-;    let turtles-at-x-and-y-offset ( (turtles-at xCorOffset yCorOffset) with [hidden? = false] )
-;    
-;    if(any? turtles-at-x-and-y-offset)[
-;      set objects (but-first (objects))
-;      
-;      ask(turtles-at-x-and-y-offset)[
-;        ifelse(self = myself)[
-;          set objects (lput (self-token) (objects))
-;        ]
-;        [          
-;          ifelse( breed = tiles)[
-;            set objects (lput (tile-token) (objects))
-;          ]
-;          [
-;            ifelse( breed = holes)[
-;              set objects (lput (hole-token) (objects))
-;            ]
-;            [
-;              set objects (lput (opponent-token) (objects))
-;            ]
-;          ]
-;        ]
-;      ]
-;    ]
-;    
-;    output-debug-message (word "I can see the following on the patch with xCorOffset '" xCorOffset "' and yCorOffset '" yCorOffset "' from the patch I'm on: " objects) (who)
-;    foreach(objects)[
-;      set observable-environment (lput (chrest:create-item-square-pattern (?) (xCorOffset) (yCorOffset)) (observable-environment))
-;    ]
-;      
-;    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;    ;;; SET VIEW TO 1 PATCH EAST ;;;
-;    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;    
-;    set xCorOffset (xCorOffset + 1)
-;    
-;    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;    ;;; RESET VIEW TO WESTERN-MOST PATCH AND 1 PATCH NORTH IF EASTERN-MOST PATCH REACHED ;;;
-;    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;    
-;    if(xCorOffset > sight-radius)[
-;      output-debug-message (word "The local 'xCorOffset' variable value: '" xCorOffset "' is greater than my 'sight-radius' variable value '" sight-radius "' so I'll reset the local 'xCorOffset' variable value to: '" (sight-radius * -1) "'.") (who)
-;      set xCorOffset (sight-radius * -1)
-;      set yCorOffset (yCorOffset + 1)
-;    ]
-;  ]
-;  
-;  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;  ;;; RESET THE COLOUR OF PATCHES THAT CAN BE SEEN BY THE TURTLE ;;;
-;  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;  
-;  if(debug?)[
-;    set xCorOffset (sight-radius * -1)
-;    set yCorOffset (sight-radius * -1)
-;    
-;    while[ycorOffset <= sight-radius][
-;      ask patch-at xCorOffset yCorOffset [
-;        set pcolor black
-;      ]
-;      
-;      set xCorOffset (xCorOffset + 1)
-;      if(xCorOffset > sight-radius)[
-;        set xCorOffset (sight-radius * -1)
-;        set yCorOffset (yCorOffset + 1)
-;      ]
-;    ]
-;  ]
-;  
-;  let observable-environment-as-list-pattern (chrest:create-list-pattern ("visual") (observable-environment))
-;  output-debug-message (word "This is what I can see in total: " (chrest:get-list-pattern-as-string (observable-environment-as-list-pattern)) "." ) (who)
-;  
-;  set debug-indent-level (debug-indent-level - 2)
-;  report (observable-environment-as-list-pattern)
-;end
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;; "HEADING-THAT-GIVES-SHORTEST-DISTANCE-FROM-LOCATION-TO-LOCATION" PROCEDURE ;;; - DOESN'T APPEAR TO BE USED ANYMORE
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;
-;;Reports the heading that should be adopted in order to travel the shortest 
-;;distance from the specified location to the specified location.
-;;
-;;         Name              Data Type     Description
-;;         ----              ---------     -----------
-;;@param   from-location     String        The location to face from in a scene formatted 
-;;                                         as a string representation of CHREST-compatible
-;;                                         "ItemSquarePattern" instances, i.e. 
-;;                                         "[object-id xcor ycor]".
-;;@param   to-location       String        The location to face to in a scene formatted 
-;;                                         as a string representation of CHREST-compatible
-;;                                         "ItemSquarePattern" instances, i.e. 
-;;                                         "[object-id xcor ycor]".
-;;@return  -                 Number        The heading that faces from the location specified
-;;                                         to the location specified.
-;;
-;;@author  Martyn Lloyd-Kelly <martynlk@liverpool.ac.uk>
-;to-report heading-that-gives-shortest-distance-from-location-to-location [face-from face-to]
-;  set debug-indent-level (debug-indent-level + 1)
-;  output-debug-message ("EXECUTING THE 'heading-that-gives-shortest-distance-from-location-to-location' PROCEDURE...") ("")
-;  set debug-indent-level (debug-indent-level + 1) 
-;  
-;  let face-from-xcor ( chrest:get-column-from-item-square-pattern (face-from) )
-;  let face-from-ycor ( chrest:get-row-from-item-square-pattern (face-from) )
-;  output-debug-message (word "The local 'face-from-xcor' and 'face-from-ycor' variables are now set to '" face-from-xcor "' and '" face-from-ycor "', respectively...") (who)
-;  
-;  let face-to-xcor ( chrest:get-column-from-item-square-pattern (face-to) )
-;  let face-to-ycor ( chrest:get-row-from-item-square-pattern (face-to) )
-;  output-debug-message (word "The local 'face-to-xcor' and 'face-to-ycor' variables are now set to '" face-to-xcor "' and '" face-to-ycor "', respectively...") (who)
-;  
-;  set debug-indent-level (debug-indent-level - 2)
-;  report extras:towards (face-from-xcor) (face-from-ycor) (face-to-xcor) (face-to-ycor) (true)
-;end
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; "IS-VISUAL-SPATIAL-FIELD-STATE-VALID-AT-TIME?" PROCEDURE ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3006,48 +2063,6 @@ to-report is-visual-spatial-field-state-valid-at-time? [state-at-time]
   set debug-indent-level (debug-indent-level - 2)
   report (true)
 end
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;; "LOAD-ACTION" PROCEDURE ;;; - CHECK TO SEE IF THIS IS STILL NEEDED!
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;
-;;Sets the calling turtle's: 
-;; - 'next-action-to-perform' variable to the parameter passed to this procedure.
-;; - 'visual-pattern-used-to-generate-action' variable to the value of the 
-;;   calling turtle's 'current-visual-pattern' variable
-;; - 'time-to-perform-next-action' variable to the current time plus the value 
-;;   passed in the 'deliberation-time' parameter and the calling turtle's 
-;;   'action-performance-time' variable.
-;;
-;;         Name              Data Type     Description
-;;         ----              ---------     -----------
-;;@param   action-pattern    String        The action-pattern that is to be set to the calling
-;;                                         turtle's 'next-action-to-perform' variable.  This 
-;;                                         action may then be performed in the future.
-;;@param   deliberation-time Number        The length of time that must pass to simulate the 
-;;                                         time it took for the calling turtle to deliberate
-;;                                         about the action that is to be loaded.  This, in 
-;;                                         conjunction with the value of the calling turtle's
-;;                                         'action-performance-time', will simulate one entire
-;;                                         decision-making and action performance cycle.
-;;
-;;@author  Martyn Lloyd-Kelly <martynlk@liverpool.ac.uk>  
-;to load-action [action-pattern deliberation-time]
-;  set debug-indent-level (debug-indent-level + 1)
-;  output-debug-message ("EXECUTING THE 'load-action' PROCEDURE...") ("")
-;  set debug-indent-level (debug-indent-level + 1)
-;  
-;  output-debug-message (word "Setting my 'next-action-to-perform' variable value to: '" action-pattern "' and my 'visual-pattern-used-to-generate-action' variable value to: '" current-visual-pattern "'...") (who)
-;  set next-action-to-perform (action-pattern)
-;  set visual-pattern-used-to-generate-action (current-visual-pattern)
-;  
-;  let time (precision (report-current-time + deliberation-time + action-performance-time) (1))
-;  output-debug-message ( word "Setting my 'time-to-perform-next-action' variable to the current time (" report-current-time ") + 'deliberation-time' (" deliberation-time ") + 'action-performance-time (" action-performance-time ") = " time "..." ) (who)
-;  set time-to-perform-next-action (time)
-;  
-;  output-debug-message (word "I'm going to perform '" next-action-to-perform "' at time: '" time-to-perform-next-action "' and my 'visual-pattern-used-to-generate-action' variable is set to: '" visual-pattern-used-to-generate-action "'." ) (who)
-;  set debug-indent-level (debug-indent-level - 2)
-;end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; "MOVE" PROCEDURE ;;;
@@ -3172,117 +2187,6 @@ to output-debug-message [msg-to-output turtle-id]
   ]
 end
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;; "PATCH-AHEAD-BLOCKED?" PROCEDURE ;;; - MAY NO LONGER BE NEEDED
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;
-;;Determines if the patch ahead of the calling turtle's location in scene
-;;is blocked.  A patch is blocked if it contains an opponent, a hole or
-;;a non-moveable tile.
-;;
-;;         Name              Data Type          Description
-;;         ----              ---------          -----------
-;;@param   scene             jchrest.lib.Scene  The scene to be evaluated.
-;;@param   heading-to-face   Number             The heading along which the patch to check is located.
-;;@return  -                 Boolean            True if the patch ahead along the heading specified
-;;                                              in scene is blocked, false if not.
-;;
-;;@author  Martyn Lloyd-Kelly <martynlk@liverpool.ac.uk>    
-;to-report patch-ahead-blocked? [scene heading-to-face]
-;  set debug-indent-level (debug-indent-level + 1)
-;  output-debug-message ("EXECUTING THE 'patch-ahead-blocked?' PROCEDURE...") ("")
-;  set debug-indent-level (debug-indent-level + 1)
-;  
-;  output-debug-message (word "Checking to see if the patch along heading '" heading-to-face "' from my location in the scene passed contains an opponent, hole or unmoveable tile...") (who)
-;  let object-ahead-one-patch-away ( item (1) (get-object-and-patch-coordinates-ahead-of-location-in-scene (scene) (heading-to-face) (1)) )
-;  let object-ahead-two-patches-away ( item (1) (get-object-and-patch-coordinates-ahead-of-location-in-scene (scene) (heading-to-face) (2)) )
-;  output-debug-message (word "The patch ahead contains '" object-ahead-one-patch-away "' and the patch ahead of this patch contains '" object-ahead-two-patches-away "'...") (who)
-;          
-;  ifelse(
-;    (object-ahead-one-patch-away = opponent-token) or
-;    (object-ahead-one-patch-away = hole-token) or
-;    ;(object-ahead-one-patch-away = "null" and cautious?) or
-;    (
-;      (object-ahead-one-patch-away = tile-token) and
-;      (
-;        (object-ahead-two-patches-away = opponent-token) or
-;        (object-ahead-two-patches-away = tile-token)
-;        ;(object-ahead-two-patches-away = "null" and cautious? )
-;      )
-;    )
-;  )[
-;    output-debug-message ("The patch ahead is blocked, reporting true...") (who)
-;    set debug-indent-level (debug-indent-level - 2)
-;    report true
-;  ]
-;  [
-;    output-debug-message ("The patch ahead is not blocked or isn't present in the scene passed, reporting false...") (who)
-;    set debug-indent-level (debug-indent-level - 2)
-;    report false
-;  ]
-;end
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;; "PATCH-AHEAD-EMPTY?" PROCEDURE ;;; - MAY NO LONGER BE REQUIRED
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;Determines whether the patch immediately ahead of the calling turtle
-;(ahead with respect to the calling turtle's current heading) is
-;completely empty (has no turtles on it).
-;
-;         Name              Data Type          Description
-;         ----              ---------          -----------
-;@param   scene             jchrest.lib.Scene  The scene to check
-;@param   heading-of-self   Number             The heading to be checked for the calling turtle.
-;@return  -                 Boolean            Boolean true indicates that the patch ahead
-;                                              contains no turtles.  Boolean false indicates
-;                                              that the patch ahead does contain turtles.
-;
-;@author  Martyn Lloyd-Kelly <martynlk@liverpool.ac.uk>  
-;to-report patch-ahead-empty? [scene heading-of-self]
-; set debug-indent-level (debug-indent-level + 1)
-; output-debug-message ("EXECUTING THE 'patch-ahead-empty?' PROCEDURE...") ("")
-; set debug-indent-level (debug-indent-level + 1)
-; 
-; let location-of-self ( chrest:Scene.get-location-of-creator (scene) )
-; let location-of-self-xcor ( item (0) (location-of-self) )
-; let location-of-self-ycor ( item (1) (location-of-self) )
-; let pxcor-to-check 0
-; let pycor-to-check 0
-; 
-; ifelse(heading-of-self = 0)[
-;   set pxcor-to-check (location-of-self-xcor)
-;   set pycor-to-check (location-of-self-ycor + 1)
-; ]
-; [
-;   ifelse(heading-of-self = 90)[
-;     set pxcor-to-check (location-of-self-xcor + 1)
-;     set pycor-to-check (location-of-self-ycor)
-;   ]
-;   [
-;     ifelse(heading-of-self = 180)[
-;       set pxcor-to-check (location-of-self-xcor)
-;       set pycor-to-check (location-of-self-ycor - 1)
-;     ]
-;     [
-;       ifelse(heading-of-self = 270)[
-;         set pxcor-to-check (location-of-self-xcor - 1)
-;         set pycor-to-check (location-of-self-ycor)
-;       ]
-;       [
-;         error (word "The 'heading-specified' value passed to the 'patch-ahead-empty?' procedure (" heading-of-self ") is not supported.")
-;       ]
-;     ]
-;   ]
-; ]
-; 
-; output-debug-message (word "The patch x/ycor to check is '" pxcor-to-check "' and '" pycor-to-check "', respectively...") (who)
-; let class-of-object-on-patch-ahead ( item (1) (chrest:Scene.get-square-contents-as-netlogo-list (scene) (pxcor-to-check) (pycor-to-check)) )
-; output-debug-message (word "The class of the object on these coordinates is: '" class-of-object-on-patch-ahead "'.  Reporting if this is equal to '" empty-patch-token "' or '" blind-patch-token "'") (who)
-; set debug-indent-level (debug-indent-level - 2)
-; report (class-of-object-on-patch-ahead) = empty-patch-token or (class-of-object-on-patch-ahead = blind-patch-token)
-;end
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; "PERFORM-ACTION" PROCEDURE ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3349,254 +2253,269 @@ to-report perform-action [ action-info current-view ]
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   
   ifelse(member? (action-identifier) (possible-actions))[
-    output-debug-message (word "The action to perform (" action-identifier ") is a valid action so I'll try to perform it now") (who)
     
-    ;;;;;;;;;;;;;;;;;;;;;;
-    ;;; PERFORM ACTION ;;;
-    ;;;;;;;;;;;;;;;;;;;;;;
-  
-    ifelse(action-identifier = push-tile-token)[
-      output-debug-message (word "The local 'action-identifier' variable is equal to: '" action-identifier "' so I should execute the 'push-tile' procedure...") (who)
-        set action-performance-result ( push-tile (action-heading) )
-    ]
-    [
-      output-debug-message (word "The local 'action-identifier' variable is equal to: '" action-identifier "' so I should execute the 'move' procedure...") (who)
-        set action-performance-result ( move (action-heading) (action-patches) )
+    if(time-to-perform-next-action = 0)[
+      output-debug-message (word "My 'time-to-perform-next-action' turtle variable is set to 0 so I'll set it to the current time (" report-current-time ") plus my 'action-performance-time' (" time-to-perform-next-action ")") (who)
+      set time-to-perform-next-action (report-current-time + action-performance-time)
     ]
     
-    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-    ;;; ASSIGN ACTION PERFORMANCE SUCCESS VARIABLE ;;;
-    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-  
-    let action-performed-successfully (false)
-    ifelse( is-list? (action-performance-result) )[
-      set action-performed-successfully ( item (0) (action-performance-result) )
-    ]
-    [
-      set action-performed-successfully (action-performance-result)
-    ]
+    output-debug-message (word "The action to perform (" action-identifier ") is a valid action.  Checking to see if the current time (" report-current-time ") is >= my 'time-to-perform-next-action' turtle variable (" time-to-perform-next-action ")") (who)
     
-    output-debug-message (word "Was the action performed successfully: " action-performed-successfully) (who)
-    
-    ;;;;;;;;;;;;;;;;;;;;;;;;;;
-    ;;; CHREST TURTLE CODE ;;;
-    ;;;;;;;;;;;;;;;;;;;;;;;;;;
-  
-    output-debug-message ("Checking to see if I am a CHREST turtle.  If so, I have some work to do...") (who)
-    if(breed = chrest-turtles)[
-  
-      ;;;;;;;;;;;;;;;;;;;;
-      ;;; LEARN ACTION ;;;
-      ;;;;;;;;;;;;;;;;;;;;
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ;;; ACTION PERFORMANCE TIME CHECK ;;;
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    if(report-current-time >= time-to-perform-next-action)[
       
-      output-debug-message ("I am a CHREST turtle.  First, I'll learn the action I just attempted to perform...") (who)
+      output-debug-message (word "The current time is >= my 'time-to-perform-next-action' turtle variable so I'll attempt to perform the action and reset my 'time-to-perform-next-action' turtle variable to 0") (who)
+      set time-to-perform-next-action (0)
       
-      let problem-solving-action ( chrest:ListPattern.new ("action") (list chrest:ItemSquarePattern.new (problem-solving-token) (0) (0)) )
-      let explicit-action ( chrest:ListPattern.new ("action") (list chrest:ItemSquarePattern.new (action-identifier) (action-heading) (action-patches)) )
-    
-      ;If problem-solving has been used the turtle has a 50% chance of learning either the problem-solving 
-      ;action or the explicit action.  If the problem-solving action is selected for learning but is already 
-      ;learned, the explicit action will be learned instead.  Otherwise, the explicit action will be learned.
-      let action-to-learn (explicit-action)
-      if( (not pattern-rec-used?) and ((random-float (1.0)) < 0.5) )[
-        set action-to-learn (problem-solving-action)
+      ;;;;;;;;;;;;;;;;;;;;;;
+      ;;; PERFORM ACTION ;;;
+      ;;;;;;;;;;;;;;;;;;;;;;
+      
+      ifelse(action-identifier = push-tile-token)[
+        output-debug-message (word "The local 'action-identifier' variable is equal to: '" action-identifier "' so I should execute the 'push-tile' procedure...") (who)
+          set action-performance-result ( push-tile (action-heading) )
       ]
+      [
+        output-debug-message (word "The local 'action-identifier' variable is equal to: '" action-identifier "' so I should execute the 'move' procedure...") (who)
+          set action-performance-result ( move (action-heading) (action-patches) )
+      ]
+      
+      ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+      ;;; ASSIGN ACTION PERFORMANCE SUCCESS VARIABLE ;;;
+      ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+      
+      let action-performed-successfully (false)
+      ifelse( is-list? (action-performance-result) )[
+        set action-performed-successfully ( item (0) (action-performance-result) )
+      ]
+      [
+        set action-performed-successfully (action-performance-result)
+      ]
+      
+      output-debug-message (word "Was the action performed successfully: " action-performed-successfully) (who)
+      
+      ;;;;;;;;;;;;;;;;;;;;;;;;;;
+      ;;; CHREST TURTLE CODE ;;;
+      ;;;;;;;;;;;;;;;;;;;;;;;;;;
   
-      ;Check for learned problem-solving action.
-      let action-recognised ( chrest:recognise-and-learn-list-pattern (action-to-learn) (report-current-time) )
-      if (action-recognised != "")[
-        set action-recognised ( chrest:Node.get-image (action-recognised) )
-        output-debug-message (word "Recognised " chrest:ListPattern.get-as-string (action-recognised) " given action " chrest:ListPattern.get-as-string (action-to-learn)) (who)
+      output-debug-message ("Checking to see if I am a CHREST turtle.  If so, I have some work to do...") (who)
+      if(breed = chrest-turtles)[
         
-        ;Learn explicit action if problem-solving action already learned.
-        if( 
-          ( (chrest:ListPattern.get-as-string (action-to-learn)) = (chrest:ListPattern.get-as-string (problem-solving-action)) ) and 
-          ( (chrest:ListPattern.get-as-string (action-recognised)) = (chrest:ListPattern.get-as-string (problem-solving-action)) ) 
-        )[
-          output-debug-message ("The action to learn is the problem-solving action but I've already learned it so I'll learn the explicit action instead") (who)
-          set action-to-learn (explicit-action)
+        ;;;;;;;;;;;;;;;;;;;;
+        ;;; LEARN ACTION ;;;
+        ;;;;;;;;;;;;;;;;;;;;
+        
+        output-debug-message ("I am a CHREST turtle.  First, I'll learn the action I just attempted to perform...") (who)
+        
+        let problem-solving-action ( chrest:ListPattern.new ("action") (list chrest:ItemSquarePattern.new (problem-solving-token) (0) (0)) )
+        let explicit-action ( chrest:ListPattern.new ("action") (list chrest:ItemSquarePattern.new (action-identifier) (action-heading) (action-patches)) )
+        
+        ;If problem-solving has been used the turtle has a 50% chance of learning either the problem-solving 
+        ;action or the explicit action.  If the problem-solving action is selected for learning but is already 
+        ;learned, the explicit action will be learned instead.  Otherwise, the explicit action will be learned.
+        let action-to-learn (explicit-action)
+        if( (not pattern-rec-used?) and ((random-float (1.0)) < 0.5) )[
+          set action-to-learn (problem-solving-action)
         ]
-      ]
-      
-      output-debug-message (word "Attempting to learn action: " chrest:ListPattern.get-as-string (action-to-learn)) (who)
-      let ignore-this (chrest:recognise-and-learn-list-pattern (action-to-learn) (report-current-time))
-      ;Note: the action won't be learned (learning resource in CHREST won't be consumed) if the action is already committed to LTM.
-      
-      ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-      ;;; CREATE VISUAL LIST-PATTERN TO USE IN PRODUCTION/EPISODE CREATION ;;;
-      ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-      
-      ;Construct a jchrest.lib.ListPattern from the contents of 'current-view-as-list-of-item-square-patterns' and normalise the jchrest.lib.ListPattern 
-      ;according to the CHREST turtle's domain-specifics so that its possible to determine if an episode and production created from this visual information
-      ;will actually be of use.
-      ;
-      ;The visual information passed to this procedure will eventually be used by CHREST in a recognition function (to create or identify a production, the
-      ;visual part of the production must be recognised completely).  CHREST doesn't learn visual information that is entirely empty when its domain is set 
-      ;to Tileworld.  So, if during learning, the turtle can only see empty/blind patches or itself (hereafter referred to as an "empty" visual list-pattern)
-      ;then nothing is learned since the "jchrest.lib.TileWorldDomain#normalise" function will strip out all jchrest.lib.ItemSquarePatterns that denote 
-      ;empty/blind patches or the CHREST turtle itself from the jchrest.lib.ListPattern passed to it when discrimination or familiarisation occurs.  If the
-      ;result of this is an empty visual list-pattern, the CHREST turtle does not proceed with discrimination or familiarisation.  Consequently, if the CHREST 
-      ;turtle attempts to create a production using an empty visual list-pattern or use an episode containing an empty visual list-pattern to reinforce a 
-      ;production then neither operation will occur since nothing will be recognised when these functions are invoked.  To save wasting time invoking such
-      ;functions if they will ultimately fail, create the visual chrest.lib.ListPattern that will be contained in an episode or production and pass it to 
-      ;the "jchrest.lib.TileWorldDomain#normalise" function.  If this produces an empty visual list-pattern, the CHREST turtle will forego adding an episode 
-      ;containing it or creating a production using it.
-      output-debug-message ("Creating the visual list-pattern for the episode to be added to episodic memory and the (potential) production to be created..." ) (who)
-      
-      let current-view-as-list-of-item-square-patterns []
-      foreach(current-view)[
-        set current-view-as-list-of-item-square-patterns (lput 
-          (chrest:ItemSquarePattern.new 
-            (item (2) (?)) 
-            (item (0) (?)) 
-            (item (1) (?))
-          ) 
-          (current-view-as-list-of-item-square-patterns)
-        )
-      ]
-      let visual-list-pattern (chrest:ListPattern.new ("visual") (current-view-as-list-of-item-square-patterns))
-      output-debug-message (word "Visual list-pattern before domain normalisation: " chrest:ListPattern.get-as-string (visual-list-pattern)) (who)
-      
-      set visual-list-pattern ( chrest:DomainSpecifics.normalise-list-pattern (visual-list-pattern) )
-      output-debug-message (word "Visual list-pattern generated: " chrest:ListPattern.get-as-string (visual-list-pattern)) (who)
-    
-      ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-      ;;; CHECK IF PRODUCTION/EPISODE CREATION SHOULD OCCUR ;;;
-      ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-      
-      ;At this point, all information required to make a decision on whether to add an episode to episodic memory and attempt production creation is available.
-      ;Note that episodes are used to facilitate production reinforcement in CHREST, the importance of this statement will become apparent below.
-      ;
-      ;To add an episode to episodic memory and attempt production creation, the following statements must all evaluate to true for the reasons provided:
-      ;
-      ; 1) Action performed must not be a 'move' action: the 'move' action is only generated when a turtle should explore the environment freely to try and
-      ;    find an environment state that enables it to secure a tile or push a tile into a hole.  Due to the stochasticity of Tileworld, such movement should
-      ;    be random so biasing such random movement by creating a production that terminates with the 'move' action makes such movements non-random.  This may
-      ;    adversely affect the scoring potential of the turtle so should be avoided.
-      ; 2) Only successful actions should be used to create productions.  Helps to uphold the principle of production rationality specified by Miyazaki et al: 
-      ;    "better productions should be selected more frequently than worse ones" [Miyazaki, K., Yamamura, M., Kobayashi, S.: On the rationality of profit 
-      ;    sharing in reinforcement learning. In: 3rd International Conference on Fuzzy Logic, Neural Nets and Soft Computing. pp. 285–288. Korean Institute of 
-      ;    Intelligent Systems (1994)].
-      ; 3) The visual list-pattern constructed above should not be empty: (see comment in "CREATE VISUAL LIST-PATTERN TO USE IN PRODUCTION/EPISODE CREATION" section).
-      ; 4) The CHREST turtle must be capable of reinforcing problem-solving, explicit actions or both: when a production is created, its utility value is initially
-      ;    set to 0 so will not be selected for use if recognised in future unless the utility is incremented through production reinforcement. There is therefore 
-      ;    no gain to be made by creating productions if they will never be reinforced since they will never be used.  Likewise, since episodes are used to 
-      ;    facilitate production reinforcement, if the CHREST turtle is incapable of reinforcing any type of production then there is no purpose in creating an
-      ;    episode.
-      ; 5) The action performed was generated using pattern recognition and the CHREST turtle can't reinforce explicit actions: in this case, production creation
-      ;    is invalid since creating a production containing an explicit action without being able to reinforce it means that the production will never be used.
-      ;    Likewise, if its not possible to reinforce explicit action productions then there's no reason to add an episode to episodic memory.
-      output-debug-message ("Checking to see if I should add an episode to episodic memory and if I should attempt to create a production...") (who)
-      output-debug-message (word "I'll do this if the following are all true:") (who)
-      output-debug-message (word " 1. The action performed was not equal to '" move-token "' (" (action-identifier != move-token) ")") (who) 
-      output-debug-message (word " 2. The action was performed successfully (" action-performed-successfully ")") (who) 
-      output-debug-message (word " 3. The visual list-pattern generated isn't empty (" not chrest:ListPattern.empty? visual-list-pattern ")") (who)
-      output-debug-message (word " 4. I can reinforce either problem-solving productions (" reinforce-problem-solving? ") or explicit action productions (" reinforce-actions? ")") (who)
-      output-debug-message (word " 5. Its not the case that the action performed was generated using pattern-recognition and I can't reinforce explicit action productions (" not (pattern-rec-used? and not reinforce-actions?) ")") (who)
-      
-      ifelse(
-        (action-identifier != move-token) and 
-        (action-performed-successfully) and
-        (not chrest:ListPattern.empty? visual-list-pattern) and
-        (reinforce-problem-solving? or reinforce-actions?) and
-        (not (pattern-rec-used? and not reinforce-actions?))
-      )[
         
-        output-debug-message ("I'll attempt to create a production and add an episode to episodic memory...") (who)
-        
-        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-        ;;; ADD EPISODE TO EPISODIC MEMORY ;;;
-        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-        
-        output-debug-message ( word "I'll add an episode containing the visual list-pattern, the explicit action performed and whether pattern-recognition was used to generate the action to my 'episodic-memory'..." ) (who)
-        add-episode-to-episodic-memory (visual-list-pattern) (explicit-action) (pattern-rec-used?)
-            
-        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-        ;;; DETERMINE IF PRODUCTION CREATION SHOULD OCCUR AND IF SO, WHAT ACTION TO USE ;;;
-        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 
-            
-        output-debug-message ("I can reinforce problems or actions so I'll attempt to create a production now.  Determining what type of production (problem-solving or explicit action) to create...") (who)
-              
-        ; In most cases, the CHREST turtle should create a production terminating in an explicit action.  However,
-        ; in certain circumstances, a production terminating with the problem-solving action should be created.
-        ; If its determined that a problem-solving production should be created, it may still be the case that the
-        ; CHREST turtle creates an explicit-action production if the problem-solving production for the visual
-        ; list pattern created below already exists (same reasoning as with the determination of whether to learn
-        ; the problem-solving action or an explicit action above).
-        ;
-        ; The following table makes explicit all possible scenarios that may occur at this point and what the outcome
-        ; with regard to production creation should be.
-        ;
-        ; |---------------------|-----------|---------------|------------------------------------------------------|
-        ; | PS Generate Action? | Reinf PS? | Reinf Action? | Outcome                                              |
-        ; |---------------------|-----------|---------------|------------------------------------------------------|
-        ; | Yes                 | Yes       | Yes           | Choice between PS and action                         |
-        ; |                     |           | No            | Create explicit PS production                        |
-        ; |                     | No        | Yes           | Create explicit action production                    |
-        ; |                     |           | No            | N/A (must be able to reinf PS or action to get here) |
-        ; | No                  | Yes       | Yes           | Create explicit action production                    |
-        ; |                     |           | No            | N/A (this is checked for in outer conditional)       |
-        ; |                     | No        | Yes           | Create explicit action production                    |
-        ; |                     |           | No            | N/A (must be able to reinf PS or action to get here) |
-        ; |---------------------|-----------|---------------|------------------------------------------------------|
+        ;Check for learned problem-solving action.
+        let action-recognised ( chrest:recognise-and-learn-list-pattern (action-to-learn) (report-current-time) )
+        if (action-recognised != "")[
+          set action-recognised ( chrest:Node.get-image (action-recognised) )
+          output-debug-message (word "Recognised " chrest:ListPattern.get-as-string (action-recognised) " given action " chrest:ListPattern.get-as-string (action-to-learn)) (who)
           
-        ; Since its more likely that the CHREST turtle will create an explicit-action production, set the action to
-        ; be used in the production to the explicit action here.
-        let action-for-production (explicit-action)
+          ;Learn explicit action if problem-solving action already learned.
+          if( 
+            ( (chrest:ListPattern.get-as-string (action-to-learn)) = (chrest:ListPattern.get-as-string (problem-solving-action)) ) and 
+            ( (chrest:ListPattern.get-as-string (action-recognised)) = (chrest:ListPattern.get-as-string (problem-solving-action)) ) 
+          )[
+            output-debug-message ("The action to learn is the problem-solving action but I've already learned it so I'll learn the explicit action instead") (who)
+            set action-to-learn (explicit-action)
+          ]
+        ]
         
-        ; Overwrite the action to be used in the production here, if applicable.
-        if(not pattern-rec-used?)[
-          if(reinforce-problem-solving?)[
-            ifelse(reinforce-actions?)[
-              if( (random-float 1.0) < 0.5)[
+        output-debug-message (word "Attempting to learn action: " chrest:ListPattern.get-as-string (action-to-learn)) (who)
+        let ignore-this (chrest:recognise-and-learn-list-pattern (action-to-learn) (report-current-time))
+        ;Note: the action won't be learned (learning resource in CHREST won't be consumed) if the action is already committed to LTM.
+        
+        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+        ;;; CREATE VISUAL LIST-PATTERN TO USE IN PRODUCTION/EPISODE CREATION ;;;
+        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+        
+        ;Construct a jchrest.lib.ListPattern from the contents of 'current-view-as-list-of-item-square-patterns' and normalise the jchrest.lib.ListPattern 
+        ;according to the CHREST turtle's domain-specifics so that its possible to determine if an episode and production created from this visual information
+        ;will actually be of use.
+        ;
+        ;The visual information passed to this procedure will eventually be used by CHREST in a recognition function (to create or identify a production, the
+        ;visual part of the production must be recognised completely).  CHREST doesn't learn visual information that is entirely empty when its domain is set 
+        ;to Tileworld.  So, if during learning, the turtle can only see empty/blind patches or itself (hereafter referred to as an "empty" visual list-pattern)
+        ;then nothing is learned since the "jchrest.lib.TileWorldDomain#normalise" function will strip out all jchrest.lib.ItemSquarePatterns that denote 
+        ;empty/blind patches or the CHREST turtle itself from the jchrest.lib.ListPattern passed to it when discrimination or familiarisation occurs.  If the
+        ;result of this is an empty visual list-pattern, the CHREST turtle does not proceed with discrimination or familiarisation.  Consequently, if the CHREST 
+        ;turtle attempts to create a production using an empty visual list-pattern or use an episode containing an empty visual list-pattern to reinforce a 
+        ;production then neither operation will occur since nothing will be recognised when these functions are invoked.  To save wasting time invoking such
+        ;functions if they will ultimately fail, create the visual chrest.lib.ListPattern that will be contained in an episode or production and pass it to 
+        ;the "jchrest.lib.TileWorldDomain#normalise" function.  If this produces an empty visual list-pattern, the CHREST turtle will forego adding an episode 
+        ;containing it or creating a production using it.
+        output-debug-message ("Creating the visual list-pattern for the episode to be added to episodic memory and the (potential) production to be created..." ) (who)
+        
+        let current-view-as-list-of-item-square-patterns []
+        foreach(current-view)[
+          set current-view-as-list-of-item-square-patterns (lput 
+            (chrest:ItemSquarePattern.new 
+              (item (2) (?)) 
+              (item (0) (?)) 
+              (item (1) (?))
+              ) 
+            (current-view-as-list-of-item-square-patterns)
+            )
+        ]
+        let visual-list-pattern (chrest:ListPattern.new ("visual") (current-view-as-list-of-item-square-patterns))
+        output-debug-message (word "Visual list-pattern before domain normalisation: " chrest:ListPattern.get-as-string (visual-list-pattern)) (who)
+        
+        set visual-list-pattern ( chrest:DomainSpecifics.normalise-list-pattern (visual-list-pattern) )
+        output-debug-message (word "Visual list-pattern generated: " chrest:ListPattern.get-as-string (visual-list-pattern)) (who)
+        
+        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+        ;;; CHECK IF PRODUCTION/EPISODE CREATION SHOULD OCCUR ;;;
+        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+        
+        ;At this point, all information required to make a decision on whether to add an episode to episodic memory and attempt production creation is available.
+        ;Note that episodes are used to facilitate production reinforcement in CHREST, the importance of this statement will become apparent below.
+        ;
+        ;To add an episode to episodic memory and attempt production creation, the following statements must all evaluate to true for the reasons provided:
+        ;
+        ; 1) Action performed must not be a 'move' action: the 'move' action is only generated when a turtle should explore the environment freely to try and
+        ;    find an environment state that enables it to secure a tile or push a tile into a hole.  Due to the stochasticity of Tileworld, such movement should
+        ;    be random so biasing such random movement by creating a production that terminates with the 'move' action makes such movements non-random.  This may
+        ;    adversely affect the scoring potential of the turtle so should be avoided.
+        ; 2) Only successful actions should be used to create productions.  Helps to uphold the principle of production rationality specified by Miyazaki et al: 
+        ;    "better productions should be selected more frequently than worse ones" [Miyazaki, K., Yamamura, M., Kobayashi, S.: On the rationality of profit 
+        ;    sharing in reinforcement learning. In: 3rd International Conference on Fuzzy Logic, Neural Nets and Soft Computing. pp. 285–288. Korean Institute of 
+        ;    Intelligent Systems (1994)].
+        ; 3) The visual list-pattern constructed above should not be empty: (see comment in "CREATE VISUAL LIST-PATTERN TO USE IN PRODUCTION/EPISODE CREATION" section).
+        ; 4) The CHREST turtle must be capable of reinforcing problem-solving, explicit actions or both: when a production is created, its utility value is initially
+        ;    set to 0 so will not be selected for use if recognised in future unless the utility is incremented through production reinforcement. There is therefore 
+        ;    no gain to be made by creating productions if they will never be reinforced since they will never be used.  Likewise, since episodes are used to 
+        ;    facilitate production reinforcement, if the CHREST turtle is incapable of reinforcing any type of production then there is no purpose in creating an
+        ;    episode.
+        ; 5) The action performed was generated using pattern recognition and the CHREST turtle can't reinforce explicit actions: in this case, production creation
+        ;    is invalid since creating a production containing an explicit action without being able to reinforce it means that the production will never be used.
+        ;    Likewise, if its not possible to reinforce explicit action productions then there's no reason to add an episode to episodic memory.
+        output-debug-message ("Checking to see if I should add an episode to episodic memory and if I should attempt to create a production...") (who)
+        output-debug-message (word "I'll do this if the following are all true:") (who)
+        output-debug-message (word " 1. The action performed was not equal to '" move-token "' (" (action-identifier != move-token) ")") (who) 
+        output-debug-message (word " 2. The action was performed successfully (" action-performed-successfully ")") (who) 
+        output-debug-message (word " 3. The visual list-pattern generated isn't empty (" not chrest:ListPattern.empty? visual-list-pattern ")") (who)
+        output-debug-message (word " 4. I can reinforce either problem-solving productions (" reinforce-problem-solving? ") or explicit action productions (" reinforce-actions? ")") (who)
+        output-debug-message (word " 5. Its not the case that the action performed was generated using pattern-recognition and I can't reinforce explicit action productions (" not (pattern-rec-used? and not reinforce-actions?) ")") (who)
+        
+        ifelse(
+          (action-identifier != move-token) and 
+          (action-performed-successfully) and
+          (not chrest:ListPattern.empty? visual-list-pattern) and
+          (reinforce-problem-solving? or reinforce-actions?) and
+          (not (pattern-rec-used? and not reinforce-actions?))
+        )[
+        
+          output-debug-message ("I'll attempt to create a production and add an episode to episodic memory...") (who)
+          
+          ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+          ;;; ADD EPISODE TO EPISODIC MEMORY ;;;
+          ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+          
+          output-debug-message ( word "I'll add an episode containing the visual list-pattern, the explicit action performed and whether pattern-recognition was used to generate the action to my 'episodic-memory'..." ) (who)
+          add-episode-to-episodic-memory (visual-list-pattern) (explicit-action) (pattern-rec-used?)
+          
+          ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+          ;;; DETERMINE IF PRODUCTION CREATION SHOULD OCCUR AND IF SO, WHAT ACTION TO USE ;;;
+          ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 
+          
+          output-debug-message ("I can reinforce problems or actions so I'll attempt to create a production now.  Determining what type of production (problem-solving or explicit action) to create...") (who)
+          
+          ; In most cases, the CHREST turtle should create a production terminating in an explicit action.  However,
+          ; in certain circumstances, a production terminating with the problem-solving action should be created.
+          ; If its determined that a problem-solving production should be created, it may still be the case that the
+          ; CHREST turtle creates an explicit-action production if the problem-solving production for the visual
+          ; list pattern created below already exists (same reasoning as with the determination of whether to learn
+          ; the problem-solving action or an explicit action above).
+          ;
+          ; The following table makes explicit all possible scenarios that may occur at this point and what the outcome
+          ; with regard to production creation should be.
+          ;
+          ; |---------------------|-----------|---------------|------------------------------------------------------|
+          ; | PS Generate Action? | Reinf PS? | Reinf Action? | Outcome                                              |
+          ; |---------------------|-----------|---------------|------------------------------------------------------|
+          ; | Yes                 | Yes       | Yes           | Choice between PS and action                         |
+          ; |                     |           | No            | Create explicit PS production                        |
+          ; |                     | No        | Yes           | Create explicit action production                    |
+          ; |                     |           | No            | N/A (must be able to reinf PS or action to get here) |
+          ; | No                  | Yes       | Yes           | Create explicit action production                    |
+          ; |                     |           | No            | N/A (this is checked for in outer conditional)       |
+          ; |                     | No        | Yes           | Create explicit action production                    |
+          ; |                     |           | No            | N/A (must be able to reinf PS or action to get here) |
+          ; |---------------------|-----------|---------------|------------------------------------------------------|
+          
+          ; Since its more likely that the CHREST turtle will create an explicit-action production, set the action to
+          ; be used in the production to the explicit action here.
+          let action-for-production (explicit-action)
+          
+          ; Overwrite the action to be used in the production here, if applicable.
+          if(not pattern-rec-used?)[
+            if(reinforce-problem-solving?)[
+              ifelse(reinforce-actions?)[
+                if( (random-float 1.0) < 0.5)[
+                  set action-for-production (problem-solving-action)
+                ]
+              ]
+              [
                 set action-for-production (problem-solving-action)
               ]
             ]
-            [
-              set action-for-production (problem-solving-action)
-            ]
           ]
-        ]
-        output-debug-message (word "Determined that " chrest:ListPattern.get-as-string (action-for-production) " is to be the action part of the production" ) (who)
-        
-        ; Check to see if the turtle should create an explicit action production instead of a problem-solving production. 
-        if( 
-          (chrest:ListPattern.get-as-string (action-for-production)) = (chrest:ListPattern.get-as-string (problem-solving-action)) and
-          reinforce-actions?
-        )[
-          output-debug-message (word "I'm to create a problem-solving production and I can reinforce explicit actions so if such a production already exists for the visual list-pattern generated I'll create a production with the explicit action instead...") (who)
+          output-debug-message (word "Determined that " chrest:ListPattern.get-as-string (action-for-production) " is to be the action part of the production" ) (who)
           
-          let productions (chrest:get-productions (visual-list-pattern) (report-current-time))
-          output-debug-message (word "Productions associated with " chrest:ListPattern.get-as-string (visual-list-pattern) ": " map ([chrest:ListPattern.get-as-string (chrest:Node.get-image (item (0) (?)))]) (productions)) (who)
-          
-          foreach(productions)[
-            let action-node (item (0) (?))
-            let action-node-contents ( chrest:ListPattern.get-as-netlogo-list (chrest:Node.get-image (action-node)) )
-            foreach(action-node-contents)[
-              let action (chrest:ItemSquarePattern.get-item (?))
-              output-debug-message (word "Checking if '" action "' is equal to '" problem-solving-token "'" ) (who)
-              if(action = problem-solving-token)[
-                output-debug-message (word "Action '" action "' is equal to '" problem-solving-token "' so there is already a problem-solving production for " chrest:ListPattern.get-as-string (visual-list-pattern) "!") (who)
-                output-debug-message (word "Setting the action for the production to " chrest:ListPattern.get-as-string (explicit-action) " instead...") (who)
-                set action-for-production (explicit-action)
+          ; Check to see if the turtle should create an explicit action production instead of a problem-solving production. 
+          if( 
+            (chrest:ListPattern.get-as-string (action-for-production)) = (chrest:ListPattern.get-as-string (problem-solving-action)) and
+            reinforce-actions?
+          )[
+            output-debug-message (word "I'm to create a problem-solving production and I can reinforce explicit actions so if such a production already exists for the visual list-pattern generated I'll create a production with the explicit action instead...") (who)
+            
+            let productions (chrest:get-productions (visual-list-pattern) (report-current-time))
+            output-debug-message (word "Productions associated with " chrest:ListPattern.get-as-string (visual-list-pattern) ": " map ([chrest:ListPattern.get-as-string (chrest:Node.get-image (item (0) (?)))]) (productions)) (who)
+            
+            foreach(productions)[
+              let action-node (item (0) (?))
+              let action-node-contents ( chrest:ListPattern.get-as-netlogo-list (chrest:Node.get-image (action-node)) )
+              foreach(action-node-contents)[
+                let action (chrest:ItemSquarePattern.get-item (?))
+                output-debug-message (word "Checking if '" action "' is equal to '" problem-solving-token "'" ) (who)
+                if(action = problem-solving-token)[
+                  output-debug-message (word "Action '" action "' is equal to '" problem-solving-token "' so there is already a problem-solving production for " chrest:ListPattern.get-as-string (visual-list-pattern) "!") (who)
+                  output-debug-message (word "Setting the action for the production to " chrest:ListPattern.get-as-string (explicit-action) " instead...") (who)
+                  set action-for-production (explicit-action)
+                ]
               ]
             ]
           ]
-        ]
           
-        output-debug-message (word "The production will terminate with action " chrest:ListPattern.get-as-string (action-for-production)) (who)
-        
-        ;;;;;;;;;;;;;;;;;;;;;;;;;
-        ;;; CREATE PRODUCTION ;;;
-        ;;;;;;;;;;;;;;;;;;;;;;;;;
-        
-        output-debug-message (word "Creating a production that starts with vision " chrest:ListPattern.get-as-string (visual-list-pattern) " and terminates with action " chrest:ListPattern.get-as-string (action-for-production)) (who)
-        chrest:associate-list-patterns (visual-list-pattern) (action-for-production) (report-current-time)
-      ]
-      [
-        output-debug-message ("I won't attempt to create a production or add an episode to episodic memory...") (who)
-      ]
-    ] ;CHREST turtle breed check.
+          output-debug-message (word "The production will terminate with action " chrest:ListPattern.get-as-string (action-for-production)) (who)
+          
+          ;;;;;;;;;;;;;;;;;;;;;;;;;
+          ;;; CREATE PRODUCTION ;;;
+          ;;;;;;;;;;;;;;;;;;;;;;;;;
+          
+          output-debug-message (word "Creating a production that starts with vision " chrest:ListPattern.get-as-string (visual-list-pattern) " and terminates with action " chrest:ListPattern.get-as-string (action-for-production)) (who)
+          chrest:associate-list-patterns (visual-list-pattern) (action-for-production) (report-current-time)
+        ]
+        [
+          output-debug-message ("I won't attempt to create a production or add an episode to episodic memory...") (who)
+        ]
+      ] ;CHREST turtle breed check.
+    ]
   ]
   [
     error (word "The action to perform specified by turtle " who " is not a valid action (does not occur in the global 'possible-actions' list: " possible-actions ").")
@@ -3949,11 +2868,19 @@ end
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     
 ;Enables the calling agent (the pusher) to push a tile by setting the pusher's heading 
-;to face its closest-tile, T, and T is asked to do the same so that it moves along the 
-;same heading as the pusher.
+;to that indicated by the parameter passed to this procedure.  The procedure then
+;branches in one of two ways depending on whether there is a tile, T, on the patch 
+;immediately adjacent to the calling turtle's location along the heading specified.
+;
+; 1. There is no tile on the patch immediately ahead of the calling turtle along the 
+;    heading specified.  The procedure will exit and indicate that the action was 
+;    unsuccessful and a hole was not filled.
+; 2. There is a tile on the patch immediately ahead of the calling turtle along the 
+;    heading specified.  The tile, T, is asked to set its heading to that specified
+;    by the input paramater too.  The procedure will then continue.
 ;
 ;The procedure then branches in one of two ways depending on whether there is a hole 
-;on the patch ahead of T:
+;on the patch ahead of T along its new heading:
 ;
 ;  1. There is a hole on the patch immediately ahead of T:
 ;     a. T moves forward by 1 patch.
@@ -3968,7 +2895,8 @@ end
 ;
 ;The pusher then checks to see if T has moved.
 ;
-;  1. T has not moved so the pusher remains stationary.
+;  1. T has not moved so the pusher remains stationary.  The procedure will exit and 
+;     indicate that the action was unsuccessful and a hole was not filled.
 ;  2. T has moved so it must have been pushed; pusher also moves forward one patch.
 ;
 ;         Name              Data Type     Description
@@ -3991,7 +2919,7 @@ to-report push-tile [push-heading]
   
   output-debug-message( word "Setting my heading to the value contained in the local 'push-heading' variable: " push-heading "...") (who)
   set heading (push-heading)
-  output-debug-message (word "My 'heading' variable is now set to:" heading ".  Checking to see if there is a tile immediately ahead...") (who)
+  output-debug-message (word "My 'heading' variable is now set to: " heading ".  Checking to see if there is a tile immediately ahead...") (who)
   
   if(any? tiles-on patch-at-heading-and-distance (heading) (1))[
     output-debug-message (word "There is a tile immediately ahead along heading " heading ".  Pushing this tile...") (who)
@@ -4085,119 +3013,6 @@ to-report quote-string-or-read-from-string [value]
     ]
   ]
 end
-         
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;; "RECTIFY-HEADING" PROCEDURE ;;; - MAY NO LONGER BE NEEDED
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;
-;;Reports one of 0, 90, 180 or 270 if the heading passed does not already
-;;equal one of these values. If the heading passed is less than 0, it is 
-;;converted to its positive equivalent and this converted value is used
-;;to determine what heading is reported.  If the heading does not equal 
-;;0, 90, 180 or 270 the value returned is as follows:
-;;
-;; - If the heading passed is 360, 0 is returned.
-;; - If the heading passed is > 0 and < 90 either 0 or 90 is returned.
-;; - If the heading passed is > 90 and < 180 either 90 or 180 is returned.
-;; - If the heading passed is > 180 and < 270 either 180 or 270 is returned.
-;; - If the heading passed is > 270 and < 360 either 270 or 0 is returned. 
-;;
-;;The non-determinism of the value reported ensures that the calling turtle
-;;does not repeat the same action over and over e.g. if a calling turtle's
-;;closest tile is to the south-east and the calling turtle turns to face this
-;;tile and its heading is then rectified, it has a 1 in 2 chance of setting 
-;;its heading east or south rather than always setting its heading to the east
-;;or always to the south.  Thus, the behaviour of the calling turtle is more 
-;;flexible.
-;;
-;;         Name              Data Type     Description
-;;         ----              ---------     -----------
-;;@param   heading-to-recify Float         The heading to be rectified.
-;;
-;;@author  Martyn Lloyd-Kelly <martynlk@liverpool.ac.uk>  
-;to-report rectify-heading [heading-to-rectify]
-; set debug-indent-level (debug-indent-level + 1)
-; output-debug-message ("EXECUTING THE 'recitify-heading' PROCEDURE...") ("")
-; set debug-indent-level (debug-indent-level + 1)
-; output-debug-message (word "THE VALUE OF THE LOCAL VARIABLE 'heading-to-rectify' IS: '" heading-to-rectify "'.") ("")
-; 
-; if(heading-to-rectify = 360)[
-;   output-debug-message (word "'heading-to-rectify' IS EQUAL TO 360, REPORTING 0") ("")
-;   set debug-indent-level (debug-indent-level - 2)
-;   report 0
-; ]
-; 
-; if(heading-to-rectify < 0)[
-;   set heading-to-rectify (360 + heading-to-rectify)
-;   output-debug-message ("'heading-to-rectify' IS LESS THAN 0, SO 360 HAS BEEN ADDED TO IT TO CONVERT IT TO A POSITIVE VALUE.") ("")
-;   output-debug-message(word "'heading-to-rectify' IS NOW EQUAL TO: '" heading-to-rectify "'.") ("")
-; ]
-; 
-; output-debug-message ("SETTING THE LOCAL 'random-decision' VARIABLE VALUE...") ("")
-; let random-decision (random 2)
-; output-debug-message (word "THE LOCAL 'random-decision' VARIABLE VALUE IS NOW SET TO: " random-decision "...") ("")
-; output-debug-message (word "CHECKING THE VALUE OF THE LOCAL 'heading-to-rectify' VARIABLE VALUE (" heading-to-rectify ")...") ("")
-; 
-; if( (heading-to-rectify > 0) and (heading-to-rectify < 90) )[
-;   output-debug-message (word "THE LOCAL 'heading-to-rectify' VARIABLE VALUE IS > 0 AND < 90...") ("")
-;   ifelse( random-decision = 0 )[
-;     output-debug-message (word "REPORTING " (item (0) (movement-headings)) "...") ("")
-;     set debug-indent-level (debug-indent-level - 2)
-;     report (item (0) (movement-headings))
-;   ]
-;   [
-;     output-debug-message (word "REPORTING " (item (1) (movement-headings)) "...") ("")
-;     set debug-indent-level (debug-indent-level - 2)
-;     report (item (1) (movement-headings))
-;   ]
-; ]
-; 
-; if( (heading-to-rectify > 90) and (heading-to-rectify < 180) )[
-;   output-debug-message (word "THE LOCAL 'heading-to-rectify' VARIABLE VALUE IS > 90 AND < 180...") ("")
-;   ifelse( random-decision = 0 )[
-;     output-debug-message (word "REPORTING " (item (1) (movement-headings)) "...") ("")
-;     set debug-indent-level (debug-indent-level - 2)
-;     report (item (1) (movement-headings))
-;   ]
-;   [
-;     output-debug-message (word "REPORTING " (item (2) (movement-headings)) "...") ("")
-;     set debug-indent-level (debug-indent-level - 2)
-;     report (item (2) (movement-headings))
-;   ]
-; ]
-; 
-; if( (heading-to-rectify > 180) and (heading-to-rectify < 270) )[
-;   output-debug-message (word "THE LOCAL 'heading-to-rectify' VARIABLE VALUE IS > 180 AND < 270...") ("")
-;   ifelse( random-decision = 0 )[
-;     output-debug-message (word "REPORTING " (item (2) (movement-headings)) "...") ("")
-;     set debug-indent-level (debug-indent-level - 2)
-;     report (item (2) (movement-headings))
-;   ]
-;   [
-;     output-debug-message (word "REPORTING " (item (3) (movement-headings)) "...") ("")
-;     set debug-indent-level (debug-indent-level - 2)
-;     report (item (3) (movement-headings))
-;   ]
-; ]
-; 
-; if( (heading-to-rectify > 270) and (heading-to-rectify < 360) )[
-;   output-debug-message (word "THE LOCAL 'heading-to-rectify' VARIABLE VALUE IS > 270 AND < 360...") ("")
-;   ifelse( random-decision = 0 )[
-;     output-debug-message (word "REPORTING " (item (3) (movement-headings)) "...") ("")
-;     set debug-indent-level (debug-indent-level - 2)
-;     report (item (3) (movement-headings))
-;   ]
-;   [
-;     output-debug-message (word "REPORTING " (item (0) (movement-headings)) "...") ("")
-;     set debug-indent-level (debug-indent-level - 2)
-;     report (item (0) (movement-headings))
-;   ]
-; ]
-; 
-; output-debug-message ("THE LOCAL 'heading-to-rectify' VARIABLE VALUE IS SET TO EITHER 0, 90, 180 or 270, REPORTING THIS VALUE...") ("")
-; set debug-indent-level (debug-indent-level - 2)
-; report heading-to-rectify
-;end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;; "REINFORCE-PRODUCTIONS" PROCEDURE ;;;;;
@@ -4520,86 +3335,6 @@ to-report roulette-selection [actions-and-values]
    ]
  ]
 end
-         
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;; "SCHEDULED-TO-PERFORM-ACTION-IN-FUTURE?" PROCEDURE ;;; - CHECK IF THIS IS NEEDED ANYMORE!
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;Checks the calling turtle's 'time-to-perform-next-action' variable against either
-;;the 'current-training-time' or 'current-game-time' depending on whether the game
-;;is being played in a training context or not.
-;;
-;;         Name              Data Type     Description
-;;         ----              ---------     -----------
-;;@returns -                 Boolean       True returned if the value of the calling turtle's 
-;;                                         'time-to-perform-next-action' variable is greater 
-;;                                         than the value of the local 'current-time' variable.  
-;;                                         False is returned if not.
-;;
-;;@author  Martyn Lloyd-Kelly <martynlk@liverpool.ac.uk>  
-;to-report scheduled-to-perform-action-in-future?
-; set debug-indent-level (debug-indent-level + 1)
-; output-debug-message (word "EXECUTING THE 'scheduled-to-perform-action-in-future?' PROCEDURE...") ("")
-; set debug-indent-level (debug-indent-level + 1)
-; 
-; output-debug-message (word "CHECKING THE VALUE OF THE GLOBAL 'training?' VARIABLE (" training? ") TO SEE IF THE GAME IS BEING PLAYED IN A TRAINING CONTEXT OR NOT.  'true' IF IT IS, 'false' IF NOT...") ("")
-; output-debug-message (word "A LOCAL VARIABLE: 'current-time' WILL BE SET TO EITHER THE VALUE OF 'current-training-time' (" current-training-time ") OR 'current-game-time' (" current-game-time ") DEPENDING ON WHETHER THE GAME IS BEING PLAYED IN A TRAINING CONTEXT OR NOT...") ("")
-; output-debug-message (word "THE LOCAL 'current-time' VARIABLE WILL THEN BE CHECKED AGAINST THE VALUE OF THE CALLING TURTLE's 'time-to-perform-next-action' VARIABLE TO SEE IF IT IS SCHEDULED TO PERFORM AN ACTION IN THE FUTURE...") ("")
-; let current-time 0
-; ifelse(training?)[ set current-time (current-training-time) ][ set current-time (current-game-time) ]
-; 
-; output-debug-message (word "Comparing the value of my 'time-to-perform-next-action' variable (" time-to-perform-next-action ") against the value of the local 'current-time' variable (" current-time ")...") (who)
-; 
-; ifelse(time-to-perform-next-action > current-time)[
-;   output-debug-message ("The value of my 'time-to-perform-next-action' variable is greater than the value of the local 'current-time' variable.") (who)
-;   output-debug-message ("I am therefore scheduled to perform an action in the future.  Reporting 'true'...") (who)
-;   set debug-indent-level (debug-indent-level - 2)
-;   report true
-; ]
-; [
-;   set debug-indent-level (debug-indent-level - 2)
-;   report false
-; ]
-;end
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;; "SCHEDULED-TO-PERFORM-ACTION-NOW?" PROCEDURE ;;; - CHECK IF THIS IS NEEDED ANYMORE!
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;
-;;Checks the calling turtle's 'time-to-perform-next-action' variable against either
-;;the 'current-training-time' or 'current-game-time' depending on whether the game
-;;is being played in a training context or not.
-;;
-;;         Name              Data Type     Description
-;;         ----              ---------     -----------
-;;@returns -                 Boolean       True returned if the value of the calling turtle's 
-;;                                         'time-to-perform-next-action' variable is greater 
-;;                                         than the value of the local 'current-time' variable.  
-;;                                         False is returned if not.
-;;
-;;@author  Martyn Lloyd-Kelly <martynlk@liverpool.ac.uk>  
-;to-report scheduled-to-perform-action-now?
-; set debug-indent-level (debug-indent-level + 1)
-; output-debug-message (word "EXECUTING THE 'scheduled-to-perform-action-now?' PROCEDURE...") ("")
-; set debug-indent-level (debug-indent-level + 1)
-; 
-; output-debug-message (word "CHECKING THE VALUE OF THE GLOBAL 'training?' VARIABLE (" training? ") TO SEE IF THE GAME IS BEING PLAYED IN A TRAINING CONTEXT OR NOT.  'true' IF IT IS, 'false' IF NOT...") ("")
-; output-debug-message (word "A LOCAL VARIABLE: 'current-time' WILL BE SET TO EITHER THE VALUE OF 'current-training-time' (" current-training-time ") OR 'current-game-time' (" current-game-time ") DEPENDING ON WHETHER THE GAME IS BEING PLAYED IN A TRAINING CONTEXT OR NOT...") ("")
-; output-debug-message (word "THE LOCAL 'current-time' VARIABLE WILL THEN BE CHECKED AGAINST THE VALUE OF THE CALLING TURTLE's 'time-to-perform-next-action' VARIABLE TO SEE IF IT IS SCHEDULED TO PERFORM AN ACTION NOW...") ("")
-; let current-time 0
-; ifelse(training?)[ set current-time (current-training-time) ][ set current-time (current-game-time) ]
-; 
-; output-debug-message (word "Comparing the value of my 'time-to-perform-next-action' variable (" time-to-perform-next-action ") against the value of the local 'current-time' variable (" current-time ")...") (who)
-; ifelse(time-to-perform-next-action = current-time)[
-;   output-debug-message ("The value of my 'time-to-perform-next-action' variable is equal to the value of the local 'current-time' variable.") (who)
-;   output-debug-message ("I am therefore scheduled to perform an action now.  Reporting 'true'...") (who)
-;   set debug-indent-level (debug-indent-level - 2)
-;   report true
-; ]
-; [
-;   set debug-indent-level (debug-indent-level - 2)
-;   report false
-; ]
-;end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;; "SETUP" PROCEDURE ;;;;;
@@ -4724,12 +3459,17 @@ to setup-chrest-turtles [setup-chrest?]
     set next-action-to-perform ""
     set plan []
     set score 0
-    set time-to-perform-next-action -1 ;Set to -1 initially since if it is set to 0 the turtle will think it has some action to perform in the initial round.
+    set time-to-perform-next-action 0
     set episodic-memory []
     set sight-radius-colour (color + 2)
     set generate-plan? true
     set current-search-iteration 0
     set who-of-tile-last-pushed-in-plan ""
+    
+    set deliberation-finished-time -1
+    if(can-plan?)[
+      set deliberation-finished-time 0
+    ]
     
     if(setup-chrest?)[
       chrest:instantiate-chrest-in-turtle
@@ -4956,43 +3696,6 @@ to setup-plot-pen [name-of-plot mode-of-pen]
   
   set debug-indent-level (debug-indent-level - 2)
 end
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;; "SHORTEST-DISTANCE-FROM-LOCATION-TO-LOCATION" PROCEDURE ;;; - MAY NO LONGER BE NEEDED
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;Reports the least number of patches that would need to be traversed to
-;get from the location specified to the location specified if movement
-;headings are unrestricted and environment wrapping is enabled.
-;
-;         Name              Data Type     Description
-;         ----              ---------     -----------
-;@param   from-location     String        The location to calculate distance from.
-;                                         Should be formatted as the string representation
-;                                         of a CHREST-compatible "ItemSquarePattern"
-;                                         instance, i.e. "[object-id xcor ycor]".
-;@param   to-location       String        The location to calculate distance to.
-;                                         Should be formatted as the string representation
-;                                         of a CHREST-compatible "ItemSquarePattern"
-;                                         instance, i.e. "[object-id xcor ycor]".
-;@return  -                 Number        See procedure description.
-;
-;@author  Martyn Lloyd-Kelly <martynlk@liverpool.ac.uk>  
-;to-report shortest-distance-from-location-to-location [from-location to-location]
-;  set debug-indent-level (debug-indent-level + 1)
-;  output-debug-message ("EXECUTING THE 'shortest-distance-from-location-to-location' PROCEDURE...") ("")
-;  set debug-indent-level (debug-indent-level + 1)
-;  
-;  let from-location-xcor ( chrest:ItemSquarePattern.get-column (from-location) )
-;  let from-location-ycor ( chrest:ItemSquarePattern.get-row (from-location) )
-;      
-;  let to-location-xcor ( chrest:ItemSquarePattern.get-column (to-location) )
-;  let to-location-ycor ( chrest:ItemSquarePattern.get-row (to-location) )
-;      
-;  output-debug-message (word "The x/ycor values to calculate the shortest distance between when wrapping is enabled are '" from-location-xcor "'/'" from-location-ycor "' and '" to-location-xcor "'/'" to-location-ycor "', respectively...") (who)
-;  set debug-indent-level (debug-indent-level - 2)
-;  report ( extras:distance (from-location-xcor) (from-location-ycor) (to-location-xcor) (to-location-ycor) (true) )
-;end
         
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; "SPECIFY-DEBUG-MESSAGE-OUTPUT-FILE" PROCEDURE ;;;
@@ -5013,98 +3716,6 @@ to specify-debug-message-output-file
    file-open debug-message-output-file
  ]
 end
-             
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;; "SURROUNDED?" PROCEDURE ;;; - MAY NO LONGER BE NEEDED
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;
-;;Determines whether the calling turtle is surrounded by checking to see if either 
-;;condition that follows is true for each item, n, in the global 'movement-headings' 
-;;variable:
-;;
-;; - Is there a turtle other than a tile on the patch immediately ahead of the calling
-;;   turtle with heading n?
-;; - If there is a tile on the patch immediately ahead of the calling turtle with 
-;;   heading n, is there another turtle other than a hole on the patch that is 2 
-;;   patches away from the calling turtle with heading n?
-;;
-;;If these conditions are true for all items in the global 'movement-headings' 
-;;variable then the calling turtle is surrounded. 
-;;
-;;         Name              Data Type          Description
-;;         ----              ---------          -----------
-;;@param   scene             jchrest.lib.Scene  The scene to evaluate.
-;;@return  -                 Boolean            Boolean true indicates that the calling turtle is
-;;                                              surrounded, boolean false indicates that the calling 
-;;                                              turtle is not surrounded.
-;;
-;;@author  Martyn Lloyd-Kelly <martynlk@liverpool.ac.uk>  
-;to-report surrounded? [scene]
-; set debug-indent-level (debug-indent-level + 1)
-; output-debug-message ("EXECUTING THE 'surrounded?' PROCEDURE...") ("")
-; set debug-indent-level (debug-indent-level + 1)
-; 
-; output-debug-message ("Setting the local 'headings-blocked' and 'heading-item' variable values to an empty list and 0, respectively...") (who)
-; let headings-blocked []
-; let heading-item 0
-; output-debug-message (word "The local 'headings-blocked' and 'heading-item' variable values are now set to: '" headings-blocked "' and '" heading-item "'...") (who)
-; 
-; output-debug-message (word "Setting the local 'location-of-self' variable to the location of myself in the scene I am to analyse so I can determine if I am surrounded...") (who)
-; let location-of-self ( chrest:Scene.get-location-of-creator (scene) )
-; output-debug-message (word "The local 'location-of-self' variable is now set to: '" location-of-self "'.") (who)
-; let self-xcor ( item (0) (location-of-self) )
-; let self-ycor ( item (1) (location-of-self) )
-;  
-; let xcor-of-adjacent-patch 0
-; let ycor-of-adjacent-patch 0
-; let xcor-of-patch-ahead-of-adjacent-patch 0
-; let ycor-of-patch-ahead-of-adjacent-patch 0
-; 
-; while[heading-item < length movement-headings][
-;   let heading-to-check (item (heading-item) (movement-headings))
-;   
-;   let object-on-adjacent-patch ( item (1) (get-object-and-patch-coordinates-ahead-of-location-in-scene (scene) (heading-to-check) (1)) )
-;   let object-on-patch-ahead-of-adjacent-patch ( item (1) (get-object-and-patch-coordinates-ahead-of-location-in-scene (scene) (heading-to-check) (2)) )
-;   
-;   
-;   output-debug-message (word "With heading " heading-to-check "the object on the patch adjacent to me is: '" object-on-adjacent-patch "' and the object on the patch ahead of the patch adjacent to me is: '" object-on-patch-ahead-of-adjacent-patch "'.") (who)
-;   if(
-;     ;Check that the patch adjacent to the calling turtle along the heading specified is not empty, not a "blind spot" and contains an object other than a tile.
-;     (
-;       object-on-adjacent-patch != tile-token and 
-;       object-on-adjacent-patch != empty-patch-token and 
-;       object-on-adjacent-patch != blind-patch-token
-;     ) or
-;     ;Check that the adjacent patch contains a tile and the patch ahead of this adjacent patch is not empty, a "blind spot" and doesn't contain a hole.
-;     (
-;       object-on-adjacent-patch = tile-token and
-;       object-on-patch-ahead-of-adjacent-patch != hole-token and
-;       object-on-patch-ahead-of-adjacent-patch != empty-patch-token and
-;       object-on-patch-ahead-of-adjacent-patch != blind-patch-token
-;     )
-;   )[
-;     output-debug-message (word "Either, the patch adjacent to me with heading " heading-to-check " contains a non-moveable object or a non-moveable tile so I'll add " heading-to-check " to the local 'headings-blocked' list...") (who)
-;     set headings-blocked (lput (heading-to-check) (headings-blocked))
-;     output-debug-message (word "The local 'headings-blocked' variable is now set to: " headings-blocked ".  Checking the next heading in the global 'movement-headings' variable...") (who)
-;   ]
-;   
-;   ;TODO: CONSIDER INCREMENTING DELIBERATION TIME HERE.
-;   set heading-item (heading-item + 1)
-; ]
-; 
-; output-debug-message (word "Checking the length of the local 'headings-blocked' list (" length headings-blocked ").  If this is equal to the length of the global 'movement-headings' list (" length movement-headings ") then I'm surrounded...") (who)
-; ifelse( (length headings-blocked) = (length movement-headings) )[
-;   output-debug-message ("The length of the local 'headings-blocked' list is equal to the length of the global 'movement-headings' list so I am surrounded...") (who)
-;   set debug-indent-level (debug-indent-level - 2)
-;   report true
-; ]
-; [
-;   output-debug-message ("The length of the local 'headings-blocked' list is not equal to the length of the global 'movement-headings' list so I am not surrounded...") (who)
-;   set debug-indent-level (debug-indent-level - 2)
-;   report false
-; ]
-;   
-;end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; "UPDATE-PLOT-NO-X-AXIS-VALUE" PROCEDURE ;;;
@@ -5413,7 +4024,7 @@ BUTTON
 279
 Play
 play
-NIL
+T
 1
 T
 OBSERVER
@@ -5603,7 +4214,7 @@ SWITCH
 168
 debug?
 debug?
-0
+1
 1
 -1000
 
@@ -5791,9 +4402,9 @@ draw-plots?
 BUTTON
 7
 303
-106
+148
 336
-Run Unit Tests
+Run Procedure Tests
 test
 NIL
 1

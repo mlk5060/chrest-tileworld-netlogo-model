@@ -2,8 +2,8 @@
 ;========== TEST AIM ==========
 ;==============================
 ;
-; Checks that relevant paramaters are set correctly when a CHREST turtle unsuccessfully 
-; performs an action in its plan.
+; Checks that relevant paramaters are set correctly when a CHREST turtle successfully 
+; performs an action in its plan that entails it pushing a tile into a hole.
 ;
 ;======================================
 ;========== TEST DESCRIPTION ==========
@@ -16,16 +16,18 @@
 ; - 'generate-plan?' is set to false.
 ; - 'deliberation-finished-time' is set to 100.
 ; - 'plan' is populated with expected values.
-; - 'episodic-memory' contains an episode (a string, not a real episode)
+; - 'episodic-memory' contains an episode (a string, not a real episode).
 ;
-; The initial state of the environment is not modified so that the next action in the CHREST 
-; turtle's plan will not be executed successfully.  Since the next action will be a "push-tile 
-; south by 1 patch" action, the CHREST turtle's observable environment will look like the following:
+; The environment is then modified so that the next action in the CHREST turtle's plan can
+; be executed successfully.  Since the next action will be a "push-tile south by 1 patch" 
+; action, the CHREST turtle's observable environment will look like the following:
 ;
 ; LEGEND
 ; ======
 ;
 ; C - CHREST turtle
+; T - tile
+; H - hole
 ;
 ; ---------------------
 ; |   |   |   |   |   |
@@ -34,15 +36,20 @@
 ; ---------------------
 ; |   |   | C |   |   |
 ; ---------------------
-; |   |   |   |   |   |
+; |   |   | T |   |   |
 ; ---------------------
-; |   |   |   |   |   |
+; |   |   | H |   |   |
 ; ---------------------
 ;
 ; The domain time is then set to the value of the CHREST turtle's 'deliberation-finished-time' 
 ; variable and the 'execute-next-planned-action' procedure is invoked.  Given that the domain
 ; time is equal to the CHREST turtle's 'deliberation-finished-time' variable and the environment
-; is such that the action performed will be successful, the action should be performed.
+; is such that the action performed will be successful, the 'perform-action' procedure that is
+; invoked by the 'execute-next-planned-action' procedure will schedule the action for performance.
+;
+; The model time is then advanced by the value of the CHREST turtle's "action-performance-time" 
+; parameter before 'execute-planned-action' is invoked again.  This second request should cause 
+; the action to be performed.
 ;
 ;=====================================
 ;========== TESTS PERFORMED ==========
@@ -68,6 +75,7 @@
 		set action-performance-time (10000)
 		set action-selection-procedure ("roulette-selection")
 		set add-link-time (10000)
+		set can-plan? (true)
 		set discount-rate (0.5)
 		set discrimination-time (10000)
 		set familiarisation-time (2000)
@@ -90,6 +98,19 @@
 		set visual-spatial-field-unrecognised-object-lifespan (50000)
 	]
 	setup (true)
+
+	;==========================;
+	;== CREATE TILE AND HOLE ==;
+	;==========================;
+
+	create-tiles 1 [
+		setxy ([pxcor] of turtle 0) ( ([pycor] of turtle 0) - 1)
+		set heading (0)
+	]
+
+	create-holes 1 [
+		setxy ([pxcor] of turtle 0) ( ([pycor] of turtle 0) - 2)
+	]
 
 	ask turtle 0 [
 
@@ -122,6 +143,9 @@
 		;==========================================;
 
 		set current-training-time (deliberation-finished-time)
+		execute-next-planned-action
+
+		set current-training-time (report-current-time + action-performance-time)
 		execute-next-planned-action
 		
 		;===========;
