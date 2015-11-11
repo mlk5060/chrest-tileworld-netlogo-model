@@ -124,8 +124,6 @@
 				set hider-expected-location (list (xcor) (ycor))
 			]
 
-			output-print (hider-breed)
-
 			;===========;
 			;== TESTS ==;
 			;===========;

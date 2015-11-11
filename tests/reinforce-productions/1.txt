@@ -174,7 +174,7 @@
 
 			let visual-chunk ""
 			while [visual-chunk != chrest:ListPattern.get-as-string (visual-pattern)][
-				set visual-chunk (chrest:recognise-and-learn-list-pattern (visual-pattern) (chrest:get-learning-clock))
+				set visual-chunk (chrest:recognise-and-learn (visual-pattern) (chrest:get-learning-clock))
 
 				if(not is-string? visual-chunk)[
 					set visual-chunk (chrest:ListPattern.get-as-string (chrest:Node.get-image (visual-chunk)))
@@ -183,7 +183,7 @@
 
 			let action-chunk ""
 			while [action-chunk != chrest:ListPattern.get-as-string (explicit-action-pattern)][
-				set action-chunk (chrest:recognise-and-learn-list-pattern (explicit-action-pattern) (chrest:get-learning-clock))
+				set action-chunk (chrest:recognise-and-learn (explicit-action-pattern) (chrest:get-learning-clock))
 
 				if(not is-string? action-chunk)[
 					set action-chunk (chrest:ListPattern.get-as-string (chrest:Node.get-image (action-chunk)))
@@ -192,7 +192,7 @@
 
 			set action-chunk ""
 			while [action-chunk != chrest:ListPattern.get-as-string (problem-solving-action-pattern)][
-				set action-chunk (chrest:recognise-and-learn-list-pattern (problem-solving-action-pattern) (chrest:get-learning-clock))
+				set action-chunk (chrest:recognise-and-learn (problem-solving-action-pattern) (chrest:get-learning-clock))
 
 				if(not is-string? action-chunk)[
 					set action-chunk (chrest:ListPattern.get-as-string (chrest:Node.get-image (action-chunk)))
@@ -267,7 +267,7 @@
 				set expected-problem-solving-production-value " > 0.0"
 			]
 
-			let productions (chrest:get-productions (visual-pattern) (report-current-time))
+			let productions (chrest:Node.get-productions (chrest:recognise (visual-pattern) (report-current-time)))
 
 			foreach (productions)[
 				let production-action (chrest:ListPattern.get-as-string (chrest:Node.get-image (item (0) (?))))

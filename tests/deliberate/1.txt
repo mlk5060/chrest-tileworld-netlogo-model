@@ -107,7 +107,7 @@
 			let result-of-chrest-recognising-visual-list-pattern ( 
 				chrest:ListPattern.get-as-string (
 					chrest:Node.get-image (
-						chrest:recognise-and-learn-list-pattern (visual-list-pattern) (report-current-time)
+						chrest:recognise-and-learn (visual-list-pattern) (report-current-time)
 					)
 				)
 			)
@@ -116,7 +116,7 @@
 				set result-of-chrest-recognising-visual-list-pattern ( 
 					chrest:ListPattern.get-as-string (
 						chrest:Node.get-image (
-							chrest:recognise-and-learn-list-pattern (visual-list-pattern) (report-current-time)
+							chrest:recognise-and-learn (visual-list-pattern) (report-current-time)
 						)
 					)
 				)
@@ -130,7 +130,7 @@
 			let result-of-chrest-recognising-action-list-pattern ( 
 				chrest:ListPattern.get-as-string (
 					chrest:Node.get-image (
-						chrest:recognise-and-learn-list-pattern (action-list-pattern) (report-current-time)
+						chrest:recognise-and-learn (action-list-pattern) (report-current-time)
 					)
 				)
 			)
@@ -139,7 +139,7 @@
 				set result-of-chrest-recognising-action-list-pattern ( 
 					chrest:ListPattern.get-as-string (
 						chrest:Node.get-image (
-							chrest:recognise-and-learn-list-pattern (action-list-pattern) (report-current-time)
+							chrest:recognise-and-learn (action-list-pattern) (report-current-time)
 						)
 					)
 				)
@@ -150,7 +150,7 @@
 			;== CREATE PRODUCTION BETWEEN CURRENT ENVIRONMENT STATE AND DEFINED ACTION ==;
 			;============================================================================;
 
-			while[ (chrest:get-ltm-modality-num-action-links ("visual")) = 0 ][
+			while[ chrest:get-production-count = 0 ][
 				chrest:associate-list-patterns (chrest:DomainSpecifics.normalise-list-pattern (visual-list-pattern)) (action-list-pattern) (report-current-time)
 				set current-training-time (chrest:get-learning-clock)
 			]
@@ -173,7 +173,7 @@
 
 			let deliberation-result (deliberate (observable-environment))
 			while [not item (2) (deliberation-result)][
-				set deliberation-result (deliberate (observable-environment-as-scene))
+				set deliberation-result (deliberate (observable-environment))
 			]
 			
 			;===========;

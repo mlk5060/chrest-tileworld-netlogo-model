@@ -708,16 +708,16 @@ to chrest-turtles-act
      output-debug-message ("Updating my plots...") (who)
      update-plot-no-x-axis-value ("Scores") (score)
      update-plot-no-x-axis-value ("Total Deliberation Time") (total-deliberation-time)
-     update-plot-no-x-axis-value ("Num Visual-Action Links") (chrest:get-ltm-modality-num-action-links "visual")
+     update-plot-no-x-axis-value ("Production Count") (chrest:get-production-count)
      update-plot-with-x-axis-value ("Random Behaviour Frequency") (who) (frequency-of-random-behaviour) 
      update-plot-with-x-axis-value ("Problem-Solving Frequency") (who) (frequency-of-problem-solving)
      update-plot-with-x-axis-value ("Pattern-Recognition Frequency") (who) (frequency-of-pattern-recognitions)
-     update-plot-no-x-axis-value ("Visual STM Size") (chrest:get-stm-modality-size "visual")
-     update-plot-no-x-axis-value ("Visual LTM Size") (chrest:get-ltm-modality-size "visual")
-     update-plot-no-x-axis-value ("Visual LTM Avg. Depth")(chrest:get-ltm-modality-avg-depth "visual")
-     update-plot-no-x-axis-value ("Action STM Size") (chrest:get-stm-modality-size "action")
-     update-plot-no-x-axis-value ("Action LTM Size") (chrest:get-ltm-modality-size "action")
-     update-plot-no-x-axis-value ("Action LTM Avg. Depth") (chrest:get-ltm-modality-avg-depth "action")
+     update-plot-no-x-axis-value ("Visual STM Node Count") (chrest:get-visual-stm-node-count)
+     update-plot-no-x-axis-value ("Visual LTM Size") (chrest:get-visual-ltm-size)
+     update-plot-no-x-axis-value ("Visual LTM Avg. Depth")(chrest:get-visual-ltm-avg-depth)
+     update-plot-no-x-axis-value ("Action STM Node Count") (chrest:get-action-stm-node-count)
+     update-plot-no-x-axis-value ("Action LTM Size") (chrest:get-action-ltm-size)
+     update-plot-no-x-axis-value ("Action LTM Avg. Depth")(chrest:get-action-ltm-avg-depth)
    ]
  ]
 end
@@ -911,14 +911,14 @@ to-report deliberate [scene]
       output-debug-message (word "Setting the local 'scanned-scene-during-pattern-recognition' variable to true.") (who)
       set scanned-scene-during-pattern-recognition (true)
       
-      let visual-stm (chrest:get-stm-contents-by-modality ("visual"))
+      let visual-stm (chrest:get-visual-stm)
       output-debug-message (word "I've recognised the following visual chunks by scanning the scene: " (map ([ chrest:ListPattern.get-as-string (chrest:Node.get-image (?)) ]) (visual-stm))) (who)
 
       foreach(visual-stm)[
-        let visual-chunk ( chrest:Node.get-image (?) )
+        let visual-chunk (?)
         
-        output-debug-message (word "Getting any productions associated with the recognised visual chunk: " ( chrest:ListPattern.get-as-string (visual-chunk) ) "..." ) (who)
-        let productions (chrest:get-productions (visual-chunk) (report-current-time))
+        output-debug-message (word "Getting any productions associated with the recognised visual chunk: " ( chrest:ListPattern.get-as-string (chrest:Node.get-image (visual-chunk)) ) "..." ) (who)
+        let productions (chrest:Node.get-productions (visual-chunk))
         output-debug-message (word "Productions found: " map ([ ( list (chrest:ListPattern.get-as-string (chrest:Node.get-image (item (0) (?)))) (item (1) (?)) ) ]) (productions) ".") (who)
         
         ;===============================================================================================================;
@@ -2321,7 +2321,7 @@ to-report perform-action [ action-info current-view ]
         ]
         
         ;Check for learned problem-solving action.
-        let action-recognised ( chrest:recognise-and-learn-list-pattern (action-to-learn) (report-current-time) )
+        let action-recognised ( chrest:recognise-and-learn (action-to-learn) (report-current-time) )
         if (action-recognised != "")[
           set action-recognised ( chrest:Node.get-image (action-recognised) )
           output-debug-message (word "Recognised " chrest:ListPattern.get-as-string (action-recognised) " given action " chrest:ListPattern.get-as-string (action-to-learn)) (who)
@@ -2337,7 +2337,7 @@ to-report perform-action [ action-info current-view ]
         ]
         
         output-debug-message (word "Attempting to learn action: " chrest:ListPattern.get-as-string (action-to-learn)) (who)
-        let ignore-this (chrest:recognise-and-learn-list-pattern (action-to-learn) (report-current-time))
+        let ignore-this (chrest:recognise-and-learn (action-to-learn) (report-current-time))
         ;Note: the action won't be learned (learning resource in CHREST won't be consumed) if the action is already committed to LTM.
         
         ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2484,10 +2484,10 @@ to-report perform-action [ action-info current-view ]
           )[
             output-debug-message (word "I'm to create a problem-solving production and I can reinforce explicit actions so if such a production already exists for the visual list-pattern generated I'll create a production with the explicit action instead...") (who)
             
-            let productions (chrest:get-productions (visual-list-pattern) (report-current-time))
+            let productions ( chrest:Node.get-productions (chrest:recognise (visual-list-pattern) (report-current-time)) )
             output-debug-message (word "Productions associated with " chrest:ListPattern.get-as-string (visual-list-pattern) ": " map ([chrest:ListPattern.get-as-string (chrest:Node.get-image (item (0) (?)))]) (productions)) (who)
             
-            foreach(productions)[
+            foreach (productions)[
               let action-node (item (0) (?))
               let action-node-contents ( chrest:ListPattern.get-as-netlogo-list (chrest:Node.get-image (action-node)) )
               foreach(action-node-contents)[
@@ -2730,13 +2730,13 @@ to play
       
       output-print (word "Avg score: " (mean [score] of chrest-turtles) )
       output-print (word "Avg deliberation time: " (mean [total-deliberation-time] of chrest-turtles) )
-      output-print (word "Avg # visual-action links: " (mean [chrest:get-ltm-modality-num-action-links "visual"] of chrest-turtles) )
+      output-print (word "Avg # productions: " (mean [chrest:get-production-count] of chrest-turtles) )
       output-print (word "Avg frequency of random behaviour: " (mean [frequency-of-random-behaviour] of chrest-turtles) )
       output-print (word "Avg frequency of problem-solving: " (mean [frequency-of-problem-solving] of chrest-turtles) )
       output-print (word "Avg frequency of pattern-recognition: " (mean [frequency-of-pattern-recognitions] of chrest-turtles) )
-      output-print (word "Avg # visual LTM nodes: " (mean [chrest:get-ltm-modality-size "visual"] of chrest-turtles) )
-      output-print (word "Avg depth visual LTM: " (mean [chrest:get-ltm-modality-avg-depth "visual"] of chrest-turtles) )
-      output-print (word "Avg # action LTM nodes: " (mean [chrest:get-ltm-modality-size "action"] of chrest-turtles) )
+      output-print (word "Avg # visual LTM nodes: " (mean [chrest:get-visual-ltm-size] of chrest-turtles) )
+      output-print (word "Avg depth visual LTM: " (mean [chrest:get-visual-ltm-avg-depth] of chrest-turtles) )
+      output-print (word "Avg # action LTM nodes: " (mean [chrest:get-action-ltm-size] of chrest-turtles) )
       
       output-debug-message ("CHECKING TO SEE IF ANY DATA ACCUMULATED DURING THE GAME SHOULD BE SAVED...") ("")
       if(save-interface?)[
@@ -3113,7 +3113,7 @@ to reinforce-productions
           )[
             output-debug-message (word "Since the action pattern to reinforce is the problem-solving action and I can reinforce explicit actions too, I'll check to see if a production exists between the visual pattern in this episode and the problem-solving action") (who)
             let problem-solving-production-learned? (false)
-            let productions (chrest:get-productions (visual-pattern) (report-current-time))
+            let productions ( chrest:Node.get-productions (chrest:recognise (visual-pattern) (report-current-time)) )
           
             foreach (productions)[
               let production (?)
@@ -3473,7 +3473,7 @@ to setup-chrest-turtles [setup-chrest?]
     
     if(setup-chrest?)[
       chrest:instantiate-chrest-in-turtle
-      chrest:set-domain ( chrest:TileworldDomain.new ( list (hole-token) (opponent-token) (tile-token) ) )
+      chrest:set-domain ("jchrest.lib.TileworldDomain")
     ]
       
     chrest:set-add-link-time ( add-link-time )
@@ -3485,14 +3485,14 @@ to setup-chrest-turtles [setup-chrest?]
     
     setup-plot-pen ("Scores") (0)
     setup-plot-pen ("Total Deliberation Time") (0)
-    setup-plot-pen ("Num Visual-Action Links") (0)
+    setup-plot-pen ("Production Count") (0)
     setup-plot-pen ("Random Behaviour Frequency") (1)
     setup-plot-pen ("Problem-Solving Frequency") (1)
     setup-plot-pen ("Pattern-Recognition Frequency") (1)
-    setup-plot-pen ("Visual STM Size") (0)
+    setup-plot-pen ("Visual STM Node Count") (0)
     setup-plot-pen ("Visual LTM Size") (0)
     setup-plot-pen ("Visual LTM Avg. Depth") (0)
-    setup-plot-pen ("Action STM Size") (0)
+    setup-plot-pen ("Action STM Node Count") (0)
     setup-plot-pen ("Action LTM Size") (0)
     setup-plot-pen ("Action LTM Avg. Depth") (0)
     
@@ -4173,7 +4173,7 @@ PLOT
 368
 957
 547
-Num Visual-Action Links
+Production Count
 Time
 NIL
 0.0
@@ -4214,7 +4214,7 @@ SWITCH
 168
 debug?
 debug?
-1
+0
 1
 -1000
 
@@ -4223,7 +4223,7 @@ PLOT
 10
 1449
 189
-Visual STM Size
+Visual STM Node Count
 Time
 # Nodes
 0.0
@@ -4240,7 +4240,7 @@ PLOT
 10
 1695
 189
-Action STM Size
+Action STM Node Count
 Time
 # Nodes
 0.0
@@ -4395,7 +4395,7 @@ SWITCH
 201
 draw-plots?
 draw-plots?
-1
+0
 1
 -1000
 

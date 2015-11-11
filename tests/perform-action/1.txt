@@ -409,7 +409,7 @@
 			
 				let recognised-chunk (chrest:ListPattern.get-as-string 
 					(chrest:Node.get-image 
-						(chrest:recognise-and-learn-list-pattern 
+						(chrest:recognise-and-learn 
 							(observable-environment-list-pattern) 
 							(report-current-time)
 						)
@@ -420,7 +420,7 @@
 					
 					set recognised-chunk (chrest:ListPattern.get-as-string 
 						(chrest:Node.get-image
-							(chrest:recognise-and-learn-list-pattern 
+							(chrest:recognise-and-learn 
 								(observable-environment-list-pattern) 
 								(report-current-time)
 							)
@@ -569,9 +569,11 @@
 			; "perform-action" function.
 			let productions ( map 
 				([ chrest:ListPattern.get-as-string (chrest:Node.get-image (item (0) (?))) ]) 
-				( chrest:get-productions
-					(observable-environment-list-pattern)
-					(report-current-time)
+				( chrest:Node.get-productions
+					( chrest:recognise
+						(observable-environment-list-pattern)
+						(report-current-time)
+					)
 				)
 			)
 
@@ -588,12 +590,12 @@
 			]
 
 			check-equal
-				(chrest:get-ltm-modality-num-action-links ("visual"))
+				(chrest:get-production-count)
 				(expected-num-productions-across-visual-ltm)
 				(word "when checking the number of productions that exist across visual LTM " scenario-description)
 
 			check-equal
-				(chrest:get-ltm-modality-size ("action"))
+				(chrest:get-action-ltm-size)
 				(expected-action-ltm-size)
 				(word "when checking the size of action LTM " scenario-description)
 
