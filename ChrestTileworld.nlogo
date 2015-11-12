@@ -61,6 +61,7 @@ breed [ holes ]
 globals [
   blind-patch-token              ;Stores the string used to denote a blind patch in a CHREST turtle's visual-spatial field.
   breeds                         ;Stores the names of turtle breeds (not automatically updated).
+  colors-used                    ;Stores a list of the colors used by CHREST turtles: used to ensure colour uniqueness to make graphs easier to interpret.
   current-game-time              ;Stores the length of time (in milliseconds) that the non-training game has run for.
   current-repeat-number          ;Stores the current repeat number.
   current-scenario-number        ;Stores the current scenario number.
@@ -73,10 +74,9 @@ globals [
   hole-birth-prob                ;Stores the probability that a hole will be created on each tick in the game.
   hole-lifespan                  ;Stores the length of time (in milliseconds) that a hole lives for after creation. 
   hole-token                     ;Stores the string used to indicate a hole in scene instances.
-  move-token                     ;Stores the string used to indicate that the calling turtle should move in a direction in action-patterns.
+  move-token                     ;Stores the string used to indicate that the calling turtle should move non randomly.
+  move-randomly-token            ;Stores the string used to indicate that the calling turtle should move randomly.
   movement-headings              ;Stores headings that agents can move along.
-  move-around-tile-token         ;Stores the string used to indicate that the calling turtle moved around a tile in action-patterns.
-  move-to-tile-token             ;Stores the string used to indicate that the calling turtle moved to a tile in action-patterns.
   ;output-interval                ;Stores the interval of time that must pass before data is output to the model's output area.
   possible-actions               ;Stores a list of action identifier strings.  If adding a new action, include its identifier in this list.
   problem-solving-token          ;Stores the string used to indicate that a turtle used problem-solving to select an action.
@@ -621,16 +621,20 @@ to chrest-turtles-act
      ;== TURTLE CAN NOT PLAN ==;
      ;=========================;
      [
-       chrest:learn-scene (chrest:Scene.new (get-observable-environment) ("")) (number-fixations) (report-current-time)
+       output-debug-message ("I can not plan") (who)
        
        ifelse(deliberation-finished-time = -1)[
+         output-debug-message ("My 'deliberation-finished-time' turtle variable is = -1 so I should deliberate") (who)
          let action-deliberationTime-patternRecUsed (deliberate (get-observable-environment))
          set next-action-to-perform (list (item (0) (action-deliberationTime-patternRecUsed)) (item (2) (action-deliberationTime-patternRecUsed)))
-         set deliberation-finished-time (item (1) (action-deliberationTime-patternRecUsed))
+         set deliberation-finished-time (report-current-time + (item (1) (action-deliberationTime-patternRecUsed)))
+         output-debug-message (word "Next action to perform is: " next-action-to-perform " and my 'deliberation-finished-time' turtle variable is = " deliberation-finished-time) (who)
        ]
        [
-         if(report-current-time >= deliberation-finished-time)[
-           set deliberation-finished-time (-1)
+         output-debug-message (word "My 'deliberation-finished-time' turtle variable is != -1 (" deliberation-finished-time ") so I should try to perform " next-action-to-perform " if the current time is >= my 'deliberation-finished-time'") (who)
+         ifelse(report-current-time >= deliberation-finished-time)[
+           
+           output-debug-message (word "My 'deliberation-finished-time' is >= the current time, performing " next-action-to-perform) (who)
            
            ;=========================================;
            ;== PREPARE ACTION FOR "perform-action" ==;
@@ -641,7 +645,7 @@ to chrest-turtles-act
            ;=========================================;
            ;== PREPARE VISION FOR "perform-action" ==;
            ;=========================================;
-           
+        
            let observable-environment (get-observable-environment)
         
            output-debug-message (word "Removing object ID's from what I can currently see since this information is not required by the action performance procedure...") (who)
@@ -699,7 +703,13 @@ to chrest-turtles-act
                output-debug-message ( word "The action was not performed successfully..." ) (who)
                set episodic-memory ([])
              ]
+             
+             output-debug-message ("I should deliberate again, resetting my 'deliberation-finished-time' turtle variable to -1") (who)
+             set deliberation-finished-time (-1)
            ]
+         ]
+         [
+           output-debug-message ("Haven't finished deliberating yet, exiting procedure") (who)
          ]
        ]
        
@@ -738,26 +748,26 @@ to construct-visual-spatial-field
   if( breed = chrest-turtles )[
     output-debug-message ("THE CALLING TURTLE'S BREED IS EQUAL TO 'chrest-turtles' SO THE PROCEDURE WILL CONTINUE...") ("")
     
-    output-debug-message (word "Creating the scene that will be used to construct the visual-spatial field...") (who)
-    let scene (chrest:scene.new (get-observable-environment) (""))
-    
-    output-debug-message (word "Constructing the visual-spatial field...") (who)
-    chrest:VisualSpatialField.new
-     (scene) 
-     (visual-spatial-field-object-placement-time)
-     (visual-spatial-field-empty-square-placement-time)
-     (visual-spatial-field-access-time) 
-     (visual-spatial-field-object-movement-time)
-     (visual-spatial-field-recognised-object-lifespan)
-     (visual-spatial-field-unrecognised-object-lifespan)
-     (number-fixations)
-     (report-current-time)
-     (false)
-     (false)
+      output-debug-message (word "Creating the scene that will be used to construct the visual-spatial field...") (who)
+      let scene (chrest:scene.new (get-observable-environment) (""))
+      
+      output-debug-message (word "Constructing the visual-spatial field...") (who)
+      chrest:VisualSpatialField.new
+      (scene) 
+      (visual-spatial-field-object-placement-time)
+      (visual-spatial-field-empty-square-placement-time)
+      (visual-spatial-field-access-time) 
+      (visual-spatial-field-object-movement-time)
+      (visual-spatial-field-recognised-object-lifespan)
+      (visual-spatial-field-unrecognised-object-lifespan)
+      (number-fixations)
+      (report-current-time)
+      (false)
+      (false)
      
      set construct-visual-spatial-field? (false)
      output-debug-message (word "Since I'm constructing a visual-spatial field I'll set the 'construct-visual-spatial-field?' turtle variable to boolean false so that I can plan and not repeatedly construct a visual-spatial field every time 'generate-plan' is called.") (who)
-  ]
+    ]
   
   set debug-indent-level (debug-indent-level - 2)
 end
@@ -1047,7 +1057,7 @@ to-report deliberate [scene]
     ]
     [
       output-debug-message ("I didn't see any tiles, I'll try to select a random heading to move 1 patch forward along...") (who)
-      set action ( list (move-token) (one-of (movement-headings)) (1) )
+      set action ( list (move-randomly-token) (one-of (movement-headings)) (1) )
     ]
       
     ;================================================;
@@ -1282,29 +1292,29 @@ to-report generate-action-when-tile-can-be-seen [tile-xcor tile-ycor]
     let potential-actions []
     if(tile-xcor = 0 and tile-ycor = 1)[
       output-debug-message ("Tile is north of me so I could move east or west around it or push it north...") (who)
-      set potential-actions (lput (list (move-around-tile-token) (90) (1)) (potential-actions))
-      set potential-actions (lput (list (move-around-tile-token) (270) (1)) (potential-actions))
+      set potential-actions (lput (list (move-token) (90) (1)) (potential-actions))
+      set potential-actions (lput (list (move-token) (270) (1)) (potential-actions))
       set potential-actions (lput (list (push-tile-token) (0) (1)) (potential-actions))
     ]
     
     if(tile-xcor = 1 and tile-ycor = 0)[
       output-debug-message ("Tile is east of me so I could move north or south around it or push it east...") (who)
-      set potential-actions (lput (list (move-around-tile-token) (0) (1)) (potential-actions))
-      set potential-actions (lput (list (move-around-tile-token) (180) (1)) (potential-actions))
+      set potential-actions (lput (list (move-token) (0) (1)) (potential-actions))
+      set potential-actions (lput (list (move-token) (180) (1)) (potential-actions))
       set potential-actions (lput (list (push-tile-token) (90) (1)) (potential-actions))
     ]
     
     if(tile-xcor = 0 and tile-ycor = -1)[
       output-debug-message ("Tile is south of me so I could move east or west around it or push it south...") (who)
-      set potential-actions (lput (list (move-around-tile-token) (90) (1)) (potential-actions))
-      set potential-actions (lput (list (move-around-tile-token) (270) (1)) (potential-actions))
+      set potential-actions (lput (list (move-token) (90) (1)) (potential-actions))
+      set potential-actions (lput (list (move-token) (270) (1)) (potential-actions))
       set potential-actions (lput (list (push-tile-token) (180) (1)) (potential-actions))
     ]
     
     if(tile-xcor = -1 and tile-ycor = 0)[
       output-debug-message ("Tile is west of me so I could move north or south around it or push it west...") (who)
-      set potential-actions (lput (list (move-around-tile-token) (0) (1)) (potential-actions))
-      set potential-actions (lput (list (move-around-tile-token) (180) (1)) (potential-actions))
+      set potential-actions (lput (list (move-token) (0) (1)) (potential-actions))
+      set potential-actions (lput (list (move-token) (180) (1)) (potential-actions))
       set potential-actions (lput (list (push-tile-token) (270) (1)) (potential-actions))
     ]
     
@@ -1334,7 +1344,7 @@ to-report generate-action-when-tile-can-be-seen [tile-xcor tile-ycor]
       set potential-headings (lput (270) (potential-headings))
     ]
     
-    set action (list (move-to-tile-token) (one-of (potential-headings)) (1))
+    set action (list (move-token) (one-of (potential-headings)) (1))
   ]
   
   output-debug-message (word "The action I'm going to perform is: " action) (who)
@@ -1358,7 +1368,7 @@ to generate-plan
   set debug-indent-level (debug-indent-level + 1)
   
   if(breed = chrest-turtles)[
-  
+      
     ;==========================;
     ;== ATTENTION FREE CHECK ==;
     ;==========================; 
@@ -1368,127 +1378,127 @@ to generate-plan
       
       output-debug-message(word "Attention is free, I can plan...") (who)
       
-      ;=================================================;
-      ;== CHECK FOR VISUAL-SPATIAL FIELD CONSTRUCTION ==;
-      ;=================================================;
+    ;=================================================;
+    ;== CHECK FOR VISUAL-SPATIAL FIELD CONSTRUCTION ==;
+    ;=================================================;
       
-      ifelse(construct-visual-spatial-field?)[
-        output-debug-message(word "My 'construct-visual-spatial-field?' variable is equal to 'true' so I'll construct a new visual-spatial field...") (who)
-        construct-visual-spatial-field
+    ifelse(construct-visual-spatial-field?)[
+      output-debug-message(word "My 'construct-visual-spatial-field?' variable is equal to 'true' so I'll construct a new visual-spatial field...") (who)
+      construct-visual-spatial-field
+    ]
+    [
+      output-debug-message (word "My 'construct-visual-spatial-field?' variable is equal to 'false' so I've already constructed a visual-spatial field for this planning cycle.  Generating a planned action...")  (who)
+        
+      ;========================================================;
+      ;== CHECK FOR END PLAN GENERATION CONDITIONS BEING MET ==;
+      ;========================================================;
+        
+      output-debug-message ("Checking to see if any plan generation conditions have been met...") (who)
+      let end-plan-generation? (false)
+        
+      ;++++++++++++++++++++++++++++;
+      ;++ CHECK SEARCH ITERATION ++;
+      ;++++++++++++++++++++++++++++;
+      
+      if(current-search-iteration > max-search-iteration)[
+        output-debug-message (word "I've reached my maximum search bound: my 'current-search-iteration' variable (" current-search-iteration ") is > my 'max-search-iteration' variable (" max-search-iteration ").  Ending plan generation...") (who)
+        set end-plan-generation? (true)
       ]
-      [
-        output-debug-message (word "My 'construct-visual-spatial-field?' variable is equal to 'false' so I've already constructed a visual-spatial field for this planning cycle.  Generating a planned action...")  (who)
-        
-        ;========================================================;
-        ;== CHECK FOR END PLAN GENERATION CONDITIONS BEING MET ==;
-        ;========================================================;
-        
-        output-debug-message ("Checking to see if any plan generation conditions have been met...") (who)
-        let end-plan-generation? (false)
-        
-        ;++++++++++++++++++++++++++++;
-        ;++ CHECK SEARCH ITERATION ++;
-        ;++++++++++++++++++++++++++++;
-        
-        if(current-search-iteration > max-search-iteration)[
-          output-debug-message (word "I've reached my maximum search bound: my 'current-search-iteration' variable (" current-search-iteration ") is > my 'max-search-iteration' variable (" max-search-iteration ").  Ending plan generation...") (who)
-          set end-plan-generation? (true)
+      
+      ;++++++++++++++++++++++++++++++++++++++++++++;
+      ;++ CHECK FOR SELF ON VISUAL-SPATIAL FIELD ++;
+      ;++++++++++++++++++++++++++++++++++++++++++++;
+      
+      if(not end-plan-generation?)[
+        if( empty? chrest:VisualSpatialField.get-object-locations (report-current-time) (word who) (true) )[
+          output-debug-message (word "I can't currently see myself in my visual-spatial field. Ending plan generation...")  (who)
+          set end-plan-generation? true
         ]
+      ]
+      
+      ;+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++;
+      ;++ CHECK FOR TILE BEING PUSHED STILL EXISTING IN VISUAL-SPATIAL FIELD OR BEING PUSHED ONTO SAME COORDINATE AS HOLE ++;
+      ;+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++;
+      
+      if(not end-plan-generation?)[  
+        output-debug-message (word "Checking to see if I was pushing a tile that has been pushed into a hole or no longer exists in my visual-spatial field. The latter may be true if:\n"
+           "1. The tile has been pushed out of the visual-spatial field\n" 
+           "2. Its visual-spatial field object representation has decayed\n"
+           "If this isn't checked, further planning may occur which should not be done since, when planning. I should be fixated on a tile and if it disappears or fills a hole I should execute the plan as-is..."
+        ) (who)
         
-        ;++++++++++++++++++++++++++++++++++++++++++++;
-        ;++ CHECK FOR SELF ON VISUAL-SPATIAL FIELD ++;
-        ;++++++++++++++++++++++++++++++++++++++++++++;
-        
-        if(not end-plan-generation?)[
-          if( empty? chrest:VisualSpatialField.get-object-locations (report-current-time) (word who) (true) )[
-            output-debug-message (word "I can't currently see myself in my visual-spatial field. Ending plan generation...")  (who)
-            set end-plan-generation? true
-          ]
-        ]
-        
-        ;+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++;
-        ;++ CHECK FOR TILE BEING PUSHED STILL EXISTING IN VISUAL-SPATIAL FIELD OR BEING PUSHED ONTO SAME COORDINATE AS HOLE ++;
-        ;+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++;
-        
-        if(not end-plan-generation?)[  
-          output-debug-message (word "Checking to see if I was pushing a tile that has been pushed into a hole or no longer exists in my visual-spatial field. The latter may be true if:\n"
-             "1. The tile has been pushed out of the visual-spatial field\n" 
-             "2. Its visual-spatial field object representation has decayed\n"
-             "If this isn't checked, further planning may occur which should not be done since, when planning. I should be fixated on a tile and if it disappears or fills a hole I should execute the plan as-is..."
-          ) (who)
+        if( (not empty? who-of-tile-last-pushed-in-plan) )[
           
-          if( (not empty? who-of-tile-last-pushed-in-plan) )[
+          output-debug-message (word "I've been pushing a tile so I'll check to see if it still exists or has been pushed onto a hole") (who)
+          let locations-of-tile-last-pushed (chrest:VisualSpatialField.get-object-locations (report-current-time) (who-of-tile-last-pushed-in-plan) (true))
+          ifelse(empty? locations-of-tile-last-pushed)[
+            output-debug-message (word "There is no tile with a 'who' value of " who-of-tile-last-pushed-in-plan " in my visual-spatial field so the 'end-plan-generation?' turtle variable should be set to true") (who)
+            set end-plan-generation? (true)
+          ]
+          [
+            let location-of-tile-last-pushed ( item (0) (locations-of-tile-last-pushed) )
+            output-debug-message (word "There is a tile with a 'who' value of " who-of-tile-last-pushed-in-plan " on coordinates " location-of-tile-last-pushed " in my visual-spatial field so I'll check to see if there is also a hole on this location...")  (who)
             
-            output-debug-message (word "I've been pushing a tile so I'll check to see if it still exists or has been pushed onto a hole") (who)
-            let locations-of-tile-last-pushed (chrest:VisualSpatialField.get-object-locations (report-current-time) (who-of-tile-last-pushed-in-plan) (true))
-            ifelse(empty? locations-of-tile-last-pushed)[
-              output-debug-message (word "There is no tile with a 'who' value of " who-of-tile-last-pushed-in-plan " in my visual-spatial field so the 'end-plan-generation?' turtle variable should be set to true") (who)
+            if(chrest:VisualSpatialField.is-object-on-square? (report-current-time) (hole-token) (item (0) (location-of-tile-last-pushed)) (item (1) (location-of-tile-last-pushed)) (false))[
+              output-debug-message (word "There is a hole on the same coordinates as the tile so the local 'end-plan-generation?' variable will be set to true...")  (who)
               set end-plan-generation? (true)
-            ]
-            [
-              let location-of-tile-last-pushed ( item (0) (locations-of-tile-last-pushed) )
-              output-debug-message (word "There is a tile with a 'who' value of " who-of-tile-last-pushed-in-plan " on coordinates " location-of-tile-last-pushed " in my visual-spatial field so I'll check to see if there is also a hole on this location...")  (who)
-              
-              if(chrest:VisualSpatialField.is-object-on-square? (report-current-time) (hole-token) (item (0) (location-of-tile-last-pushed)) (item (1) (location-of-tile-last-pushed)) (false))[
-                output-debug-message (word "There is a hole on the same coordinates as the tile so the local 'end-plan-generation?' variable will be set to true...")  (who)
-                set end-plan-generation? (true)
-              ]  
-            ]
+            ]  
           ]
         ]
-        
+      ]
+      
         ;=========================================;
         ;== GENERATE VISUAL-SPATIAL FIELD MOVES ==;
         ;=========================================;
-        ifelse(not end-plan-generation?)[
+      ifelse(not end-plan-generation?)[
           
           output-debug-message ("No end plan generation conditions met, generating next planned action...") (who)
-          
+      
           let action-to-perform ""
           let visual-spatial-field-moves ""
           let reverse-visual-spatial-field-move? (false)
-          
+        
           output-debug-message ("Resetting 'who-of-tile-last-pushed-in-plan'") (who)
           set who-of-tile-last-pushed-in-plan ("")
-          
+        
           ;Generate a new move and add it to the plan (at this point, the visual-spatial field will be OK to generate as a Scene since there will not be two objects on any visual-spatial coordinate)
           let visual-spatial-field-as-list-with-object-ids (chrest:ListPattern.get-as-netlogo-list
             (chrest:Scene.get-as-list-pattern
               (chrest:VisualSpatialField.get-as-scene 
                 (report-current-time) 
                 (false)
-                ) 
+              ) 
               (true) ;Creator-relative coordinates
               (false) ;Object IDs
-              )
             )
+          )
           
           let visual-spatial-field-as-list-with-object-classes (chrest:ListPattern.get-as-netlogo-list
             (chrest:Scene.get-as-list-pattern
               (chrest:VisualSpatialField.get-as-scene 
                 (report-current-time) 
                 (false)
-                ) 
+              ) 
               (true) ;Creator-relative coordinates
               (true) ;Object classes
-              )
             )
+          )
           
           let scene-to-deliberate-with []
           let i (0)
           while [i < (length visual-spatial-field-as-list-with-object-classes)][
             let visual-spatial-field-object-info-with-id (item (i) (visual-spatial-field-as-list-with-object-ids))
             let visual-spatial-field-object-info-with-class (item (i) (visual-spatial-field-as-list-with-object-classes))
-            
+          
             set scene-to-deliberate-with (lput
               (list 
                 (chrest:ItemSquarePattern.get-column (visual-spatial-field-object-info-with-id))
                 (chrest:ItemSquarePattern.get-row (visual-spatial-field-object-info-with-id))
                 (chrest:ItemSquarePattern.get-item (visual-spatial-field-object-info-with-id))
                 (chrest:ItemSquarePattern.get-item (visual-spatial-field-object-info-with-class))
-                )
-              (scene-to-deliberate-with)
               )
+              (scene-to-deliberate-with)
+            )
             set i (i + 1)
           ]
           
@@ -1496,64 +1506,64 @@ to generate-plan
           set action-to-perform ( item (0) (action-to-perform-time-taken-to-deliberate-and-used-pattern-recognition) )
           let time-taken-to-deliberate ( item (1) (action-to-perform-time-taken-to-deliberate-and-used-pattern-recognition) )
           let used-pattern-recognition ( item (2) (action-to-perform-time-taken-to-deliberate-and-used-pattern-recognition) )
-          
+        
           set action-to-perform (chrest:ItemSquarePattern.new 
             (item (0) (action-to-perform)) 
             (item (1) (action-to-perform)) 
             (item (2) (action-to-perform)) 
-            )
-          
+          )
+        
           output-debug-message (word "Action decided upon: " chrest:ItemSquarePattern.get-as-string (action-to-perform) ) (who)
           output-debug-message (word "Time spent deliberating: " time-taken-to-deliberate ".") (who)
           output-debug-message (word "Did I use pattern-recognition to generate " chrest:ItemSquarePattern.get-as-string (action-to-perform) "?: " used-pattern-recognition ".") (who)
-          
+        
           output-debug-message ( word "Adding the time taken to decide upon this action pattern to the current value of my 'time-spent-deliberating-on-plan' turtle variable (" time-spent-deliberating-on-plan ")...") (who)
           set time-spent-deliberating-on-plan (time-spent-deliberating-on-plan + time-taken-to-deliberate)
           output-debug-message ( word "My 'time-spent-deliberating-on-plan' turtle variable is now equal to: " time-spent-deliberating-on-plan "...") (who)
-          
+        
           output-debug-message ("Generating visual-spatial field moves...") (who)
           set visual-spatial-field-moves ( generate-visual-spatial-field-moves (action-to-perform) (false) )
-          
+        
           ;========================================;
           ;== PERFORM VISUAL-SPATIAL FIELD MOVES ==;
           ;========================================;
-          
+        
           output-debug-message ( word "Moving objects in the visual-spatial field..." ) (who)
           chrest:VisualSpatialField.move-objects (visual-spatial-field-moves) (report-current-time) (false)
           output-debug-message ( word "Completed moving objects in the visual-spatial-field...") (who)
-          
+        
           output-debug-message ("Incrementing my 'current-search-iteration' turtle variable by 1") (who)
           set current-search-iteration (current-search-iteration + 1)
-          
+        
           ;===========================================;
           ;== CHECK THAT LAST PLANNED ACTION VALID  ==;
           ;===========================================;
-          
+        
           ;CAUTION: When checking these conditions, don't get the visual-spatial-field as a Scene since only one object will exist on any visual-spatial field coordinate 
           ;preventing correct checks to be made on the state of the visual-spatial field.
-          
+        
           output-debug-message (word "I'll check that there are no illegal configurations of objects in 'visual-spatial-field-as-list-pattern'.") (who)
           output-debug-message (word "If there are, the previous planned action must have caused this and thus, the planned action will be unsuccessful if performed in reality.") (who)
           output-debug-message (word "Consequently, the move should be reversed in my visual-spatial field") (who)
-          
+        
           ;To check that the last planned action produces a valid visual-spatial field, we need to "cheat" and get the visual-spatial field at
           ;the time when the last planned action has actually been performed.
           let last-action-valid? (is-visual-spatial-field-state-valid-at-time? (chrest:get-attention-clock))
-          
+        
           ;============================;
           ;== REVERSE INVALID ACTION ==;
           ;============================;
-          
+        
           ifelse(not last-action-valid?)[
             output-debug-message ("The last action planned produces an invalid visual-spatial field state so I should reverse the action..." ) (who)
             set visual-spatial-field-moves ( generate-visual-spatial-field-moves (action-to-perform) (true) )
-            
+          
             ;To reverse the move, we need to "cheat" and pass the current attention free time of the model as a parameter to the "VisualSpatialField.move-objects" extension primitive so
             ;that the move is actually reversed (using the current environment time would result in the reversal not being performed because attention would be consumed at this time as
             ;far as the turtle's CHREST model is concerned).
             chrest:VisualSpatialField.move-objects (visual-spatial-field-moves) (chrest:get-attention-clock) (false)
             output-debug-message ( word "Completed reversing the move in the visual-spatial-field...") (who)
-            
+          
             output-debug-message ( word "Resetting my 'who-of-tile-last-pushed-in-plan' since, if I did push a tile, I shouldn't have because it resulted in the invalid state just reverted." ) (who)
             set who-of-tile-last-pushed-in-plan ""
           ]
@@ -1566,29 +1576,29 @@ to generate-plan
             output-debug-message ( word "My plan turtle variable is now equal to: '" map ([list ( chrest:ItemSquarePattern.get-as-string (item (0) (?)) ) (item (1) (?))]) (plan) "'..." ) (who)
           ]
         ]
-        ;=========================;
-        ;== END PLAN GENERATION ==;
-        ;=========================;
-        [ 
-          output-debug-message ( word "The local 'end-plan-generation?' variable is set to true so I should not plan any more.  To do this I need to set my 'generate-plan?' turtle variable to false..."  ) (who)
-          set generate-plan? false
-          
-          output-debug-message ( word "I also need to set my 'deliberation-finished-time' turtle variable so that I simulate inactivity while deliberating.  This will be set to the sum of the current time (" report-current-time ") and the value of my 'time-spent-deliberating-on-plan' turtle variable (" time-spent-deliberating-on-plan ")..." ) (who)
-          set deliberation-finished-time (report-current-time + time-spent-deliberating-on-plan)
-          
-          output-debug-message ( word "I'll also set my 'time-spent-deliberating-on-plan' turtle variable to 0 now since it has served its purpose for this plan generation cycle and should be reset for the next cycle..." ) (who)
-          set time-spent-deliberating-on-plan 0
-          
-          output-debug-message ( word "I'll also set my 'current-search-iteration' turtle variable to 0 now since it should be reset for the next planning cycle..." ) (who)
-          set current-search-iteration 0
-          
-          output-debug-message ( word "I'll also set my 'who-of-tile-last-pushed-in-plan' turtle variable to '' now since it should be reset for the next planning cycle..." ) (who)
-          set who-of-tile-last-pushed-in-plan ""
-          
-          output-debug-message (word "My 'generate-plan?', 'deliberation-finished-time' and 'time-spent-deliberating-on-plan' turtle variables are now set to: '" generate-plan? "', '" deliberation-finished-time "' and '" time-spent-deliberating-on-plan "' respectively...") (who)
-          output-debug-message (word "The final plan is set to: '" map ([ (list (chrest:ItemSquarePattern.get-as-string item (0) (?)) (item (1) (?)))  ]) (plan) "'.") (who)
-        ]
-      ];construct-visual-spatial-field? check
+      ;=========================;
+      ;== END PLAN GENERATION ==;
+      ;=========================;
+      [ 
+        output-debug-message ( word "The local 'end-plan-generation?' variable is set to true so I should not plan any more.  To do this I need to set my 'generate-plan?' turtle variable to false..."  ) (who)
+        set generate-plan? false
+        
+        output-debug-message ( word "I also need to set my 'deliberation-finished-time' turtle variable so that I simulate inactivity while deliberating.  This will be set to the sum of the current time (" report-current-time ") and the value of my 'time-spent-deliberating-on-plan' turtle variable (" time-spent-deliberating-on-plan ")..." ) (who)
+        set deliberation-finished-time (report-current-time + time-spent-deliberating-on-plan)
+        
+        output-debug-message ( word "I'll also set my 'time-spent-deliberating-on-plan' turtle variable to 0 now since it has served its purpose for this plan generation cycle and should be reset for the next cycle..." ) (who)
+        set time-spent-deliberating-on-plan 0
+        
+        output-debug-message ( word "I'll also set my 'current-search-iteration' turtle variable to 0 now since it should be reset for the next planning cycle..." ) (who)
+        set current-search-iteration 0
+        
+        output-debug-message ( word "I'll also set my 'who-of-tile-last-pushed-in-plan' turtle variable to '' now since it should be reset for the next planning cycle..." ) (who)
+        set who-of-tile-last-pushed-in-plan ""
+        
+        output-debug-message (word "My 'generate-plan?', 'deliberation-finished-time' and 'time-spent-deliberating-on-plan' turtle variables are now set to: '" generate-plan? "', '" deliberation-finished-time "' and '" time-spent-deliberating-on-plan "' respectively...") (who)
+        output-debug-message (word "The final plan is set to: '" map ([ (list (chrest:ItemSquarePattern.get-as-string item (0) (?)) (item (1) (?)))  ]) (plan) "'.") (who)
+      ]
+    ];construct-visual-spatial-field? check
     ];attention check
   ];CHREST turtle breed check
   
@@ -2387,10 +2397,10 @@ to-report perform-action [ action-info current-view ]
         ;
         ;To add an episode to episodic memory and attempt production creation, the following statements must all evaluate to true for the reasons provided:
         ;
-        ; 1) Action performed must not be a 'move' action: the 'move' action is only generated when a turtle should explore the environment freely to try and
-        ;    find an environment state that enables it to secure a tile or push a tile into a hole.  Due to the stochasticity of Tileworld, such movement should
-        ;    be random so biasing such random movement by creating a production that terminates with the 'move' action makes such movements non-random.  This may
-        ;    adversely affect the scoring potential of the turtle so should be avoided.
+        ; 1) Action performed must not be a 'move-randomly' action: the 'move-randomly' action is only generated when a turtle should explore the environment 
+        ;    freely to try and find an environment state that enables it to secure a tile or push a tile into a hole.  Due to the stochasticity of Tileworld, 
+        ;    such movement should be random so biasing such random movement by creating a production that terminates with the 'move-randomly' action makes 
+        ;    such movements non-random.  This may adversely affect the scoring potential of the turtle so should be avoided.
         ; 2) Only successful actions should be used to create productions.  Helps to uphold the principle of production rationality specified by Miyazaki et al: 
         ;    "better productions should be selected more frequently than worse ones" [Miyazaki, K., Yamamura, M., Kobayashi, S.: On the rationality of profit 
         ;    sharing in reinforcement learning. In: 3rd International Conference on Fuzzy Logic, Neural Nets and Soft Computing. pp. 285–288. Korean Institute of 
@@ -2406,14 +2416,14 @@ to-report perform-action [ action-info current-view ]
         ;    Likewise, if its not possible to reinforce explicit action productions then there's no reason to add an episode to episodic memory.
         output-debug-message ("Checking to see if I should add an episode to episodic memory and if I should attempt to create a production...") (who)
         output-debug-message (word "I'll do this if the following are all true:") (who)
-        output-debug-message (word " 1. The action performed was not equal to '" move-token "' (" (action-identifier != move-token) ")") (who) 
+        output-debug-message (word " 1. The action performed was not equal to '" move-randomly-token "' (" (action-identifier != move-token) ")") (who) 
         output-debug-message (word " 2. The action was performed successfully (" action-performed-successfully ")") (who) 
         output-debug-message (word " 3. The visual list-pattern generated isn't empty (" not chrest:ListPattern.empty? visual-list-pattern ")") (who)
         output-debug-message (word " 4. I can reinforce either problem-solving productions (" reinforce-problem-solving? ") or explicit action productions (" reinforce-actions? ")") (who)
         output-debug-message (word " 5. Its not the case that the action performed was generated using pattern-recognition and I can't reinforce explicit action productions (" not (pattern-rec-used? and not reinforce-actions?) ")") (who)
         
         ifelse(
-          (action-identifier != move-token) and 
+          (action-identifier != move-randomly-token) and 
           (action-performed-successfully) and
           (not chrest:ListPattern.empty? visual-list-pattern) and
           (reinforce-problem-solving? or reinforce-actions?) and
@@ -3377,9 +3387,8 @@ to setup [testing]
   
   ;Set action strings.
   set problem-solving-token "PS"
-  set move-around-tile-token "MAT"
   set move-token "MV"
-  set move-to-tile-token "MTT"
+  set move-randomly-token "MR"
   set procedure-not-applicable-token "PNA"
   set push-tile-token "PT"
   
@@ -3403,24 +3412,12 @@ to setup [testing]
     270 
   ]
   set possible-actions ( list 
-    (move-around-tile-token)
     (move-token)
-    (move-to-tile-token)
+    (move-randomly-token)
     (push-tile-token)
   )
+  set colors-used []
   set training? true
-  
-  output-debug-message (word "THE 'current-training-time' GLOBAL VARIABLE IS SET TO: '" current-training-time "'.") ("")
-  output-debug-message (word "THE 'current-game-time' GLOBAL VARIABLE IS SET TO: '" current-game-time "'.") ("")
-  output-debug-message (word "THE 'movement-headings' GLOBAL VARIABLE IS SET TO: '" movement-headings "'.") ("")
-  output-debug-message (word "THE 'training?' GLOBAL VARIABLE IS SET TO: '" training? "'.") ("")
-  output-debug-message (word "THE 'move-around-tile-token' GLOBAL VARIABLE IS SET TO: '" move-around-tile-token "'.") ("")
-  output-debug-message (word "THE 'move-token' GLOBAL VARIABLE IS SET TO: '" move-token "'.") ("")
-  output-debug-message (word "THE 'move-to-tile-token' GLOBAL VARIABLE IS SET TO: '" move-to-tile-token "'.") ("")
-  output-debug-message (word "THE 'push-tile-token' GLOBAL VARIABLE IS SET TO: '" push-tile-token "'.") ("")
-  output-debug-message (word "THE 'hole-token' GLOBAL VARIABLE IS SET TO: '" hole-token "'.") ("")
-  output-debug-message (word "THE 'opponent-token' GLOBAL VARIABLE IS SET TO: '" opponent-token "'.") ("")
-  output-debug-message (word "THE 'tile-token' GLOBAL VARIABLE IS SET TO: '" tile-token "'.") ("")
   
   setup-independent-variables
   setup-chrest-turtles (true)
@@ -3452,6 +3449,14 @@ end
 to setup-chrest-turtles [setup-chrest?]
         
   ask chrest-turtles [
+    while[member? (color) (colors-used)][
+      set color (one-of (base-colors))
+    ]
+    set colors-used (lput (color) (colors-used))
+    if(length colors-used = length base-colors)[
+      set colors-used ([])
+    ]
+    
     set closest-tile ""
     set current-visual-pattern ""
     set heading 0

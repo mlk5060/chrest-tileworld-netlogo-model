@@ -86,44 +86,44 @@
 				(xcor-value = -1 and ycor-value = 0) 
 			)[
 				if(xcor-value = 0 and ycor-value = 1)[
-					set expected-actions-generated (lput (list (move-around-tile-token) (90) (1)) (expected-actions-generated))
-		      		set expected-actions-generated (lput (list (move-around-tile-token) (270) (1)) (expected-actions-generated))
+					set expected-actions-generated (lput (list (move-token) (90) (1)) (expected-actions-generated))
+		      		set expected-actions-generated (lput (list (move-token) (270) (1)) (expected-actions-generated))
 		      		set expected-actions-generated (lput (list (push-tile-token) (0) (1)) (expected-actions-generated))
 				]
 
 		    	if(xcor-value = 1 and ycor-value = 0)[
-		    		set expected-actions-generated (lput (list (move-around-tile-token) (0) (1)) (expected-actions-generated))
-		      		set expected-actions-generated (lput (list (move-around-tile-token) (180) (1)) (expected-actions-generated))
+		    		set expected-actions-generated (lput (list (move-token) (0) (1)) (expected-actions-generated))
+		      		set expected-actions-generated (lput (list (move-token) (180) (1)) (expected-actions-generated))
 		      		set expected-actions-generated (lput (list (push-tile-token) (90) (1)) (expected-actions-generated))
 		    	]
 
 		    	if(xcor-value = 0 and ycor-value = -1)[
-		    		set expected-actions-generated (lput (list (move-around-tile-token) (90) (1)) (expected-actions-generated))
-		      		set expected-actions-generated (lput (list (move-around-tile-token) (270) (1)) (expected-actions-generated))
+		    		set expected-actions-generated (lput (list (move-token) (90) (1)) (expected-actions-generated))
+		      		set expected-actions-generated (lput (list (move-token) (270) (1)) (expected-actions-generated))
 		      		set expected-actions-generated (lput (list (push-tile-token) (180) (1)) (expected-actions-generated))
 		    	]
 
 		    	if(xcor-value = -1 and ycor-value = 0)[
-		    		set expected-actions-generated (lput (list (move-around-tile-token) (0) (1)) (expected-actions-generated))
-					set expected-actions-generated (lput (list (move-around-tile-token) (180) (1)) (expected-actions-generated))
+		    		set expected-actions-generated (lput (list (move-token) (0) (1)) (expected-actions-generated))
+					set expected-actions-generated (lput (list (move-token) (180) (1)) (expected-actions-generated))
 					set expected-actions-generated (lput (list (push-tile-token) (270) (1)) (expected-actions-generated))
 		    	]
 			]
 			[
 				if(ycor-value > 0)[
-					set expected-actions-generated (lput (list (move-to-tile-token) (0) (1)) (expected-actions-generated))
+					set expected-actions-generated (lput (list (move-token) (0) (1)) (expected-actions-generated))
 				]
 
 				if(xcor-value > 0)[
-					set expected-actions-generated (lput (list (move-to-tile-token) (90) (1)) (expected-actions-generated))
+					set expected-actions-generated (lput (list (move-token) (90) (1)) (expected-actions-generated))
 				]
 
 				if(ycor-value < 0)[
-					set expected-actions-generated (lput (list (move-to-tile-token) (180) (1)) (expected-actions-generated))
+					set expected-actions-generated (lput (list (move-token) (180) (1)) (expected-actions-generated))
 				]
 
 				if(xcor-value < 0)[
-					set expected-actions-generated (lput (list (move-to-tile-token) (270) (1)) (expected-actions-generated))
+					set expected-actions-generated (lput (list (move-token) (270) (1)) (expected-actions-generated))
 				]
 		    ]
 

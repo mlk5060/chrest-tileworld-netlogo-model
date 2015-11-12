@@ -37,7 +37,7 @@
 			(0.0)
 		)
 		( list
-			(list (move-around-tile-token) (270) (1))
+			(list (move-token) (270) (1))
 			(0.0)
 		)
 	)
@@ -48,7 +48,7 @@
 			(0.0)
 		)
 		( list
-			(list (move-around-tile-token) (270) (1))
+			(list (move-token) (270) (1))
 			(1.0)
 		)
 	)
@@ -59,11 +59,11 @@
 			(0.0)
 		)
 		( list
-			(list (move-around-tile-token) (270) (1))
+			(list (move-token) (270) (1))
 			(0.5)
 		)
 		( list
-			(list (move-to-tile-token) (270) (1))
+			(list (move-token) (270) (1))
 			(0.5)
 		)
 	)
@@ -72,13 +72,13 @@
 		check-equal (roulette-selection (productions-with-zero-values)) ([]) ("")
 		check-equal 
 			(roulette-selection (two-productions-one-with-non-zero-value)) 
-			( (list (move-around-tile-token) (270) (1)) )
+			( (list (move-token) (270) (1)) )
 			("")
 
 		repeat 20[
 			let action-selected (roulette-selection (three-productions-two-with-equal-non-zero-values))
 			check-equal
-				(action-selected = (list (move-around-tile-token) (270) (1)) or action-selected = (list (move-to-tile-token) (270) (1)) ) 
+				(action-selected = (list (move-token) (270) (1)) or action-selected = (list (move-token) (270) (1)) ) 
 				( true ) 
 				("")
 		]

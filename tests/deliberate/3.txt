@@ -37,7 +37,7 @@
 ;=====================================
 ;
 ; The result of the "deliberation" procedure is checked to see if it is as expected:
-; - The first item should be an expected action.  Given that no tiles can be seen, a "move" action with any cardinal compass heading.
+; - The first item should be an expected action.  Given that no tiles can be seen, a "move-randomly" action with any cardinal compass heading.
 ; - The second item should be the time taken to deliberate, i.e. the time defined for the CHREST turtle to use problem-solving.
 ; - The third item should be equal to false, i.e. the turtle used problem-solving to generate the action reported.
 <test>
@@ -82,10 +82,10 @@
 
 			let deliberation-result ( deliberate (get-observable-environment) )
 			let expected-actions (list
-				(list (move-token) (0) (1))
-				(list (move-token) (90) (1))
-				(list (move-token) (180) (1))
-				(list (move-token) (270) (1))
+				(list (move-randomly-token) (0) (1))
+				(list (move-randomly-token) (90) (1))
+				(list (move-randomly-token) (180) (1))
+				(list (move-randomly-token) (270) (1))
 			)
 
 			check-equal 
