@@ -1974,20 +1974,22 @@ to-report get-observable-environment
   report (observable-environment)
 end
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;; "IS-VISUAL-SPATIAL-FIELD-STATE-VALID-AT-TIME?" PROCEDURE ;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;; "ARE-VISUAL-SPATIAL-FIELD-SQUARES-VALID-AT-TIME?" PROCEDURE ;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;Determines whether the calling turtle's visual-spatial field state is valid at a particular time.
-;For a visual-spatial field's state to be valid, all of the following must be f:
+;Determines whether the squares specified in the calling turtle's 
+;visual-spatial field have a valid configuration of objects upon them
+;at the time specified.
 ;
-; 1) A tile:
-;   a. Exists on the same patch as another tile
-;   b. Exists on the same patch as an opponent
-; 2) The self:
-;   a. Exists on the same patch as a hole
-;   b. Exists on the same patch as a tile
-;   c. Exists on the same patch as an opponent
+;For a visual-spatial field square's object configuration to be valid, 
+;none of the following must be true:
+;
+; 1) Two tiles exist on the square.
+; 2) A tile and an opponent both exist on the square.
+; 3) The calling turtle's avatar and a hole both exist on the square.
+; 4) The calling turtle's avatar and a tile both exist on the square.
+; 5) The calling turtle's avatar and an opponent both exist on the square.
 ;
 ;Note that only the self and tiles are checked since these are the only
 ;objects that can be moved by a calling turtle in its visual-spatial field.
@@ -1999,77 +2001,66 @@ end
 ;         ----              ---------     -----------
 ;@param   state-at-time     Number        The time at which to check the validity of the visual-spatial
 ;                                         field at.
-;@return  -                 Boolean       True if the visual-spatial field state is valid at the time
+;@param   squares-to-check  List          The squares to check specified using lists of non-turtle relative
+;                                         x and y coordinates.
+;@return  -                 Boolean       True if the visual-spatial field squares are valid at the time
 ;                                         specified, false if not.
 ;
 ;@author  Martyn Lloyd-Kelly <martynlk@liverpool.ac.uk>
-to-report is-visual-spatial-field-state-valid-at-time? [state-at-time]
+to-report are-visual-spatial-field-squares-valid-at-time? [state-at-time squares-to-check]
   set debug-indent-level (debug-indent-level + 1)
-  output-debug-message ("EXECUTING THE 'is-visual-spatial-field-state-valid-at-time' PROCEDURE...") ("")
+  output-debug-message ("EXECUTING THE 'are-visual-spatial-field-squares-valid-at-time?' PROCEDURE...") ("")
   set debug-indent-level (debug-indent-level + 1) 
   
-  let columns (chrest:VisualSpatialField.get-as-netlogo-list (state-at-time) (false))
-  output-debug-message (word "Visual-spatial field at time " state-at-time ": " columns) (who)
-  let col 0
-  
-  while[col < length columns][
-    let rows (item (col) (columns))
-    let row 0
+  let visual-spatial-field (chrest:VisualSpatialField.get-as-netlogo-list (state-at-time) (false))
+  output-debug-message (word "Visual-spatial field at time " state-at-time ": " visual-spatial-field) (who)
+
+  foreach(squares-to-check)[
+    let col item (0) (?)
+    let row item (1) (?)
     
-    while [row < length rows] [
-      let objects (item (row) (rows))
-      let object-index 0
-      output-debug-message (word "Checking coordinates " col ", " row) (who)
-      set debug-indent-level (debug-indent-level + 1)
+    output-debug-message (word "Checking square (" col ", " row ")") (word)
+    
+    let square-contents (item (row) (item (col) (visual-spatial-field)))
+    
+    let hole-counter 0
+    let opponent-counter 0
+    let self-counter 0
+    let tile-counter 0
+    
+    foreach(square-contents)[
+      let object-class (item (1) (?))
       
-      let hole-counter 0
-      let opponent-counter 0
-      let self-counter 0
-      let tile-counter 0
-      
-      while [object-index < length objects][
-        let object (item (object-index) (objects))
-        let object-class (item (1) (object))
-        output-debug-message (word "Object class: '" object-class "'" ) (who)
-        
-        if(object-class = hole-token)[
-          set hole-counter (hole-counter + 1)
-        ]
-        
-        if(object-class = opponent-token)[
-          set opponent-counter (opponent-counter + 1)
-        ]
-        
-        if(object-class = chrest:Scene.get-creator-token)[
-          set self-counter (self-counter + 1)
-        ]
-        
-        if(object-class = tile-token)[
-          set tile-counter (tile-counter + 1)
-        ]
-        
-        set object-index (object-index + 1)
-      ]
-      set debug-indent-level (debug-indent-level - 1)
-      
-      output-debug-message (word "There's " hole-counter " hole(s), " opponent-counter " opponent(s), " self-counter " of me and " tile-counter " tile(s) here" ) (who)
-      if(
-        (tile-counter > 1) or 
-        ((tile-counter = 1 or self-counter = 1) and opponent-counter > 0) or
-        (self-counter = 1 and (hole-counter > 0 or tile-counter > 0))
-      )[
-        output-debug-message (word "This indicates an invalid visual-spatial field state so false will be reported." ) (who)
-        set debug-indent-level (debug-indent-level - 2)
-        report (false)
+      if(object-class = hole-token)[
+        set hole-counter (hole-counter + 1)
       ]
       
-      set row (row + 1)
+      if(object-class = opponent-token)[
+        set opponent-counter (opponent-counter + 1)
+      ]
+      
+      if(object-class = chrest:Scene.get-creator-token)[
+        set self-counter (self-counter + 1)
+      ]
+      
+      if(object-class = tile-token)[
+        set tile-counter (tile-counter + 1)
+      ]
     ]
     
-    set col (col + 1)
+    output-debug-message (word "There's " hole-counter " hole(s), " opponent-counter " opponent(s), " self-counter " of me and " tile-counter " tile(s) here" ) (who)
+    if(
+      (tile-counter > 1) or 
+      ((tile-counter = 1 or self-counter = 1) and opponent-counter > 0) or
+      (self-counter = 1 and (hole-counter > 0 or tile-counter > 0))
+    )[
+      output-debug-message (word "This indicates an invalid visual-spatial field square state so false will be reported." ) (who)
+      set debug-indent-level (debug-indent-level - 2)
+      report (false)
+    ]
   ]
   
-  output-debug-message (word "The visual-spatial field state must be valid at time " state-at-time " so true will be reported." ) (who)
+  output-debug-message (word "The visual-spatial field squares specified have valid configurations at time " state-at-time " so true will be reported." ) (who)
   set debug-indent-level (debug-indent-level - 2)
   report (true)
 end
@@ -2869,8 +2860,6 @@ to print-and-run [string-to-be-run]
  output-debug-message (word "NETLOGO COMMAND TO BE PASSED TO 'run' PRIMITIVE: '" string-to-be-run "'.") ("")
  set debug-indent-level (debug-indent-level - 2)
  run string-to-be-run
- 
- 
 end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3857,7 +3846,7 @@ end
 ;wish to demo test code before including it in the test file, ensure 
 ;that the body of the procedure below is commented out.
 ;
-;@author  Martyn Lloyd-Kelly <martynlk@liverpool.ac.uk>  
+;@author  Martyn Lloyd-Kelly <martynlk@liverpool.ac.uk>
 to test
   ifelse( user-yes-or-no? ("Would you like to run a specific test?  If not, all tests in the 'tests' model directory will be run.") )[
     let test-file (user-file)

@@ -2,21 +2,24 @@
 ;========== TEST AIM ==========
 ;==============================
 ;
-; 1) To determine if the "is-visual-spatial-field-state-valid-at-time?" variable generates correct output.
+; 1) To determine if the "are-visual-spatial-field-squares-valid-at-time?" variable generates correct output.
 ;
 ;======================================
 ;========== TEST DESCRIPTION ==========
 ;====================================== 
 ; 
-; A CHREST turtle is situated in an environment consisting of two tiles, a hole and an object (all objects that can exist in Tileworld) and asked to construct
-; a visual-spatial field representing its observable environment.  After this an object is moved in the visual-spatial field and the resulting visual-spatial 
+; A CHREST turtle is situated in an environment consisting of two tiles, a hole and an object (all objects 
+; that can exist in Tileworld) and asked to construct a visual-spatial field representing its observable 
+; environment.  After this an object is moved in the visual-spatial field and the resulting visual-spatial 
 ; field state is checked to see if it is valid or not.
 ; 
-; Only particular scenarios are tested since only the CHREST turtle's avatar (the self) and tiles can be moved in a CHREST turtle's visual-spatial field so 
-; only these objects are moved in this test.  Consequently, any scenario imagined outside of those tested here will be evaluated as being valid.
+; Only particular scenarios are tested since only the CHREST turtle's avatar (the self) and tiles can be 
+; moved in a CHREST turtle's visual-spatial field so only these objects are moved in this test.  
+; Consequently, any scenario imagined outside of those tested here will be evaluated as being valid.
 ;
-; The table below displays all possible combinations of objects that exist on the same visual-spatial coordinate and the scenario in which this configuration
-; is tested.  Note that some combinations are impossible:
+; The table below displays all possible combinations of objects that exist on the same visual-spatial 
+; coordinate and the scenario in which this configuration is tested.  Note that some combinations are 
+; impossible:
 ;
 ; - No two "Self" objects will exist in the same visual-spatial field concurrently.
 ; - "Hole" and "Opponent" objects are never moved in the visual-spatial field. 
@@ -34,8 +37,8 @@
 ;
 ; In total there are 6 scenarios to be tested.  Scenarios 1-5 are invalid whilst 6 is valid.
 ;
-; The initial visual-spatial field state and the states created for each scenario are illustrated below.  Each object is denoted by its "who" number followed 
-; by the class of the object in parenthesis.
+; The initial visual-spatial field state and the states created for each scenario are illustrated below.  
+; Each object is denoted by its "who" number followed by the class of the object in parenthesis.
 ;
 ; LEGEND
 ; ======
@@ -158,7 +161,7 @@
 			set familiarisation-time 2000
 			set max-length-of-episodic-memory  800
 			set max-search-iteration 5
-			set number-fixations 4
+			set number-fixations 20
 			set pattern-recognition? true
 			set play-time 14400000.0
 			set reinforce-actions? true
@@ -181,11 +184,36 @@
 		create-chrest-turtles 1 [setxy ([pxcor] of turtle 0) (([pycor] of turtle 0) - 1)]
 		create-tiles 1 [setxy (([pxcor] of turtle 0) - 1) ([pycor] of turtle 0)]
 
+		let original-object-locations (list
+			(list (1) (0))
+			(list (0) (1))
+			(list (2) (1))
+			(list (1) (2))
+		)
+
 		ask turtle 0 [
-			
-			construct-visual-spatial-field
+			let expected-fixations-made (false)
+			let expected-number-fixations-to-be-made (length (original-object-locations))
+
+			while[not expected-fixations-made][
+				construct-visual-spatial-field
+
+				let number-expected-fixations-made (0)
+				let fixations-made (map ([ list (chrest:Perceiver.get-fixation-xcor (?)) (chrest:Perceiver.get-fixation-ycor (?)) ]) (chrest:Perceiver.get-fixations))
+
+				foreach(fixations-made)[
+					if(member? ? original-object-locations)[
+						set number-expected-fixations-made (number-expected-fixations-made + 1)
+					]
+				]
+
+				if(number-expected-fixations-made = expected-number-fixations-to-be-made)[
+					set expected-fixations-made (true)
+				]
+			]
+
 			check-equal 
-				(is-visual-spatial-field-state-valid-at-time? (chrest:get-attention-clock)) 
+				(are-visual-spatial-field-squares-valid-at-time? (chrest:get-attention-clock) (original-object-locations)) 
 				(true) 
 				(word "when checking initial visual-spatial scene in scenario " scenario)
 
@@ -249,8 +277,15 @@
 			]
 
 			chrest:VisualSpatialField.move-objects (object-moves) (chrest:get-attention-clock) (false)
+			let squares-to-check []
+			foreach(object-moves)[
+				foreach(?)[
+					set squares-to-check (lput (list (chrest:ItemSquarePattern.get-column (?)) (chrest:ItemSquarePattern.get-row (?))) (squares-to-check))
+				]
+			]
+
 			check-equal 
-				(is-visual-spatial-field-state-valid-at-time? (chrest:get-attention-clock)) 
+				(are-visual-spatial-field-squares-valid-at-time? (chrest:get-attention-clock) (squares-to-check))
 				(expected-output) 
 				(word "when checking visual-spatial scene in scenario " scenario " after objects have been moved")
 		]
