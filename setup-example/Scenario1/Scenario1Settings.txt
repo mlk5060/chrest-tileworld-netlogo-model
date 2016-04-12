@@ -1,10 +1,10 @@
-<run>create-chrest-turtles 4</run>
+<run>create-chrest-turtles 1</run>
 
 tile-lifespan
-300000
+600000
 
 hole-lifespan
-300000
+600000
 
 tile-birth-prob
 0.9
@@ -16,86 +16,85 @@ reward-value
 1.0
 
 tile-born-every
-500
+100
 
 hole-born-every
-500
+100
 
 action-performance-time
-(0-3):0
+0:0
 
 action-selection-procedure
-(0-3):roulette-selection
+0:roulette-selection
 
 add-link-time
-(0-3):10000
+0:10000
 
 can-plan?
-(0-1):true
-(2-3):false
+0:true
 
 discount-rate
-(0-3):0.5
+0:0.5
 
 discrimination-time
-(0-3):10000
+0:10000
 
 familiarisation-time
-(0-3):2000
+0:2000
 
 max-length-of-episodic-memory
-(0-3):30
+0:3
 
 max-search-iteration
-(0-3):3
-
-visual-spatial-field-access-time
-(0-3):100
-
-visual-spatial-field-empty-square-placement-time
-(0-3):10
-
-visual-spatial-field-object-movement-time
-(0-3):50
-
-visual-spatial-field-object-placement-time
-(0-3):25
-
-visual-spatial-field-recognised-object-lifespan
-(0-3):10000
-
-visual-spatial-field-unrecognised-object-lifespan
-(0-3):50000
+0:3
 
 number-fixations
-(0-3):4
+0:4
 
 pattern-recognition?
-(0-3):true
+0:true
 
 play-time
-(0-3):14400000.0
+0:14400000.0
 
 reinforce-actions?
-(0-3):true
+0:true
 
 reinforce-problem-solving?
-(0-3):true
+0:true
 
 reinforcement-learning-theory
-(0-3):profit_sharing_with_discount_rate
+0:profit_sharing_with_discount_rate
 
 sight-radius
-(0-3):2
+0:2
 
 time-taken-to-act-randomly
-(0-3):500
+0:500
 
 time-taken-to-use-pattern-recognition
-(0-3):200
+0:200
 
 time-taken-to-problem-solve
-(0-3):1000
+0:1000
 
 training-time
-(0-3):0.0
+0:0.0
+
+visual-spatial-field-access-time
+0:100
+
+visual-spatial-field-empty-square-placement-time
+0:10
+
+visual-spatial-field-object-movement-time
+0:50
+
+visual-spatial-field-object-placement-time
+0:25
+
+visual-spatial-field-recognised-object-lifespan
+0:10000
+
+visual-spatial-field-unrecognised-object-lifespan
+0:50000

@@ -57,7 +57,7 @@
 			set familiarisation-time (2000)
 			set max-length-of-episodic-memory (5)
 			set max-search-iteration (5)
-			set number-fixations (4)
+			set number-fixations (15)
 			set pattern-recognition? (true)
 			set play-time (14400000.0)
 			set reinforce-actions? (true)
@@ -79,21 +79,27 @@
 		;== CREATE TILE ==;
 		;=================;
 
+		let fixation-to-make []
+
 		create-tiles 1 [
 			if(heading-to-use = 0)[
 				setxy ([pxcor] of turtle 0) (([pycor] of turtle 0) + 1)
+				set fixation-to-make (list (2) (3))
 			]
 
 			if(heading-to-use = 90)[
 				setxy (([pxcor] of turtle 0) + 1) ([pycor] of turtle 0)
+				set fixation-to-make (list (3) (2))
 			]
 
 			if(heading-to-use = 180)[
 				setxy ([pxcor] of turtle 0) (([pycor] of turtle 0) - 1)
+				set fixation-to-make (list (2) (1))
 			]
 
 			if(heading-to-use = 270)[
 				setxy (([pxcor] of turtle 0) - 1) ([pycor] of turtle 0)
+				set fixation-to-make (list (1) (2))
 			]
 		]
 
@@ -110,18 +116,30 @@
 			;== CREATE VISUAL-SPATIAL FIELD ==;
 			;=================================;
 
-			chrest:VisualSpatialField.new
-				(scene-to-encode-in-visual-spatial-field)
-				(visual-spatial-field-object-placement-time)
-				(visual-spatial-field-empty-square-placement-time)
-				(visual-spatial-field-access-time)
-				(visual-spatial-field-object-movement-time)
-				(visual-spatial-field-recognised-object-lifespan)
-				(visual-spatial-field-unrecognised-object-lifespan)
-				(number-fixations)
-				(report-current-time)
-				(false)
-				(false)
+			let expected-fixations-made (false)
+			let expected-number-fixations-to-be-made (length (fixation-to-make))
+			
+			while[not expected-fixations-made][
+				chrest:VisualSpatialField.new
+					(scene-to-encode-in-visual-spatial-field)
+					(visual-spatial-field-object-placement-time)
+					(visual-spatial-field-empty-square-placement-time)
+					(visual-spatial-field-access-time)
+					(visual-spatial-field-object-movement-time)
+					(visual-spatial-field-recognised-object-lifespan)
+					(visual-spatial-field-unrecognised-object-lifespan)
+					(number-fixations)
+					(report-current-time)
+					(false)
+					(false)
+
+				let number-expected-fixations-made (0)
+				let fixations-made (map ([ list (chrest:Perceiver.get-fixation-xcor (?)) (chrest:Perceiver.get-fixation-ycor (?)) ]) (chrest:Perceiver.get-fixations))
+
+				if(member? (fixation-to-make) (fixations-made))[
+					set expected-fixations-made (true)
+				]
+			]
 
 			;=================================================================================;
 			;== INVOKE 'generate-visual-spatial-field-moves' AND PREPARE OUTPUT FOR TESTING ==;

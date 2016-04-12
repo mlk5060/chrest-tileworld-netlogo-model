@@ -60,7 +60,7 @@
 			set familiarisation-time 2000
 			set max-length-of-episodic-memory (5)
 			set max-search-iteration 5
-			set number-fixations 4
+			set number-fixations 15
 			set pattern-recognition? true
 			set play-time 14400000.0
 			set reinforce-actions? true
@@ -91,10 +91,20 @@
 
 			;When the ListPattern representing the observable environment as a Scene is learned, CHREST will normalise the ListPattern according to 
 			;the DomainSpecifics class set as its current domain.  So, to control learning, it is necessary to check if what is recognised is equal
-			;to what should be learned.  So, to do this correctly, the ListPattern should be normalised here.
+			;to what should be learned.  So, to do this correctly, the ListPattern should be normalised here.  Also, the "Scene.get-as-list-pattern"
+			;extension primitive will cause the coordinates for objects in the ListPattern returned to be scene-specific rather than creator-specific.
+			;This has implications later when the scene is scanned as part of the "deliberate" procedure since, when scanning, CHREST will attempt to
+			;recognise what is scanned as ListPatterns containing ItemSquarePatterns whose coordinates are domain-specific, in this case, creator-relative.
+			;Thus, if the scene-specific coordinates are not converted here, learned information will have scene-specific coordinates and when the model
+			;attempts to recognise info in the scene, the creator-relative coordinates will never match up correctly causing an infinite loop (see the 
+			;while loop that controls when deliberation ends).
+
 			let visual-list-pattern ( chrest:DomainSpecifics.normalise-list-pattern 
-				( chrest:Scene.get-as-list-pattern 
-					(observable-environment-as-scene) (true) (true) 
+				( chrest:DomainSpecifics.convert-scene-specific-coordinates-to-domain-specific-coordinates
+					( chrest:Scene.get-as-list-pattern 
+						(observable-environment-as-scene) (true) 
+					)
+					(observable-environment-as-scene)
 				)
 			)
 			let action-pattern (chrest:ItemSquarePattern.new (push-tile-token) (180) (1))

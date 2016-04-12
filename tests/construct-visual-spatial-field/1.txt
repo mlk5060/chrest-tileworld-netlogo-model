@@ -51,7 +51,7 @@
 		set familiarisation-time 2000
 		set max-length-of-episodic-memory 5
 		set max-search-iteration 5
-		set number-fixations 4
+		set number-fixations 20
 		set pattern-recognition? true
 		set play-time 14400000.0
 		set reinforce-actions? true
@@ -78,8 +78,37 @@
 	create-chrest-turtles 1 [setxy ( ([pxcor] of turtle 0) - 1 ) ( ([pycor] of turtle 0) - 1 )]
 	create-tiles 1 [setxy ( ([pxcor] of turtle 0) - 1 ) ( ([pycor] of turtle 0) + 1 )]
 
+	let expected-fixations (list
+		(list (1) (1))
+		(list (2) (1))
+		(list (3) (1))
+		(list (1) (2))
+		(list (3) (2))
+		(list (1) (3))
+		(list (2) (3))
+		(list (3) (3))
+	)
+
 	ask turtle 0 [
-		construct-visual-spatial-field
+		let expected-fixations-made (false)
+		let expected-number-fixations-to-be-made (length (expected-fixations))
+
+		while[not expected-fixations-made][
+			construct-visual-spatial-field
+
+			let number-expected-fixations-made (0)
+			let fixations-made (map ([ list (chrest:Perceiver.get-fixation-xcor (?)) (chrest:Perceiver.get-fixation-ycor (?)) ]) (chrest:Perceiver.get-fixations))
+
+			foreach(fixations-made)[
+				if(member? ? expected-fixations)[
+					set number-expected-fixations-made (number-expected-fixations-made + 1)
+				]
+			]
+
+			if(number-expected-fixations-made = expected-number-fixations-to-be-made)[
+				set expected-fixations-made (true)
+			]
+		]
 
 		let visual-spatial-field ( chrest:Scene.get-as-netlogo-list ( chrest:VisualSpatialField.get-as-scene (chrest:get-attention-clock) (true) ) )
 

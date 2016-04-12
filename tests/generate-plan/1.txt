@@ -2,36 +2,64 @@
 ;========== TEST AIM ==========
 ;==============================
 ;
-; To determine if plan generation is blocked when a CHREST turtle invokes the "generate-plan" procedure when its attention is occupied.
+; 1) To determine if visual-spatial field construction occurs when a CHREST turtle invokes the "generate-plan" procedure and 
+;    its attention is free.
+; 2) To determine if the CHREST turtle attempts to learn the current observable environment in this situation until its
+;    visual-spatial field has been constructed.
 ;
 ;======================================
 ;========== TEST DESCRIPTION ==========
 ;======================================
 ;
-; To plan, a CHREST turtle's attention must be free since plan generation involves manipulating information in the visual-spatial field
-; and this requires attention. Since a CHREST turtle's attention can be consumed performing visual-spatial field functions, calls to the 
-; "generate-plan" procedure may be blocked in certain scenarios to make code execution in the Netlogo model more efficient (why do 
-; everything to enable plan generation if the CHREST turtle's attention is consumed and visual-spatial field access is blocked?).  
-; Consequently, this test has a CHREST turtle perform a task that consumes its attention before calling "generate-plan" after some 
-; time has passed but not enough for the CHREST turle's attention to become "free".
+; At time 0 in the domain, a CHREST turtle invokes "generate-plan" when its obeservable environment looks like the following:
+;
+; LEGEND
+; ======
+;
+; - H: hole
+; - O: opponent
+; - T: tile
+; - C: CHREST turtle
+;
+; |------|------|------|
+; | 8(H) | 1(T) | 2(H) |
+; |------|------|------|
+; | 7(T) | 0(C) | 3(O) |
+; |------|------|------|
+; | 6(O) | 5(H) | 4(T) |
+; |------|------|------|
+;
+; This should result in the CHREST turtle constructing a visual-spatial field *only* (no actual planning should occur) and 
+; it attempting to learn what it fixated on (looked at) during visual-spatial field construction.
+;
+; The test then continues to invoke "generate-plan" until the model time equals that of the CHREST turtle's attention clock
+; (set during the first "generate-plan" invocation), i.e. the time visual-spatial field construction completes.
+;
+; NOTE: the visual-spatial field constructed is not checked for correctness since this is handled by CHREST's testing.
 ;
 ;=====================================
 ;========== TESTS PERFORMED ==========
 ;=====================================
+; 
+; The following variables are checked at each time increment:
 ;
-; - The attention-clock of the CHREST turtle should be set to the time taken to completely instantiate the minds eye.
-; - The 'construct-visual-spatial-field?' turtle variable should be set to boolean false since the visual-spatial field of the CHREST 
-;   turtle will have already been constructed when the first "generate-plan" procedure is invoked.
-; - The 'generate-plan' turtle variable is set to 'true' since no *actual* plan generation will occur therefore, no end plan generation 
-;   conditions will be met.
-; - The length of the 'plan' turtle variable is 0 since no *actual* plan generation will occur.
-; - The 'time-spent-deliberating-on-plan' turtle variable is set to 0 since no *actual* plan generation will occur.
-; - The 'deliberation-finished-time' is set to 0 since no *actual* plan generation will occur.
-; - The 'who-of-tile-last-pushed-in-plan' turtle variable should be set to "" since no plan generation has occured and thus no tile could have been pushed yet.
-; - The 'current-search-iteration' turtle variable should be set to 0 since no search has been performed.
+; - CHREST attention clock: should be set greater than or equal to a minimum value and less than or equal to a maximum value since attention should be 
+;   consumed as a visual-spatial field should have been constructed.  An exact value isn't calculated since this is tested by CHREST's testing.
+; - "construct-visual-spatial-field?" turtle variable: should be set to boolean false since a visual-spatial field should have been constructed 
+;   and neither planning or execution of planned actions has occurred yet.
+; - "generate-plan?" turtle variable: should be set to boolean true since no end plan generation conditions should have been met at time t.
+; - Length of the "plan" turtle variable: should be set to 0 since no *actual* plan generation should have occurred at time t so no actions should have
+;   been added to the turtle's plan.
+; - "time-spent-deliberating-on-plan": should be set to 0 since no *actual* plan generation should have occurred at time t so no time should have been
+;   spent deliberating on a plan.
+; - "deliberation-finished-time": should be set to 0 since no end plan generation conditions should have been met at time t.
+; - "who-of-tile-last-pushed-in-plan" turtle variable: should be set to "" since no *actual* plan generation should have occurred at time t and thus no 
+;   tile could have been pushed in the CHREST turtle's visual-spatial field.
+; - "current-search-iteration" turtle variable: should be set to 0 since no *actual* plan generation should have occurred at time t so no search should have 
+;   occurred.
+; - "scene-to-learn" turtle variable: should be set to the CHREST turtle's current observable environment.
 ;
 <test>
-
 	create-chrest-turtles 1 [
 		set action-performance-time 10000
 		set action-selection-procedure "roulette-selection"
@@ -48,7 +76,7 @@
 		set reinforce-actions? true
 		set reinforce-problem-solving? true
 		set reinforcement-learning-theory "profit_sharing_with_discount_rate" 
-		set sight-radius 2
+		set sight-radius 1
 		set time-taken-to-use-pattern-recognition 200
 		set time-taken-to-problem-solve 1000
 		set visual-spatial-field-access-time 100
@@ -60,37 +88,55 @@
 	]
 	setup (true)
 
-	create-tiles 1 [setxy ([pxcor] of turtle 0) ( ([pycor] of turtle 0) + 1) ]
-	
-	let expected-attention-free-time 0
-	let expected-visual-spatial-field-construction-value false
+	create-tiles 1 [ setxy ([pxcor] of turtle 0) (([pycor] of turtle 0) + 1) ]
+	create-holes 1 [ setxy (([pxcor] of turtle 0) + 1) (([pycor] of turtle 0) + 1) ]
+	create-chrest-turtles 1 [ setxy (([pxcor] of turtle 0) + 1) ([pycor] of turtle 0) ]
+	create-tiles 1 [ setxy (([pxcor] of turtle 0) + 1) (([pycor] of turtle 0) - 1) ]
+	create-holes 1 [ setxy ([pxcor] of turtle 0) (([pycor] of turtle 0) - 1 )]
+	create-chrest-turtles 1 [ setxy (([pxcor] of turtle 0) - 1) (([pycor] of turtle 0) - 1) ]
+	create-tiles 1 [ setxy (([pxcor] of turtle 0) - 1) ([pycor] of turtle 0) ]
+	create-holes 1 [ setxy (([pxcor] of turtle 0) - 1) (([pycor] of turtle 0) + 1) ]
 
-	ask turtle 0 [
-
+	ask turtle 0[
 		generate-plan
-
+		
 		let total-number-patches-visible ( ((sight-radius * 2) + 1) ^ 2 )
 		let number-non-empty-patches (count turtles)
 		let number-empty-patches (total-number-patches-visible - number-non-empty-patches)
-		 
-		;When calculating the time taken to encode non-empty squares, 1 is subtracted since
-		;the scene creator does not incur an object encoding time cost when the visual-spatial
-		;field is constructed.
-		set expected-attention-free-time(
+		
+		;When calculating the time taken to encode squares, 1 is subtracted since the scene 
+		;creator (calling turtle) does not incur an object encoding time cost when the 
+		;visual-spatial field is constructed.
+
+		let minimum-attention-free-time
+		(
+			visual-spatial-field-access-time +
+			(visual-spatial-field-empty-square-placement-time * (total-number-patches-visible - 1))
+		)
+
+		let maximum-attention-free-time
+		(
 			visual-spatial-field-access-time +
 			(visual-spatial-field-empty-square-placement-time * number-empty-patches) +
 			(visual-spatial-field-object-placement-time * (number-non-empty-patches - 1))
 		)
 
-		update-time
-		generate-plan
+		let attn-clock (chrest:get-attention-clock)
 
-		check-equal (chrest:get-attention-clock) (expected-attention-free-time) ("when checking the attention clock")
-		check-equal (construct-visual-spatial-field?) (expected-visual-spatial-field-construction-value) ("when checking the 'construct-visual-spatial-field?' variable")
-		check-equal (generate-plan?) (true) ("when checking the 'generate-plan?' variable")
-		check-equal (length plan) (0) ("when checking the length of the plan")
-		check-equal (time-spent-deliberating-on-plan) (0) ("when checking the time spent deliberating on the plan")
-		check-equal (deliberation-finished-time) (0) ("when checking the time deliberation finishes")
-		check-equal (current-search-iteration) (0) ("when checking the 'current-search-iteration' turtle variable")
+		while[report-current-time < attn-clock][
+			generate-plan
+
+			check-equal ( (attn-clock >= minimum-attention-free-time) and (attn-clock <= maximum-attention-free-time) ) (true) ("when checking the attention clock")
+			check-equal (construct-visual-spatial-field?) (false) ("when checking the 'construct-visual-spatial-field?' variable")
+			check-equal (generate-plan?) (true) ("when checking the 'generate-plan?' variable")
+			check-equal (length (plan)) (0) ("when checking the length of the plan")
+			check-equal (time-spent-deliberating-on-plan) (0) ("when checking the time spent deliberating on the plan")
+			check-equal (deliberation-finished-time) (0) ("when checking the time deliberation finishes")
+			check-equal (who-of-tile-last-pushed-in-plan) ("") ("when checking 'who-of-tile-last-pushed-in-plan'")
+			check-equal (current-search-iteration) (0) ("when checking the 'current-search-iteration' turtle variable")
+			check-equal (chrest:Scene.get-as-netlogo-list (scene-to-learn)) (chrest:Scene.get-as-netlogo-list (chrest:Scene.new (get-observable-environment) (""))) ("when checking the 'scene-to-learn' turtle variable")
+
+			set current-training-time (current-training-time + 1)
+		]
 	]
 </test>
