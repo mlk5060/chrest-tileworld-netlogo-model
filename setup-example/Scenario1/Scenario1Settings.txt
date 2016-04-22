@@ -27,7 +27,7 @@ action-performance-time
 action-selection-procedure
 0:roulette-selection
 
-add-link-time
+add-production-time
 0:10000
 
 can-plan?
@@ -42,20 +42,26 @@ discrimination-time
 familiarisation-time
 0:2000
 
-max-length-of-episodic-memory
+initial-fixation-threshold
 0:3
+
+max-fixations-in-set
+0:10
 
 max-search-iteration
 0:3
 
-number-fixations
-0:4
-
 pattern-recognition?
 0:true
 
+peripheral-item-fixation-max-attempts
+0:3
+
 play-time
 0:14400000.0
+
+recognised-visual-spatial-field-object-lifespan
+0:10000
 
 reinforce-actions?
 0:true
@@ -69,32 +75,35 @@ reinforcement-learning-theory
 sight-radius
 0:2
 
-time-taken-to-act-randomly
-0:500
+time-to-access-visual-spatial-field
+0:100
 
-time-taken-to-use-pattern-recognition
-0:200
+time-to-encode-recognised-scene-object-as-visual-spatial-field-object
+0:20
 
-time-taken-to-problem-solve
+time-to-encode-unrecognised-empty-square-scene-object-as-visual-spatial-field-object
+0:30
+
+time-to-encode-unrecognised-non-empty-square-scene-object-as-visual-spatial-field-object
+0:35
+
+time-to-move-visual-spatial-field-object
+0:50
+
+time-to-problem-solve
 0:1000
+
+time-to-process-unrecognised-scene-object-during-visual-spatial-field-construction
+0:50
+
+time-to-use-pattern-recognition
+0:200
 
 training-time
 0:0.0
 
-visual-spatial-field-access-time
-0:100
+unknown-visual-spatial-field-object-replacement-probabilities
+0:[[1.0 blind-patch-token]]
 
-visual-spatial-field-empty-square-placement-time
-0:10
-
-visual-spatial-field-object-movement-time
-0:50
-
-visual-spatial-field-object-placement-time
-0:25
-
-visual-spatial-field-recognised-object-lifespan
-0:10000
-
-visual-spatial-field-unrecognised-object-lifespan
-0:50000
+unrecognised-visual-spatial-field-object-lifespan
+0:7000
