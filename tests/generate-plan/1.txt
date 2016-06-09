@@ -2,11 +2,14 @@
 ;========== TEST AIM ==========
 ;==============================
 ;
-; To determine if action sequences are handled correctly during planning, i.e.
+; To determine if action sequences generated using pattern-recognition are 
+; handled correctly during planning:
 ; 
-; 1) Are multiple actions applied correctly in the visual-spatial field?
-; 2) Are invalid actions reversed correctly?
-; 3) 
+; 1) Is an action-sequence starting with an invalid action handled 
+;    correctly?
+; 2) Is an action-sequence starting with a valid action but containing
+;    an invalid action at some time afterwards handled correctly?
+; 3) Is an action-sequence containing only valid actions handled correctly?
 ;
 ;======================================
 ;========== TEST DESCRIPTION ==========
@@ -66,24 +69,21 @@
 ;
 ; The test then ends.
 ;
-; Plan generation will not end since the CHREST turtle's "max-search-iteration"
-; is set to a number greater than 3 (the number of iterations performed in the 
-; test), the tile that can be pushed will not be pushed out of the visual-spatial
-; field or into a hole and the CHREST turtle's visual-spatial field avatar will
-; not be moved out of the visual-spatial field.
+; Note the following caveats regarding plan generation in context of this test:
 ; 
-; The number of fixations that can be made in a set by the CHREST turtle is set 
-; to 5 and each Fixation that can be made takes the same amount of time to 
-; perform.  This means that each one should be able to be performed when decided
-; upon. 
+; - Plan generation will not end since the CHREST turtle's "max-search-iteration"
+;   is set to a number greater than 3 (the number of iterations performed in the 
+;   test), the tile that can be pushed will not be pushed out of the visual-spatial
+;   field or into a hole and the CHREST turtle's visual-spatial field avatar will
+;   not be moved out of the visual-spatial field.
 ;
-; The CHREST turtle's "probability-of-using-problem-solving" turtle variable will
-; also be set to 0.0 so that the CHREST turtle is guaranteed to use the actions in
-; the viusual STM hypotheses when deliberating.
+; - The CHREST turtle's "probability-of-using-problem-solving" turtle variable will
+;   be set to 0.0 so that the CHREST turtle is guaranteed to use the actions in
+;   the viusual STM hypotheses when deliberating.
 ;
-; The CHREST turtle won't ever actually fixate on the visual-spatial field since its
-; not necessary (the CHREST turtle is provided with information to make a decision
-; using pattern-recognition).
+; - Since problem-solving is not used, the CHREST turtle won't ever actually fixate 
+;   on the visual-spatial field since its not necessary (the CHREST turtle is 
+;   provided with information to make a decision using pattern-recognition).
 ;
 ;=====================================
 ;========== TESTS PERFORMED ==========
@@ -207,7 +207,6 @@
 			;Set variables that affect test
 			set can-plan? (true)
 			set can-use-pattern-recognition? (true)
-			set max-fixations-in-set (5)
 			set max-search-iteration (99999)
 			set probability-of-using-problem-solving (0.0)
 			set time-to-retrieve-item-from-stm (1)
@@ -220,6 +219,7 @@
 			set discrimination-time (10000)
 			set familiarisation-time (2000)
 			set initial-fixation-threshold (2)
+			set max-fixations-in-set (5)
 			set peripheral-item-fixation-max-attempts (3)
 			set play-time (14400000.0)
 			set reinforcement-learning-theory ("profit_sharing_with_discount_rate")
