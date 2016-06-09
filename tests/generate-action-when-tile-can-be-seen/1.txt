@@ -1,13 +1,13 @@
-;==============================
-;========== TEST AIM ==========
-;==============================
+;====================
+;===== TEST AIM =====
+;====================
 ;
 ; To ensure that the "generate-action-when-tile-can-be-seen" procedure operates
 ; as expected given every possible input (within reason).
 ;
-;======================================
-;========== TEST DESCRIPTION ==========
-;======================================
+;============================
+;===== TEST DESCRIPTION =====
+;============================
 ;
 ; The "generate-action-when-tile-can-be-seen" is designed to return actions to
 ; perform when a tile is seen and is either immediately adjacent to a calling
@@ -19,7 +19,7 @@
 ; "scenario" in context of this test.
 ;
 ; NOTE: a scenario where the first and second parameter input to the procedure
-;       are both equal to 0 is not tested and since such a scenario is impossible in
+;       are both equal to 0 is not tested since such a scenario is impossible in
 ;       the standard operation of the model given that this procedure isn't called
 ;       when a tile and the calling turtle exist on the same patch either in a 
 ;       CHREST turtle's visual-spatial field or in the model environment.
@@ -37,9 +37,9 @@
 ;   specified and the output is checked to see if it is contained in the actions
 ;   expected to be generated.
 ;
-;=====================================
-;========== TESTS PERFORMED ==========
-;=====================================
+;===========================
+;===== TESTS PERFORMED =====
+;===========================
 ;
 ; See procedure documentation in Netlogo model code for expected output.
 ;

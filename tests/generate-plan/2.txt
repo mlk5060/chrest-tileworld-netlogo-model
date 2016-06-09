@@ -2,38 +2,83 @@
 ;========== TEST AIM ==========
 ;==============================
 ;
-; 1) To determine if plan generation correctly proceeds until a CHREST turtle pushes a tile out of its visual-spatial field.
-; 2) To determine if variables are reset correctly following this end condition being recognised.
+; 1) To determine if plan generation correctly proceeds until a CHREST 
+;    turtle pushes a tile out of its visual-spatial field.
+; 2) To determine if variables are reset correctly following this end 
+;    condition being recognised.
 ;
 ;======================================
 ;========== TEST DESCRIPTION ==========
 ;======================================
 ; 
-; 1) A CHREST turtle repeatedly invokes "generate-plan" when its attention is free and it is located in an environment where plan generation will 
-;    only result in the CHREST turtle pushing the tile out of its visual-spatial field.
-; 2) After the CHREST turtle has pushed the tile out of its visual-spatial field and when its attention is free, the "generate-plan" procedure
-;    is invoked again.
+; 1) A CHREST turtle repeatedly invokes "generate-plan" when its 
+;    attention is free and where plan generation will only result 
+;    in the CHREST turtle pushing a tile out of its visual-spatial 
+;    field.
+; 2) For the first action performed, the visual STM hypothesis of 
+;    the turtle will contain a production constituted of a sequence
+;    of 2 actions:
+;    ~ Action 1: CHREST turtle moves 1 patch in the opposite
+;                direction from the heading that the moveable tile 
+;                can be pushed along.
+;    ~ Action 2: CHREST turtle moves 1 patch in the opposite 
+;                direction from the heading that the moveable tile 
+;                can be pushed along again.
+;    After performing action 1 in its visual-spatial-field, the 
+;    CHREST turtle should reverse the action and deliberate on a 
+;    new action without fixating on the visual-spatial field.
+; 3) For the second action performed, the visual STM hypothesis of
+;    the turtle will be replaced by a Node whose productions consist
+;    of a sequence of 2 actions:
+;    ~ Action 1: CHREST turtle pushes the moveable tile 1 patch along
+;                the correct heading.
+;    ~ Action 2: CHREST turtle turns 90 degrees from the heading the
+;                tile is being pushed along and moves 1 patch forward
+;                along this direction.
+;    After performing action 2 in its visual-spatial-field, the 
+;    CHREST turtle should reverse action 2 and deliberate on a 
+;    new action after fixating on the visual-spatial field since action
+;    1 will have created a new visual-spatial field state (opening up 
+;    new action options, potentially).
+; 4) Visual STM is cleared and the CHREST turtle will now use 
+;    problem-solving exclusively until it has pushed the tile out of its 
+;    visual-spatial field.
+; 5) When the CHREST turtle's attention is free again, the "generate-plan" 
+;    procedure is invoked once more.
 ;
-; To fully test the "generate-plan" procedure with respect to ending plan generation when a tile has been pushed out of visual-spatial range, four 
-; initial states are created with each one only allowing the tile in question to be moved in one cardinal compass direction.
+; To fully test the "generate-plan" procedure with respect to 
+; ending plan generation when a tile has been pushed out of 
+; visual-spatial range, four initial states are created with each 
+; one only allowing the tile in question to be moved in one cardinal 
+; compass direction.  The four initial visual-spatial field states 
+; and expected final states are depicted visually below.  Each object 
+; is denoted by its "who" number followed by the class of the object 
+; in parenthesis.
 ;
-; NOTE: the CHREST turtle's maximum search iteration is set to a very high (unreachable) value so that plan generation doesn't end due to the search
-;       iteration number check.
+; NOTE: the CHREST turtle's 'time-to-move-visual-spatial-field-object'
+;       variable is set to its CHREST default so that visual STM 
+;       hypothesis setting is reliable.
 ;
-; Since the CHREST turtle continues to call the "generate-plan" procedure until the tile has been moved out of its visual-spatial field, this means 
-; that, if the test runs ad infinitum, there is most likely an error in the "generate-plan" procedure code.  However, this condition will not be 
-; picked up by the test code since the non-determinism of the "deliberate" procedure means that it is impossible to enforce a strict boundary on 
-; when the test should complete, if at all (the CHREST turtle may repeatedly generate a valid visual spatial state, V, then an invalid state, V', 
-; forever).  It is therefore the responsibility of the tester to investigate why an infinite loop occurs when this test is run.  Note that the test 
-; for each initial state is repeated 50 times to ensure that most output variation from the "deliberation" procedure is handled correctly (the 
-; "deliberate" procedure's output is variable).
-;
-; Since planned moves are determined and applied in the CHREST turtle's visual-spatial field by other procedures that are called by "generate-plan", 
-; this test makes no attempt to determine if such procedures operate correctly.  Note also that it is not the responsibility of this test to determine 
-; if invalid visual-spatial field states are identified as being invalid.  This is left to the tests for the procedure that handles this functionality.
-;
-; The four initial visual-spatial field states and expected final states are depicted visually below.  Each object is denoted by its "who" number followed 
-; by the class of the object in parenthesis.
+; NOTE: the CHREST turtle's maximum search iteration is set to a 
+;       very high (unreachable) value so that plan generation 
+;       doesn't end due to the search iteration number check.  Also,
+;       each VisualSpatialFieldObject terminus is set to "null" so 
+;       that VisualSpatialFieldObjects will not decay.
+; 
+; Since the CHREST turtle continues to call the "generate-plan" 
+; procedure until the tile has been moved out of its visual-spatial 
+; field, this means that, if the test never ends, there is most 
+; likely an error in the "generate-plan" procedure code.  However, 
+; this condition will not be picked up by the test code since the 
+; non-determinism of the "deliberate" procedure means that it is 
+; impossible to enforce a strict boundary on when the test should 
+; complete, if at all (the CHREST turtle may repeatedly generate a 
+; valid visual spatial state, V, then an invalid state, V', forever).  
+; It is therefore the responsibility of the tester to investigate 
+; why an infinite loop occurs if this test is run.  Note that the test 
+; for each initial state is repeated 50 times to ensure that most 
+; output variation from the "deliberation" procedure is handled 
+; correctly.
 ;
 ; LEGEND
 ; ======
@@ -79,101 +124,120 @@
 ;========== TESTS PERFORMED ==========
 ;=====================================
 ;
-; After the first "generate-plan" invocation, this test checks the following turtle variables:
-;
-; - "scene-to-learn": this should be set to the currently observable environment so that the CHREST turtle can learn something whilst constructing
-;   its visual-spatial field.
-;
-; Whilst plan generation is occuring, this test checks the following variables after the "generate-plan" procedure is invoked:
+; Whilst plan generation is occuring, this test checks the following 
+; variables after the "generate-plan" procedure is invoked:
 ; 
-; - "generate-plan?": this should remain set to true until the final visual-spatial field state is generated.
-; - "plan" length: should increase by 1 if the visual-spatial field before and after the plan invocation is different (indicates that a visual-spatial
-;   move occurred that wasn't reversed, i.e. it was valid).
-; - "time-spent-deliberating-on-plan": should increase by the value specified for the "time-taken-to-problem-solve" turtle variable after every 
-;   "generate-plan" invocation (the CHREST turtle never learns during this test so deliberation using pattern-recognition isn't possible).
-; - "who-of-tile-last-pushed-in-plan": checked before and after a 'generate-plan' invocation.  To explain, consider two consecutive 'generate-plan' invocations:
-;	(i) and (i + 1).
-;   ~ If the CHREST turtle's visual-spatial field before and after (i) is the same (indicates that a visual-spatial object move sequence occurred that was
-;     reversed, i.e. it was invalid) then the value of "who-of-tile-last-pushed-in-plan" will be set to "" since there is no need to check whether a tile
-;     that may have been moved is out of the visual-spatial field range or on the same coordinates as a hole on (i + 1).  This is because the state of the
-;     visual-spatial field before (i + 1)s visual-spatial field object move application will be the same as it was before (i)s visual-spatial field object 
-;     move application.  Consequently, plan generation would have ended during (i), before any object move sequence is carried out.
-;   ~ If the CHREST turtle's visual-spatial field before and after (i) is different (indicates that a visual-spatial object move sequence occurred that wasn't 
-;     reversed, i.e. it was valid) and if the location of tile 1 has changed then, the value of "who-of-tile-last-pushed-in-plan" should be set to "1" both 
-;     immediately after (i) and before (i + 1).  Only the location of tile 1 is checked since movement of any other tile will result in an invalid visual-spatial
-;     field state and a reversal of the move (resulting in the situation described above).
-; - "current-search-iteration": should increase by 1 for every "generate-plan" invocation after the initial one that constructs the visual-spatial field.
-; - "scene-to-learn": this should be set to the state of the visual-spatial field when the last "deliberation" procedure was invoked i.e. it should always be
-;   the most recent, valid, visual-spatial field.
+; - generate-plan?: this should remain set to true until the final 
+;   visual-spatial field state is generated.
+; - episodic-memory length: should increase by 1 if the visual-spatial 
+;   field before and after the plan invocation is different (indicates 
+;   that a visual-spatial move occurred that wasn't reversed, i.e. it was 
+;   valid).
+; - who-of-tile-last-pushed-in-plan: checked before and after a 
+;   'generate-plan' invocation.  To explain, consider two consecutive 
+;   'generate-plan' invocations: (i) and (i + 1).
+;   ~ If the CHREST turtle's visual-spatial field before and after (i) is 
+;     the same (indicates that a visual-spatial object move sequence occurred 
+;     that was reversed, i.e. it was invalid) then the value of 
+;     'who-of-tile-last-pushed-in-plan' will be set to "" since there is no 
+;     need to check whether a tile that may have been moved is out of the 
+;     visual-spatial field range or on the same coordinates as a hole on 
+;     (i + 1).  This is because the state of the visual-spatial field before 
+;     (i + 1)s visual-spatial field object move application will be the same 
+;     as it was before (i)s visual-spatial field object move application.  
+;     Consequently, plan generation would have ended during (i), before any 
+;     object move sequence is carried out.
+;   ~ If the CHREST turtle's visual-spatial field before and after (i) is 
+;     different (indicates that a visual-spatial object move sequence occurred 
+;     that wasn't reversed, i.e. it was valid) and if the location of tile 1 
+;     has changed then, the value of 'who-of-tile-last-pushed-in-plan' should 
+;     be set to "1" both immediately after (i) and before (i + 1).  Only the 
+;     location of tile 1 is checked since movement of any other tile will result 
+;     in an invalid visual-spatial field state and a reversal of the move 
+;     (resulting in the situation described above).
+; - current-search-iteration: should increase by 1 for every "generate-plan" 
+;   invocation.
 ;
-; After the tile has been pushed out of the CHREST turtle's visual-spatial field and after a subsequent "generate-plan" invocation, the following
+; After the tile has been pushed out of the CHREST turtle's visual-spatial 
+; field and after a subsequent "generate-plan" invocation, the following
 ; variables are checked:
 ;
-; - CHREST attention clock: should remain unchanged before and after the final "generate-plan" invocation is made since an "end-plan" condition should
-;   be detected and therefore no visual-spatial field interaction should occur.
-; - Visual-spatial field state: should remain unchanged (equal to the final expected state) since an "end-plan" condition should be detected and therefore 
-;   no visual-spatial field interaction should occur.
-; - "generate-plan?": this should be set to 'false' since an "end plan" condition has been met.
-; - "plan" length: should remain unchanged since an "end-plan" condition should be detected and therefore no further planning should occur (so no further 
-;   actions added to the plan).  Furthermore, no actions in the plan should have been executed yet.
-; - "time-spent-deliberating-on-plan": should be reset to 0 for the next planning cycle.
-; - "deliberation-finished-time": should be set to the current domain time plus the value of the "time-spent-deliberating-on-plan" before it was
+; - CHREST attention clock: should remain unchanged before and after the 
+;   final "generate-plan" invocation is made since an "end-plan" condition 
+;   should be detected and therefore no visual-spatial field interaction 
+;   should occur.
+; - Visual-spatial field state: should remain unchanged (equal to the 
+;   final expected state) since an "end-plan" condition should be 
+;   detected and therefore no visual-spatial field interaction should 
+;   occur.
+; - generate-plan?: this should be set to 'false' since an "end plan" 
+;   condition has been met.
+; - 'episodic-memory' length: should remain unchanged since an 'end-plan' 
+;   condition should be detected and therefore no further planning should 
+;   occur (so no further actions added to episodic-memory).  Furthermore, 
+;   no actions should have been executed yet.
+; - time-spent-deliberating-on-plan: should be reset to 0 for the next 
+;   planning cycle.
+; - deliberation-finished-time: should be set to the current model time 
+;   plus the value of the 'time-spent-deliberating-on-plan' before it was
 ;   reset to 0.
-; - "who-of-tile-last-pushed-in-plan": should be set to "" since this value needs to be reset for the next planning cycle.
-; - "current-search-iteration": should be set to 0 since this value needs to be reset for the next planning cycle.
-; - "scene-to-learn": should be set to the state of the visual-spatial field the last time the "deliberation" procedure was called i.e. the state of the visual-spatial
-;   field before the tile was finally moved out of the visual-spatial field (prevents the CHREST turtle learning a production for a state and action that would never 
-;   occur together in "reality").
+; - who-of-tile-last-pushed-in-plan: should be set to "" since this value 
+;   needs to be reset for the next planning cycle.
+; - current-search-iteration: should be set to 0 since this value needs 
+;   to be reset for the next planning cycle.
+; - fixate-on-visual-spatial-field?: should be reset to 0 for next planning
+;   cycle.
+; - execute-actions?: set to true so that planned actions will now be 
+;   scheduled/executed.
 ;
 <test>
-	foreach ([0 1 2 3])[
-		repeat 50[
+	let tile-location-relative-to-turtle [0 90 180 270] 
+	foreach (tile-location-relative-to-turtle)[
+;		repeat 1 [
 			create-chrest-turtles 1 [
-				set action-performance-time 10000
-				set action-selection-procedure "roulette-selection"
-				set add-link-time 10000
+				set add-production-time 10000
 				set can-plan? (true)
 				set discount-rate 0.5
 				set discrimination-time 10000
 				set familiarisation-time 2000
-				set max-length-of-episodic-memory 5
+				set initial-fixation-threshold 2
 				set max-search-iteration 99999
-				set number-fixations 20
-				set pattern-recognition? true
+				set max-fixations-in-set 3
+				set can-use-pattern-recognition? true
+				set peripheral-item-fixation-max-attempts 3
 				set play-time 14400000.0
-				set reinforce-actions? true
-				set reinforce-problem-solving? true
+				set probability-of-using-problem-solving (0.0)
 				set reinforcement-learning-theory "profit_sharing_with_discount_rate"
+				set saccade-time (1)
 				set sight-radius 2
-				set time-taken-to-use-pattern-recognition 200
-				set time-taken-to-problem-solve 1000
-				set visual-spatial-field-access-time 50
-				set visual-spatial-field-empty-square-placement-time 5
-				set visual-spatial-field-object-movement-time 25
-				set visual-spatial-field-object-placement-time 10
-				set visual-spatial-field-recognised-object-lifespan 10000000
-				set visual-spatial-field-unrecognised-object-lifespan 10000000
+				set time-taken-to-decide-upon-ahead-of-agent-fixations (1)
+  				set time-taken-to-decide-upon-movement-fixations (1)
+  				set time-taken-to-decide-upon-peripheral-item-fixations (1)
+  				set time-taken-to-decide-upon-peripheral-square-fixations (1)
+  				set time-taken-to-decide-upon-salient-object-fixations (1)
+				set time-to-retrieve-fixation-from-perceiver (1)
+				set time-to-retrieve-item-from-stm (1)
+				set time-to-generate-action-when-no-tile-seen 1
+				set time-to-generate-action-when-tile-seen 2
+				set time-to-access-visual-spatial-field 1
+				set time-to-encode-recognised-scene-object-as-visual-spatial-field-object (1)
+				set time-to-encode-unrecognised-empty-square-scene-object-as-visual-spatial-field-object (1)
+				set time-to-encode-unrecognised-non-empty-square-scene-object-as-visual-spatial-field-object (1)
+				set time-to-process-unrecognised-scene-object-during-visual-spatial-field-construction (1)
+				set unknown-visual-spatial-field-object-replacement-probabilities (list (list (1.0) (empty-patch-token)))
+				set recognised-visual-spatial-field-object-lifespan 10000000
+				set unrecognised-visual-spatial-field-object-lifespan 10000000
 			]
 			setup (true)
 
 			let expected-initial-visual-spatial-field []
 			let expected-final-visual-spatial-field []
-			let expected-final-scene-to-learn []
 
 			; Used during visual-spatial field construction to determine if all objects required to perform
 			; the scenario test have been encoded in the visual-spatial field.
 			let original-object-locations []
 
 			if(? = 0)[
-				create-tiles 1 [ setxy ([pxcor] of turtle 0) ( ([pycor] of turtle 0) + 1 ) ]
-				create-holes 1 [ setxy ( ([pxcor] of turtle 0) + 1 ) ( ([pycor] of turtle 0) + 1 ) ]
-				create-tiles 1 [ setxy ( ([pxcor] of turtle 0) + 1 ) ([pycor] of turtle 0) ]
-				create-chrest-turtles 1 [ setxy ( ([pxcor] of turtle 0) + 2 ) ([pycor] of turtle 0) ]
-				create-tiles 1 [ setxy ([pxcor] of turtle 0) (([pycor] of turtle 0) - 1) ]
-				create-tiles 1 [ setxy ([pxcor] of turtle 0) (([pycor] of turtle 0) - 2) ]
-				create-tiles 1 [ setxy ( ([pxcor] of turtle 0) - 1 ) ([pycor] of turtle 0) ]
-				create-chrest-turtles 1 [ setxy ( ([pxcor] of turtle 0) - 2 ) ([pycor] of turtle 0) ]
-				create-chrest-turtles 1 [ setxy ( ([pxcor] of turtle 0) - 1 ) ( ([pycor] of turtle 0) + 1 ) ]
 
 				set original-object-locations (list
 					(list (2) (0))
@@ -189,130 +253,82 @@
 
 				set expected-initial-visual-spatial-field (list 
 					( list
-						(list (list (empty-patch-token) (empty-patch-token)))
-						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list (empty-patch-token)))
+						(list (list (empty-patch-token)))
 						(list (list ("8") (opponent-token)))
-						(list (list (empty-patch-token) (empty-patch-token)))
-						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list (empty-patch-token)))
+						(list (list (empty-patch-token)))
 					)
 					( list
-						(list (list (empty-patch-token) (empty-patch-token)))
-						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list (empty-patch-token)))
+						(list (list (empty-patch-token)))
 						(list (list ("7") (tile-token)))
 						(list (list ("9") (opponent-token)))
-						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list (empty-patch-token)))
 					)
 					(list
 						(list (list ("6") (tile-token)))
 						(list (list ("5") (tile-token)))
 						(list (list ("0") (self-token)))
 						(list (list ("1") (tile-token)))
-						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list (empty-patch-token)))
 					)
 					(list
-						(list (list (empty-patch-token) (empty-patch-token)))
-						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list (empty-patch-token)))
+						(list (list (empty-patch-token)))
 						(list (list ("3") (tile-token)))
 						(list (list ("2") (hole-token)))
-						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list (empty-patch-token)))
 					)
 					(list
-						(list (list (empty-patch-token) (empty-patch-token)))
-						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list (empty-patch-token)))
+						(list (list (empty-patch-token)))
 						(list (list ("4") (opponent-token)))
-						(list (list (empty-patch-token) (empty-patch-token)))
-						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list (empty-patch-token)))
+						(list (list (empty-patch-token)))
 					)
 				)
 
 				set expected-final-visual-spatial-field ( list
 					( list
-						(list (list (empty-patch-token) (empty-patch-token)))
-						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list (empty-patch-token)))
+						(list (list (empty-patch-token)))
 						(list (list ("8") (opponent-token)))
-						(list (list (empty-patch-token) (empty-patch-token)))
-						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list (empty-patch-token)))
+						(list (list (empty-patch-token)))
 					)
 					( list
-						(list (list (empty-patch-token) (empty-patch-token)))
-						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list (empty-patch-token)))
+						(list (list (empty-patch-token)))
 						(list (list ("7") (tile-token)))
 						(list (list ("9") (opponent-token)))
-						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list (empty-patch-token)))
 					)
 					(list
 						(list (list ("6") (tile-token)))
 						(list (list ("5") (tile-token)))
-						(list (list (empty-patch-token) (empty-patch-token)))
-						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list (empty-patch-token)))
+						(list (list (empty-patch-token)))
 						(list (list ("0") (self-token)))
 					)
 					(list
-						(list (list (empty-patch-token) (empty-patch-token)))
-						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list (empty-patch-token)))
+						(list (list (empty-patch-token)))
 						(list (list ("3") (tile-token)))
 						(list (list ("2") (hole-token)))
-						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list (empty-patch-token)))
 					)
 					(list
-						(list (list (empty-patch-token) (empty-patch-token)))
-						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list (empty-patch-token)))
+						(list (list (empty-patch-token)))
 						(list (list ("4") (opponent-token)))
-						(list (list (empty-patch-token) (empty-patch-token)))
-						(list (list (empty-patch-token) (empty-patch-token)))
-					)
-				)
-
-				set expected-final-scene-to-learn ( list
-					( list
-						(list (empty-patch-token) (empty-patch-token))
-						(list (empty-patch-token) (empty-patch-token))
-						(list ("8") (opponent-token))
-						(list (empty-patch-token) (empty-patch-token))
-						(list (empty-patch-token) (empty-patch-token))
-					)
-					( list
-						(list (empty-patch-token) (empty-patch-token))
-						(list (empty-patch-token) (empty-patch-token))
-						(list ("7") (tile-token))
-						(list ("9") (opponent-token))
-						(list (empty-patch-token) (empty-patch-token))
-					)
-					(list
-						(list ("6") (tile-token))
-						(list ("5") (tile-token))
-						(list (empty-patch-token) (empty-patch-token))
-						(list ("0") (self-token))
-						(list ("1") (tile-token))
-					)
-					(list
-						(list (empty-patch-token) (empty-patch-token))
-						(list (empty-patch-token) (empty-patch-token))
-						(list ("3") (tile-token))
-						(list ("2") (hole-token))
-						(list (empty-patch-token) (empty-patch-token))
-					)
-					(list
-						(list (empty-patch-token) (empty-patch-token))
-						(list (empty-patch-token) (empty-patch-token))
-						(list ("4") (opponent-token))
-						(list (empty-patch-token) (empty-patch-token))
-						(list (empty-patch-token) (empty-patch-token))
+						(list (list (empty-patch-token)))
+						(list (list (empty-patch-token)))
 					)
 				)
 			]
 
-			if(? = 1)[
-				create-tiles 1 [ setxy (([pxcor] of turtle 0) + 1) ([pycor] of turtle 0) ]
-				create-holes 1 [ setxy ( ([pxcor] of turtle 0) + 1 ) ( ([pycor] of turtle 0) - 1 ) ]
-				create-tiles 1 [ setxy ([pxcor] of turtle 0) ( ([pycor] of turtle 0) - 1) ]
-				create-chrest-turtles 1 [ setxy ([pxcor] of turtle 0) ( ([pycor] of turtle 0) - 2) ]
-				create-tiles 1 [ setxy (([pxcor] of turtle 0) - 1) ([pycor] of turtle 0) ]
-				create-tiles 1 [ setxy (([pxcor] of turtle 0) - 2) ([pycor] of turtle 0) ]
-				create-tiles 1 [ setxy ([pxcor] of turtle 0) ( ([pycor] of turtle 0) + 1) ]
-				create-chrest-turtles 1 [ setxy ([pxcor] of turtle 0) ( ([pycor] of turtle 0) + 2) ]
-				create-chrest-turtles 1 [ setxy ( ([pxcor] of turtle 0) + 1 ) ( ([pycor] of turtle 0) + 1 ) ]
-
+			if(? = 90)[
 				set original-object-locations (list
 					(list (2) (0))
 					(list (2) (1))
@@ -327,18 +343,18 @@
 				
 				set expected-initial-visual-spatial-field ( list
 					(list
-						(list (list (empty-patch-token) (empty-patch-token)))
-						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list (empty-patch-token)))
+						(list (list (empty-patch-token)))
 						(list (list ("6") (tile-token)))
-						(list (list (empty-patch-token) (empty-patch-token)))
-						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list (empty-patch-token)))
+						(list (list (empty-patch-token)))
 					)
 					(list
-						(list (list (empty-patch-token) (empty-patch-token)))
-						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list (empty-patch-token)))
+						(list (list (empty-patch-token)))
 						(list (list ("5") (tile-token)))
-						(list (list (empty-patch-token) (empty-patch-token)))
-						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list (empty-patch-token)))
+						(list (list (empty-patch-token)))
 					)
 					(list
 						(list (list ("4") (opponent-token)))
@@ -348,109 +364,62 @@
 						(list (list ("8") (opponent-token)))
 					)
 					(list
-						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list (empty-patch-token)))
 						(list (list ("2") (hole-token)))
 						(list (list ("1") (tile-token)))
 						(list (list ("9") (opponent-token)))
-						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list (empty-patch-token)))
 					)
 					(list
-						(list (list (empty-patch-token) (empty-patch-token)))
-						(list (list (empty-patch-token) (empty-patch-token)))
-						(list (list (empty-patch-token) (empty-patch-token)))
-						(list (list (empty-patch-token) (empty-patch-token)))
-						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list (empty-patch-token)))
+						(list (list (empty-patch-token)))
+						(list (list (empty-patch-token)))
+						(list (list (empty-patch-token)))
+						(list (list (empty-patch-token)))
 					)
 				)
 
 				set expected-final-visual-spatial-field ( list
 					(list
-						(list (list (empty-patch-token) (empty-patch-token)))
-						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list (empty-patch-token)))
+						(list (list (empty-patch-token)))
 						(list (list ("6") (tile-token)))
-						(list (list (empty-patch-token) (empty-patch-token)))
-						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list (empty-patch-token)))
+						(list (list (empty-patch-token)))
 					)
 					(list
-						(list (list (empty-patch-token) (empty-patch-token)))
-						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list (empty-patch-token)))
+						(list (list (empty-patch-token)))
 						(list (list ("5") (tile-token)))
-						(list (list (empty-patch-token) (empty-patch-token)))
-						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list (empty-patch-token)))
+						(list (list (empty-patch-token)))
 					)
 					(list
 						(list (list ("4") (opponent-token)))
 						(list (list ("3") (tile-token)))
-						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list (empty-patch-token)))
 						(list (list ("7") (tile-token)))
 						(list (list ("8") (opponent-token)))
 					)
 					(list
-						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list (empty-patch-token)))
 						(list (list ("2") (hole-token)))
-						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list (empty-patch-token)))
 						(list (list ("9") (opponent-token)))
-						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list (empty-patch-token)))
 					)
 					(list
-						(list (list (empty-patch-token) (empty-patch-token)))
-						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list (empty-patch-token)))
+						(list (list (empty-patch-token)))
 						(list (list ("0") (self-token)))
-						(list (list (empty-patch-token) (empty-patch-token)))
-						(list (list (empty-patch-token) (empty-patch-token)))
-					)
-				)
-
-				set expected-final-scene-to-learn ( list
-					(list
-						(list (empty-patch-token) (empty-patch-token))
-						(list (empty-patch-token) (empty-patch-token))
-						(list ("6") (tile-token))
-						(list (empty-patch-token) (empty-patch-token))
-						(list (empty-patch-token) (empty-patch-token))
-					)
-					(list
-						(list (empty-patch-token) (empty-patch-token))
-						(list (empty-patch-token) (empty-patch-token))
-						(list ("5") (tile-token))
-						(list (empty-patch-token) (empty-patch-token))
-						(list (empty-patch-token) (empty-patch-token))
-					)
-					(list
-						(list ("4") (opponent-token))
-						(list ("3") (tile-token))
-						(list (empty-patch-token) (empty-patch-token))
-						(list ("7") (tile-token))
-						(list ("8") (opponent-token))
-					)
-					(list
-						(list (empty-patch-token) (empty-patch-token))
-						(list ("2") (hole-token))
-						(list ("0") (self-token))
-						(list ("9") (opponent-token))
-						(list (empty-patch-token) (empty-patch-token))
-					)
-					(list
-						(list (empty-patch-token) (empty-patch-token))
-						(list (empty-patch-token) (empty-patch-token))
-						(list ("1") (tile-token))
-						(list (empty-patch-token) (empty-patch-token))
-						(list (empty-patch-token) (empty-patch-token))
+						(list (list (empty-patch-token)))
+						(list (list (empty-patch-token)))
 					)
 				)
 			]
 
-			if(? = 2)[
-				create-tiles 1 [ setxy ([pxcor] of turtle 0) ( ([pycor] of turtle 0) - 1 ) ]
-				create-holes 1 [ setxy ( ([pxcor] of turtle 0) - 1 ) ( ([pycor] of turtle 0) - 1 ) ]
-				create-tiles 1 [ setxy ( ([pxcor] of turtle 0) - 1 ) ([pycor] of turtle 0) ]
-				create-chrest-turtles 1 [ setxy ( ([pxcor] of turtle 0) - 2 ) ([pycor] of turtle 0) ]
-				create-tiles 1 [ setxy ([pxcor] of turtle 0) (([pycor] of turtle 0) + 1) ]
-				create-tiles 1 [ setxy ([pxcor] of turtle 0) (([pycor] of turtle 0) + 2) ]
-				create-tiles 1 [ setxy ( ([pxcor] of turtle 0) + 1 ) ([pycor] of turtle 0) ]
-				create-chrest-turtles 1 [ setxy ( ([pxcor] of turtle 0) + 2 ) ([pycor] of turtle 0) ]
-				create-chrest-turtles 1 [ setxy ( ([pxcor] of turtle 0) + 1 ) ( ([pycor] of turtle 0) - 1 ) ]
-
+			if(? = 180)[
+				
 				set original-object-locations (list
 					(list (1) (1))
 					(list (2) (1))
@@ -465,130 +434,83 @@
 
 				set expected-initial-visual-spatial-field (list
 					(list
-						(list (list (empty-patch-token) (empty-patch-token)))
-						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list (empty-patch-token)))
+						(list (list (empty-patch-token)))
 						(list (list ("4") (opponent-token)))
-						(list (list (empty-patch-token) (empty-patch-token)))
-						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list (empty-patch-token)))
+						(list (list (empty-patch-token)))
 					)
 					(list
-						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list (empty-patch-token)))
 						(list (list ("2") (hole-token)))
 						(list (list ("3") (tile-token)))
-						(list (list (empty-patch-token) (empty-patch-token)))
-						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list (empty-patch-token)))
+						(list (list (empty-patch-token)))
 					)
 					(list
-						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list (empty-patch-token)))
 						(list (list ("1") (tile-token)))
 						(list (list ("0") (self-token)))
 						(list (list ("5") (tile-token)))
 						(list (list ("6") (tile-token)))
 					)
 					(list
-						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list (empty-patch-token)))
 						(list (list ("9") (opponent-token)))
 						(list (list ("7") (tile-token)))
-						(list (list (empty-patch-token) (empty-patch-token)))
-						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list (empty-patch-token)))
+						(list (list (empty-patch-token)))
 					)
 					(list
-						(list (list (empty-patch-token) (empty-patch-token)))
-						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list (empty-patch-token)))
+						(list (list (empty-patch-token)))
 						(list (list ("8") (opponent-token)))
-						(list (list (empty-patch-token) (empty-patch-token)))
-						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list (empty-patch-token)))
+						(list (list (empty-patch-token)))
 					)
 				)
  
  				set expected-final-visual-spatial-field (list
 					(list
-						(list (list (empty-patch-token) (empty-patch-token)))
-						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list (empty-patch-token)))
+						(list (list (empty-patch-token)))
 						(list (list ("4") (opponent-token)))
-						(list (list (empty-patch-token) (empty-patch-token)))
-						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list (empty-patch-token)))
+						(list (list (empty-patch-token)))
 					)
 					(list
-						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list (empty-patch-token)))
 						(list (list ("2") (hole-token)))
 						(list (list ("3") (tile-token)))
-						(list (list (empty-patch-token) (empty-patch-token)))
-						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list (empty-patch-token)))
+						(list (list (empty-patch-token)))
 					)
 					(list
 						(list (list ("0") (self-token)))
-						(list (list (empty-patch-token) (empty-patch-token)))
-						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list (empty-patch-token)))
+						(list (list (empty-patch-token)))
 						(list (list ("5") (tile-token)))
 						(list (list ("6") (tile-token)))
 					)
 					(list
-						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list (empty-patch-token)))
 						(list (list ("9") (opponent-token)))
 						(list (list ("7") (tile-token)))
-						(list (list (empty-patch-token) (empty-patch-token)))
-						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list (empty-patch-token)))
+						(list (list (empty-patch-token)))
 					)
 					(list
-						(list (list (empty-patch-token) (empty-patch-token)))
-						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list (empty-patch-token)))
+						(list (list (empty-patch-token)))
 						(list (list ("8") (opponent-token)))
-						(list (list (empty-patch-token) (empty-patch-token)))
-						(list (list (empty-patch-token) (empty-patch-token)))
-					)
-				)
-
-				set expected-final-scene-to-learn (list
-					(list
-						(list (empty-patch-token) (empty-patch-token))
-						(list (empty-patch-token) (empty-patch-token))
-						(list ("4") (opponent-token))
-						(list (empty-patch-token) (empty-patch-token))
-						(list (empty-patch-token) (empty-patch-token))
-					)
-					(list
-						(list (empty-patch-token) (empty-patch-token))
-						(list ("2") (hole-token))
-						(list ("3") (tile-token))
-						(list (empty-patch-token) (empty-patch-token))
-						(list (empty-patch-token) (empty-patch-token))
-					)
-					(list
-						(list ("1") (tile-token))
-						(list ("0") (self-token))
-						(list (empty-patch-token) (empty-patch-token))
-						(list ("5") (tile-token))
-						(list ("6") (tile-token))
-					)
-					(list
-						(list (empty-patch-token) (empty-patch-token))
-						(list ("9") (opponent-token))
-						(list ("7") (tile-token))
-						(list (empty-patch-token) (empty-patch-token))
-						(list (empty-patch-token) (empty-patch-token))
-					)
-					(list
-						(list (empty-patch-token) (empty-patch-token))
-						(list (empty-patch-token) (empty-patch-token))
-						(list ("8") (opponent-token))
-						(list (empty-patch-token) (empty-patch-token))
-						(list (empty-patch-token) (empty-patch-token))
+						(list (list (empty-patch-token)))
+						(list (list (empty-patch-token)))
 					)
 				)
 			]
 
-			if(? = 3)[
-				create-tiles 1 [ setxy (([pxcor] of turtle 0) - 1) ([pycor] of turtle 0) ]
-				create-holes 1 [ setxy ( ([pxcor] of turtle 0) - 1 ) ( ([pycor] of turtle 0) + 1 ) ]
-				create-tiles 1 [ setxy ([pxcor] of turtle 0) ( ([pycor] of turtle 0) + 1) ]
-				create-chrest-turtles 1 [ setxy ([pxcor] of turtle 0) ( ([pycor] of turtle 0) + 2) ]
-				create-tiles 1 [ setxy (([pxcor] of turtle 0) + 1) ([pycor] of turtle 0) ]
-				create-tiles 1 [ setxy (([pxcor] of turtle 0) + 2) ([pycor] of turtle 0) ]
-				create-tiles 1 [ setxy ([pxcor] of turtle 0) ( ([pycor] of turtle 0) - 1) ]
-				create-chrest-turtles 1 [ setxy ([pxcor] of turtle 0) ( ([pycor] of turtle 0) - 2) ]
-				create-chrest-turtles 1 [ setxy ( ([pxcor] of turtle 0) - 1 ) ( ([pycor] of turtle 0) - 1 ) ]
-
+			if(? = 270)[
+				
 				set original-object-locations (list
 					(list (2) (0))
 					(list (1) (1))
@@ -603,18 +525,18 @@
 
 				set expected-initial-visual-spatial-field (list
 					(list
-						(list (list (empty-patch-token) (empty-patch-token)))
-						(list (list (empty-patch-token) (empty-patch-token)))
-						(list (list (empty-patch-token) (empty-patch-token)))
-						(list (list (empty-patch-token) (empty-patch-token)))
-						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list (empty-patch-token)))
+						(list (list (empty-patch-token)))
+						(list (list (empty-patch-token)))
+						(list (list (empty-patch-token)))
+						(list (list (empty-patch-token)))
 					)
 					(list
-						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list (empty-patch-token)))
 						(list (list ("9") (opponent-token)))
 						(list (list ("1") (tile-token)))
 						(list (list ("2") (hole-token)))
-						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list (empty-patch-token)))
 					)
 					(list
 						(list (list ("8") (opponent-token)))
@@ -624,225 +546,420 @@
 						(list (list ("4") (opponent-token)))
 					)
 					(list
-						(list (list (empty-patch-token) (empty-patch-token)))
-						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list (empty-patch-token)))
+						(list (list (empty-patch-token)))
 						(list (list ("5") (tile-token)))
-						(list (list (empty-patch-token) (empty-patch-token)))
-						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list (empty-patch-token)))
+						(list (list (empty-patch-token)))
 					)
 					(list
-						(list (list (empty-patch-token) (empty-patch-token)))
-						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list (empty-patch-token)))
+						(list (list (empty-patch-token)))
 						(list (list ("6") (tile-token)))
-						(list (list (empty-patch-token) (empty-patch-token)))
-						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list (empty-patch-token)))
+						(list (list (empty-patch-token)))
 					)
 				)
 
 				set expected-final-visual-spatial-field (list
 					(list
-						(list (list (empty-patch-token) (empty-patch-token)))
-						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list (empty-patch-token)))
+						(list (list (empty-patch-token)))
 						(list (list ("0") (self-token)))
-						(list (list (empty-patch-token) (empty-patch-token)))
-						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list (empty-patch-token)))
+						(list (list (empty-patch-token)))
 					)
 					(list
-						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list (empty-patch-token)))
 						(list (list ("9") (opponent-token)))
-						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list (empty-patch-token)))
 						(list (list ("2") (hole-token)))
-						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list (empty-patch-token)))
 					)
 					(list
 						(list (list ("8") (opponent-token)))
 						(list (list ("7") (tile-token)))
-						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list (empty-patch-token)))
 						(list (list ("3") (tile-token)))
 						(list (list ("4") (opponent-token)))
 					)
 					(list
-						(list (list (empty-patch-token) (empty-patch-token)))
-						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list (empty-patch-token)))
+						(list (list (empty-patch-token)))
 						(list (list ("5") (tile-token)))
-						(list (list (empty-patch-token) (empty-patch-token)))
-						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list (empty-patch-token)))
+						(list (list (empty-patch-token)))
 					)
 					(list
-						(list (list (empty-patch-token) (empty-patch-token)))
-						(list (list (empty-patch-token) (empty-patch-token)))
+						(list (list (empty-patch-token)))
+						(list (list (empty-patch-token)))
 						(list (list ("6") (tile-token)))
-						(list (list (empty-patch-token) (empty-patch-token)))
-						(list (list (empty-patch-token) (empty-patch-token)))
-					)
-				)
-
-				set expected-final-scene-to-learn (list
-					(list
-						(list (empty-patch-token) (empty-patch-token))
-						(list (empty-patch-token) (empty-patch-token))
-						(list ("1") (tile-token))
-						(list (empty-patch-token) (empty-patch-token))
-						(list (empty-patch-token) (empty-patch-token))
-					)
-					(list
-						(list (empty-patch-token) (empty-patch-token))
-						(list ("9") (opponent-token))
-						(list ("0") (self-token))
-						(list ("2") (hole-token))
-						(list (empty-patch-token) (empty-patch-token))
-					)
-					(list
-						(list ("8") (opponent-token))
-						(list ("7") (tile-token))
-						(list (empty-patch-token) (empty-patch-token))
-						(list ("3") (tile-token))
-						(list ("4") (opponent-token))
-					)
-					(list
-						(list (empty-patch-token) (empty-patch-token))
-						(list (empty-patch-token) (empty-patch-token))
-						(list ("5") (tile-token))
-						(list (empty-patch-token) (empty-patch-token))
-						(list (empty-patch-token) (empty-patch-token))
-					)
-					(list
-						(list (empty-patch-token) (empty-patch-token))
-						(list (empty-patch-token) (empty-patch-token))
-						(list ("6") (tile-token))
-						(list (empty-patch-token) (empty-patch-token))
-						(list (empty-patch-token) (empty-patch-token))
+						(list (list (empty-patch-token)))
+						(list (list (empty-patch-token)))
 					)
 				)
 			]
 
 			ask turtle 0 [
 
-				;======================================;
-				;== FIRST "GENERATE-PLAN" INVOCATION ==;
-				;======================================;
+				let test-description ("")
 
-				let expected-fixations-made (false)
-				let expected-number-fixations-to-be-made (length (original-object-locations))
+				;=================================;
+				;== SET-UP VISUAL-SPATIAL FIELD ==;
+				;=================================;
 
-				output-print "constructing vsf"
-				while[not expected-fixations-made][
-					set construct-visual-spatial-field? (true)
-					generate-plan
+				chrest:TileworldModelTests#generate-plan.test-1 (?) (0)
 
-					let number-expected-fixations-made (0)
-					let fixations-made (map ([ list (chrest:Perceiver.get-fixation-xcor (?)) (chrest:Perceiver.get-fixation-ycor (?)) ]) (chrest:Perceiver.get-fixations))
+				;=========================================================;
+				;== CHECK THE INITIAL STATE OF THE VISUAL-SPATIAL FIELD ==;
+				;=========================================================;
 
-					foreach(fixations-made)[
-						if(member? ? original-object-locations)[
-							set number-expected-fixations-made (number-expected-fixations-made + 1)
+				let visual-spatial-field-state-before-plan-generation-starts ( chrest:Scene.get-as-netlogo-list 
+					(chrest:get-visual-spatial-field-as-scene 
+						(report-current-time) 
+						(unknown-visual-spatial-field-object-replacement-probabilities) 
+					)
+				)
+
+				let col (0)
+				let row (0)
+				while [col < length visual-spatial-field-state-before-plan-generation-starts][
+					while [row < length item (col) (visual-spatial-field-state-before-plan-generation-starts)][
+						let object-info (item (row) (item (col) (visual-spatial-field-state-before-plan-generation-starts)))
+						let expected-object-info (item (0) (item (row) (item (col) (expected-initial-visual-spatial-field))))
+
+						ifelse(length expected-object-info = 1)[
+							check-equal 
+								(chrest:SceneObject.get-object-type (item (0) (object-info)))
+								(item (0) (expected-object-info))
+								(word "when checking identifier/type of object on col " col ", row " row ", before planning begins")
 						]
+						[
+							check-equal 
+								(chrest:SceneObject.get-identifier (item (0) (object-info)))
+								(item (0) (expected-object-info))
+								(word "when checking identifier of object on col " col ", row " row ", before planning begins")
+
+							check-equal 
+								(chrest:SceneObject.get-object-type (item (0) (object-info)))
+								(item (1) (expected-object-info))
+								(word "when checking type of object on col " col ", row " row ", before planning begins")
+						]
+
+						set row (row + 1)
 					]
-
-					if(number-expected-fixations-made = expected-number-fixations-to-be-made)[
-						set expected-fixations-made (true)
-					]
-				]
-				output-print "done"
-
-				let expected-scene-to-learn (chrest:Scene.get-as-netlogo-list (chrest:scene.new (get-observable-environment) ("")))
-				while[current-training-time != chrest:get-attention-clock][
-					check-equal 
-						(chrest:Scene.get-as-netlogo-list (scene-to-learn)) 
-						(expected-scene-to-learn)
-						("when checking the 'scene-to-learn' turtle variable before visual-spatial field construction is complete")
-					set current-training-time (current-training-time + 1)
+					set col (col + 1)
 				]
 
-				;Increment domain time so that the next invocation of "generate-plan" will not be blocked due to the CHREST turtle's attention
-				;not being free.
-				set current-training-time (chrest:get-attention-clock)
+				;==========================;
+				;== SET TURTLE VARIABLES ==;
+				;==========================;
 
-				let expected-deliberation-time 0
-				let expected-plan-length 0
-				let expected-current-search-iteration 0
+				;Set the 'time-visual-spatial-field-can-be-used-for-planning' variable so that, 
+				;when the 'generate-plan' procedure is called, it will consider itself able to
+				;plan since the visual-spatial field will be constructed at the current time.
+				set time-visual-spatial-field-can-be-used-for-planning (0)
+
+				;Set other turtle variables to what they should be when this procedure is 
+				;invoked and can proceed.
+				set generate-plan? (true)
+
+				;Turn on the turtle's 'fixate-on-visual-spatial-field?' variable so that it
+				;has the information required to deliberate correctly.
+				set fixate-on-visual-spatial-field? (true)
+
+				;=================================;
+				;== SET EXPECTED TEST VARIABLES ==;
+				;=================================;
+
+				let expected-generate-plan? (true)
+				let expected-time-spent-deliberating-on-plan (0)
+				let expected-current-search-iteration (0)
 				let expected-who-of-tile-last-pushed-in-plan ""
+				let expected-episodic-memory-length (0)
+				let expected-fixate-on-visual-spatial-field (false)
 
-				;=============================================;
-				;== INTERMEDIATE "GENERATE-PLAN INVOCATION" ==;
-				;=============================================;
-				let test-description (" during the planning cycle")
+				;======================================;
+				;== SET VISUAL-SPATIAL FIELD AT TIME ==;
+				;======================================;
 
-				while[ ( chrest:VisualSpatialField.get-as-netlogo-list (report-current-time) (false) ) != expected-final-visual-spatial-field ][
+				;Get the visual-spatial field at the current time.  The 'vsf-at-time' data 
+				;structure will be used to control test execution, i.e. until this is equal 
+				;to the 'expected-final-visual-spatial-field' variable.
+				let visual-spatial-field-at-time (chrest:Scene.get-as-netlogo-list 
+					(chrest:get-visual-spatial-field-as-scene 
+						(report-current-time) 
+						(unknown-visual-spatial-field-object-replacement-probabilities) 
+					)
+				)
 
-					check-equal (who-of-tile-last-pushed-in-plan) (expected-who-of-tile-last-pushed-in-plan) (word "when checking 'who-of-tile-last-pushed-in-plan' before 'generate-plan' invocation" test-description)
+				set col (0)
+				set row (0)
+				let vsf-at-time []
+				foreach (visual-spatial-field-at-time)[
+
+					let row-list []
+					foreach(?)[
+						
+						let object-info (item (0) (?))
+
+						let object-details []
+						ifelse(chrest:SceneObject.get-object-type (object-info) = empty-patch-token)[
+							set object-details (lput 
+								(list 
+									(chrest:SceneObject.get-object-type (object-info))
+								) 
+								(object-details)
+							)
+						]
+						[
+							set object-details (lput 
+								(list 
+									(chrest:SceneObject.get-identifier (object-info))
+									(chrest:SceneObject.get-object-type (object-info))
+								) 
+								(object-details)
+							)
+						]
+
+						set row-list (lput (object-details) (row-list))
+					]
+
+					set vsf-at-time (lput (row-list) (vsf-at-time))
+				]
+
+				;===============================;
+				;== PROCEDURE INVOCATION LOOP ==;
+				;===============================;
+
+				let procedure-invocation-counter = 1
+;				while[ vsf-at-time != expected-final-visual-spatial-field ][
+
+					;==========================================;
+					;===== FIXATE ON VISUAL-SPATIAL FIELD =====;
+					;==========================================;
+
+					;Have the turtle fixate on its visual-spatial field until a fixation set is complete so that
+					;it has information required to deliberate.
+					if(fixate-on-visual-spatial-field?)[
+						print (word "Starting fixations at time " current-training-time)
+						let visual-spatial-field (chrest:get-visual-spatial-field-as-scene (report-current-time) (unknown-visual-spatial-field-object-replacement-probabilities))
+						while[ chrest:schedule-or-make-next-fixation (visual-spatial-field) (false) (report-current-time) != chrest:ChrestStatus.value-of("FIXATION_SET_COMPLETE") ][
+							set current-training-time (current-training-time + 1)
+						]
+
+						;Turn off 'fixate-on-visual-spatial-field?' switch so that 'generate-plan?'
+						;proceeds as expected.
+						set fixate-on-visual-spatial-field? (false)
+					]
+
+					;Increment time since it won't have happened above due to the while loop structure.
+					set current-training-time (current-training-time + 1)
+
+					check-equal 
+						(who-of-tile-last-pushed-in-plan) 
+						(expected-who-of-tile-last-pushed-in-plan) 
+						(word "when checking 'who-of-tile-last-pushed-in-plan' before 'generate-plan' invocation" test-description)
 
 					set expected-who-of-tile-last-pushed-in-plan ""
-					set expected-scene-to-learn ( chrest:Scene.get-as-netlogo-list (chrest:VisualSpatialField.get-as-scene (report-current-time) (false)) )
 
-					let visual-spatial-field-state-before-plan-generation ( chrest:VisualSpatialField.get-as-netlogo-list (report-current-time) (false) )
+					;====================================================================================;
+					;== GET VISUAL-SPATIAL FIELD STATE AND TILE 1 LOCATION BEFORE PROCEDURE INVOCATION ==;
+					;====================================================================================;
+					
+					let visual-spatial-field-before-plan-generation ( chrest:Scene.get-as-netlogo-list 
+						(chrest:get-visual-spatial-field-as-scene 
+							(report-current-time) 
+							(unknown-visual-spatial-field-object-replacement-probabilities) 
+						)
+					)
 					let location-of-tile-1-before-plan-generation (chrest:VisualSpatialField.get-object-locations 
 						(report-current-time) 
 						("1") 
-						(true)
+						(false)
 					)
+
+					;======================;
+					;== INVOKE PROCEDURE ==;
+					;======================;
 
 					generate-plan
 
-					check-equal 
-						(chrest:Scene.get-as-netlogo-list (scene-to-learn)) 
-						(expected-scene-to-learn)
-						(word "when checking the 'scene-to-learn' turtle variable after visual-spatial field construction is complete" test-description)
+					;===================================================================================;
+					;== GET VISUAL-SPATIAL FIELD STATE AND TILE 1 LOCATION AFTER PROCEDURE INVOCATION ==;
+					;===================================================================================;
 
-					let visual-spatial-field-state-after-plan-generation ( chrest:VisualSpatialField.get-as-netlogo-list (chrest:get-attention-clock) (false) )
-					let location-of-tile-1-after-plan-generation (chrest:VisualSpatialField.get-object-locations 
+					let visual-spatial-field-after-plan-generation ( chrest:Scene.get-as-netlogo-list 
+						(chrest:get-visual-spatial-field-as-scene 
+							(chrest:get-attention-clock)
+							(unknown-visual-spatial-field-object-replacement-probabilities) 
+						)
+					)
+					let location-of-tile-1-after-plan-generation (chrest:get-visual-spatial-field-object-locations 
 						(chrest:get-attention-clock) 
 						("1") 
-						(true)
+						(false)
 					)
 
-					if(visual-spatial-field-state-before-plan-generation != visual-spatial-field-state-after-plan-generation)[
+					;============================================================================;
+					;== CHECK VISUAL-SPATIAL FIELD STATE BEFORE AND AFTER PROCEDURE INVOCATION ==;
+					;============================================================================;
+
+					set col (0)
+					set row (0)
+					let vsf-before []
+					foreach (visual-spatial-field-before-plan-generation)[
+
+						let row-list []
+						foreach(?)[
+							
+							let object-info (item (0) (?))
+							let object-details []
+							ifelse(chrest:SceneObject.get-object-type (object-info) = empty-patch-token)[
+								set object-details (lput 
+									(list 
+										(chrest:SceneObject.get-object-type (object-info))
+									) 
+									(object-details)
+								)
+							]
+							[
+								set object-details (lput 
+									(list 
+										(chrest:SceneObject.get-identifier (object-info))
+										(chrest:SceneObject.get-object-type (object-info))
+									) 
+									(object-details)
+								)
+							]
+
+							set row-list (lput (object-details) (row-list))
+						]
+
+						set vsf-before (lput (row-list) (vsf-before))
+					]
+
+					set col (0)
+					set row (0)
+					let vsf-after []
+					foreach (visual-spatial-field-after-plan-generation)[
+
+						let row-list []
+						foreach(?)[
+							
+							let object-info (item (0) (?))
+
+							let object-details []
+							ifelse(chrest:SceneObject.get-object-type (object-info) = empty-patch-token)[
+								set object-details (lput 
+									(list 
+										(chrest:SceneObject.get-object-type (object-info))
+									) 
+									(object-details)
+								)
+							]
+							[
+								set object-details (lput 
+									(list 
+										(chrest:SceneObject.get-identifier (object-info))
+										(chrest:SceneObject.get-object-type (object-info))
+									) 
+									(object-details)
+								)
+							]
+
+							set row-list (lput (object-details) (row-list))
+						]
+
+						set vsf-after (lput (row-list) (vsf-after))
+;					]
+
+;					print (visual-spatial-field-before-plan-generation)
+;					print (visual-spatial-field-after-plan-generation)
+;					print (vsf-before)
+;					print (vsf-after)
+;					print ("")
+
+					if(vsf-before != vsf-after)[
 						
 						;Reversal didn't occur.
-						set expected-plan-length (expected-plan-length + 1)
+						set expected-episodic-memory-length (expected-episodic-memory-length + 1)
 
 						if(location-of-tile-1-before-plan-generation != location-of-tile-1-after-plan-generation)[
 							set expected-who-of-tile-last-pushed-in-plan "1"
 						]
 					]
+
+					;===========;
+					;== TESTS ==;
+					;===========;
 					
-
 					set expected-current-search-iteration (expected-current-search-iteration + 1)
-					set expected-deliberation-time (expected-deliberation-time + time-taken-to-problem-solve)
+;					set expected-deliberation-time (expected-deliberation-time + time-taken-to-problem-solve)
 
-					check-equal (generate-plan?) (true) (word "when checking 'generate-plan?'" test-description)
-					check-equal (length(plan)) (expected-plan-length) (word "when checking plan length" test-description)
-					check-equal (time-spent-deliberating-on-plan) (expected-deliberation-time) (word "when checking 'time-spent-deliberating-on-plan'" test-description)
-					check-equal (deliberation-finished-time) (0) (word "when checking 'deliberation-finished-time'" test-description)
-					check-equal (who-of-tile-last-pushed-in-plan) (expected-who-of-tile-last-pushed-in-plan) (word "when checking 'who-of-tile-last-pushed-in-plan' after 'generate-plan' invocation" test-description)
-					check-equal (current-search-iteration) (expected-current-search-iteration) (word "when checking 'current-search-iteration'" test-description)
+;					check-equal 
+;						(generate-plan?) 
+;						(true) 
+;						(word "when checking 'generate-plan?'" test-description)
+;
+;					check-equal 
+;						(length (episodic-memory)) 
+;						(expected-episodic-memory-length) 
+;						(word "when checking plan length" test-description)
+;
+;					check-equal 
+;						(time-spent-deliberating-on-plan) 
+;						(expected-deliberation-time) 
+;						(word "when checking 'time-spent-deliberating-on-plan'" test-description)
+;
+;					check-equal 
+;						(deliberation-finished-time) 
+;						(0) 
+;						(word "when checking 'deliberation-finished-time'" test-description)
+;
+;					check-equal 
+;						(who-of-tile-last-pushed-in-plan) 
+;						(expected-who-of-tile-last-pushed-in-plan) 
+;						(word "when checking 'who-of-tile-last-pushed-in-plan' after 'generate-plan' invocation" test-description)
+;
+;					check-equal 
+;						(current-search-iteration) 
+;						(expected-current-search-iteration) 
+;						(word "when checking 'current-search-iteration'" test-description)
+;
 
+					;=====================;
+					;== START LOOP OVER ==;
+					;=====================;
+
+					user-message ("DONE!")
+					stop
 					set current-training-time (chrest:get-attention-clock)
+					set vsf-at-time (vsf-after)
+
+					chrest:TileworldModelTests#generate-plan.test-1 (?) (procedure-invocation-counter)
+					set procedure-invocation-counter (procedure-invocation-counter + 1)
 				]
-
-				;======================================;
-				;== FINAL "GENERATE-PLAN" INVOCATION ==;
-				;======================================;
-
-				generate-plan
-				
-				set test-description (" after invoking 'generate-plan' when the end-plan condition has been met")
-
-				check-equal (chrest:get-attention-clock) (report-current-time) (word "when checking CHREST's attention clock" test-description)
-				check-equal (chrest:VisualSpatialField.get-as-netlogo-list (chrest:get-attention-clock) (false)) (expected-final-visual-spatial-field) (word "when checking the final visual-spatial field state" test-description)
-				check-equal (generate-plan?) (false) (word "when checking 'generate-plan?'" test-description)
-				check-equal (length (plan)) (expected-plan-length) (word "when checking 'plan' length" test-description)
-				check-equal (time-spent-deliberating-on-plan) (0) (word "when checking 'time-spent-deliberating-on-plan'" test-description)
-				check-equal (deliberation-finished-time) (report-current-time + expected-deliberation-time) (word "when checking 'deliberation-finished-time'" test-description)
-				check-equal (who-of-tile-last-pushed-in-plan) ("") (word "when checking 'who-of-tile-last-pushed-in-plan'" test-description)
-				check-equal (current-search-iteration) (0) (word "when checking 'current-search-iteration'" test-description)
-				check-equal 
-					(chrest:Scene.get-as-netlogo-list (scene-to-learn)) 
-					(expected-final-scene-to-learn)
-					(word "when checking the 'scene-to-learn' turtle variable " test-description)
+;
+;				;======================================;
+;				;== FINAL "GENERATE-PLAN" INVOCATION ==;
+;				;======================================;
+;
+;				generate-plan
+;				
+;				set test-description (" after invoking 'generate-plan' when the end-plan condition has been met")
+;
+;				check-equal (chrest:get-attention-clock) (report-current-time) (word "when checking CHREST's attention clock" test-description)
+;				check-equal (chrest:VisualSpatialField.get-as-netlogo-list (chrest:get-attention-clock) (false)) (expected-final-visual-spatial-field) (word "when checking the final visual-spatial field state" test-description)
+;				check-equal (generate-plan?) (false) (word "when checking 'generate-plan?'" test-description)
+;				check-equal (length (episodic-memory)) (expected-episodic-memory-length) (word "when checking 'plan' length" test-description)
+;				check-equal (time-spent-deliberating-on-plan) (0) (word "when checking 'time-spent-deliberating-on-plan'" test-description)
+;				check-equal (deliberation-finished-time) (report-current-time + expected-deliberation-time) (word "when checking 'deliberation-finished-time'" test-description)
+;				check-equal (who-of-tile-last-pushed-in-plan) ("") (word "when checking 'who-of-tile-last-pushed-in-plan'" test-description)
+;				check-equal (current-search-iteration) (0) (word "when checking 'current-search-iteration'" test-description)
 			]
 
 			reset (true)
-		]
+;		]
 	]
 </test>

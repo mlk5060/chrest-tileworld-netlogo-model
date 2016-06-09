@@ -146,150 +146,41 @@
 ; - For each scenario, the final visual-spatial field state after object movement is checked to see if it is valid or not.
 ;
 <test>
-	let scenarios [1 2 3 4 5]
+	let scenario (1)
 
-	foreach(scenarios)[
-		let scenario (?)
+	while[scenario <= 6][
 
 		create-chrest-turtles 1[
-			set action-performance-time 10000
-			set action-selection-procedure "roulette-selection"
-			set add-link-time 10000
-			set can-plan? true
-			set discount-rate 0.5
-			set discrimination-time 10000
-			set familiarisation-time 2000
-			set max-length-of-episodic-memory  800
-			set max-search-iteration 5
-			set number-fixations 20
-			set pattern-recognition? true
-			set play-time 14400000.0
-			set reinforce-actions? true
-			set reinforce-problem-solving? true
-			set reinforcement-learning-theory "profit_sharing_with_discount_rate" 
-			set sight-radius 1
-			set time-taken-to-use-pattern-recognition 200
-			set time-taken-to-problem-solve 1000
-			set visual-spatial-field-access-time 50
-			set visual-spatial-field-empty-square-placement-time 5
-			set visual-spatial-field-object-movement-time 25
-			set visual-spatial-field-object-placement-time 10
-			set visual-spatial-field-recognised-object-lifespan 100000
-			set visual-spatial-field-unrecognised-object-lifespan 90000
+
+			;None of these variables affect the procedure but need to be set.
+			set can-plan? (false)
+			set max-fixations-in-set (10)
+			set initial-fixation-threshold (3)
+			set peripheral-item-fixation-max-attempts (3)
+			set reinforcement-learning-theory ("profit_sharing_with_discount_rate")
+			set recognised-visual-spatial-field-object-lifespan (0)
+			set time-to-access-visual-spatial-field (0)
+			set time-to-encode-recognised-scene-object-as-visual-spatial-field-object (0)
+			set time-to-encode-unrecognised-empty-square-scene-object-as-visual-spatial-field-object (0)
+			set time-to-encode-unrecognised-non-empty-square-scene-object-as-visual-spatial-field-object (0)
+			set time-to-move-visual-spatial-field-object (0)
+			set time-to-process-unrecognised-scene-object-during-visual-spatial-field-construction (0)
+			set unrecognised-visual-spatial-field-object-lifespan (0)
 		]
 		setup (true)
 
-		create-tiles 1 [setxy ([pxcor] of turtle 0) (([pycor] of turtle 0) + 1)]
-		create-holes 1 [setxy (([pxcor] of turtle 0) + 1) ([pycor] of turtle 0)]
-		create-chrest-turtles 1 [setxy ([pxcor] of turtle 0) (([pycor] of turtle 0) - 1)]
-		create-tiles 1 [setxy (([pxcor] of turtle 0) - 1) ([pycor] of turtle 0)]
-
-		let original-object-locations (list
-			(list (1) (0))
-			(list (0) (1))
-			(list (2) (1))
-			(list (1) (2))
-		)
-
 		ask turtle 0 [
-			let expected-fixations-made (false)
-			let expected-number-fixations-to-be-made (length (original-object-locations))
+			chrest:TileworldModelTests#are-visual-spatial-field-squares-valid-at-time?.test (scenario)
 
-			while[not expected-fixations-made][
-				construct-visual-spatial-field
-
-				let number-expected-fixations-made (0)
-				let fixations-made (map ([ list (chrest:Perceiver.get-fixation-xcor (?)) (chrest:Perceiver.get-fixation-ycor (?)) ]) (chrest:Perceiver.get-fixations))
-
-				foreach(fixations-made)[
-					if(member? ? original-object-locations)[
-						set number-expected-fixations-made (number-expected-fixations-made + 1)
-					]
-				]
-
-				if(number-expected-fixations-made = expected-number-fixations-to-be-made)[
-					set expected-fixations-made (true)
-				]
-			]
+			let expected-output (ifelse-value (scenario = 6) [true] [false])
 
 			check-equal 
-				(are-visual-spatial-field-squares-valid-at-time? (chrest:get-attention-clock) (original-object-locations)) 
-				(true) 
-				(word "when checking initial visual-spatial scene in scenario " scenario)
-
-			let object-moves []
-			let expected-output (false)
-
-			if (scenario = 1)[
-				set object-moves (list
-					(list
-						(chrest:ItemSquarePattern.new ("1") (1) (2))
-						(chrest:ItemSquarePattern.new ("1") (0) (1))
-					)
-				)
-			]
-
-			if (scenario = 2)[
-				set object-moves (list
-					(list
-						(chrest:ItemSquarePattern.new ("1") (1) (2))
-						(chrest:ItemSquarePattern.new ("1") (1) (0))
-					)
-				)
-			]
-
-			if (scenario = 3)[
-				set object-moves (list
-					(list
-						(chrest:ItemSquarePattern.new ("0") (1) (1))
-						(chrest:ItemSquarePattern.new ("0") (1) (2))
-					)
-				)
-			]
-
-			if (scenario = 4)[
-				set object-moves (list
-					(list
-						(chrest:ItemSquarePattern.new ("0") (1) (1))
-						(chrest:ItemSquarePattern.new ("0") (2) (1))
-					)
-				)
-			]
-
-			if (scenario = 5)[
-				set object-moves (list
-					(list
-						(chrest:ItemSquarePattern.new ("0") (1) (1))
-						(chrest:ItemSquarePattern.new ("0") (1) (0))
-					)
-				)
-			]
-
-			if (scenario = 6)[
-				set object-moves (list
-					(list
-						(chrest:ItemSquarePattern.new ("0") (1) (2))
-						(chrest:ItemSquarePattern.new ("0") (2) (1))
-					)
-				)
-
-				set expected-output (true)
-			]
-
-			chrest:VisualSpatialField.move-objects (object-moves) (chrest:get-attention-clock) (false)
-			let squares-to-check []
-			foreach(object-moves)[
-				foreach(?)[
-					set squares-to-check (lput (list (chrest:ItemSquarePattern.get-column (?)) (chrest:ItemSquarePattern.get-row (?))) (squares-to-check))
-				]
-			]
-
-			check-equal 
-				(are-visual-spatial-field-squares-valid-at-time? (chrest:get-attention-clock) (squares-to-check))
+				(are-visual-spatial-field-squares-valid-at-time? (chrest:get-attention-clock))
 				(expected-output) 
-				(word "when checking visual-spatial scene in scenario " scenario " after objects have been moved")
+				(word "when checking visual-spatial scene in scenario " scenario )
 		]
 
 		reset (true)
+		set scenario (scenario + 1)
 	]
 </test>

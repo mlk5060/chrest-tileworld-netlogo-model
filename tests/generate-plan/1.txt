@@ -2,141 +2,589 @@
 ;========== TEST AIM ==========
 ;==============================
 ;
-; 1) To determine if visual-spatial field construction occurs when a CHREST turtle invokes the "generate-plan" procedure and 
-;    its attention is free.
-; 2) To determine if the CHREST turtle attempts to learn the current observable environment in this situation until its
-;    visual-spatial field has been constructed.
+; To determine if action sequences are handled correctly during planning, i.e.
+; 
+; 1) Are multiple actions applied correctly in the visual-spatial field?
+; 2) Are invalid actions reversed correctly?
+; 3) 
 ;
 ;======================================
 ;========== TEST DESCRIPTION ==========
 ;======================================
+; 
+; A CHREST turtle's visual-spatial field is initialised as depicted below:
 ;
-; At time 0 in the domain, a CHREST turtle invokes "generate-plan" when its obeservable environment looks like the following:
+;    |------|------|------|------|------|
+; 4  |      |      |      |      |      |
+;    |------|------|------|------|------|
+; 3  |      | 9(O) | 1(T) | 2(H) |      |
+;    |------|------|------|------|------|
+; 2  | 8(O) | 7(T) | 0(S) | 3(T) | 4(O) |
+;    |------|------|------|------|------|
+; 1  |      |      | 5(T) |      |      |
+;    |------|------|------|------|------|
+; 0  |      |      | 6(T) |      |      |
+;    |------|------|------|------|------|
+;        0      1      2      3      4    VISUAL-SPATIAL FIELD COORDINATES
 ;
-; LEGEND
-; ======
+; The CHREST turtle then invokes "generate-plan" 3 times: 
+; 
+; 1) For the first time "generate-plan" is invoked, the visual STM hypothesis 
+;    of a CHREST turtle will contain a Node whose productions contain a 
+;    sequence of 2 actions:
+;    ~ Action 1: Move south by 1 patch.
+;    ~ Action 2: Move south by 1 patch.
 ;
-; - H: hole
-; - O: opponent
-; - T: tile
-; - C: CHREST turtle
+;    After performing action 1 in its visual-spatial-field, the CHREST turtle 
+;    should reverse the action, not perform the second action and deliberate 
+;    on a new action without fixating on the visual-spatial field in between.
 ;
-; |------|------|------|
-; | 8(H) | 1(T) | 2(H) |
-; |------|------|------|
-; | 7(T) | 0(C) | 3(O) |
-; |------|------|------|
-; | 6(O) | 5(H) | 4(T) |
-; |------|------|------|
+; 2) For the second time "generate-plan" is invoked, the visual STM hypothesis 
+;    of the CHREST turtle will be replaced by a Node whose productions contain 
+;    a sequence of 2 actions:
+;    ~ Action 1: push tile to the north, north.  CHREST turtle should now be
+;                at (2, 3) and tile with who of "1" should be at (2, 4) 
+;    ~ Action 2: move west from (2, 3) to (1, 3)
 ;
-; This should result in the CHREST turtle constructing a visual-spatial field *only* (no actual planning should occur) and 
-; it attempting to learn what it fixated on (looked at) during visual-spatial field construction.
+;    Action 1 should be performed successfully when the action is applied in 
+;    the CHREST turtle's visual-spatial field however, after performing 
+;    action 2 in its visual-spatial-field, the CHREST turtle should reverse 
+;    action 2 and deliberate on a new action after fixating on the visual-spatial 
+;    field since action 1 will have created a new, valid, visual-spatial field 
+;    state.
 ;
-; The test then continues to invoke "generate-plan" until the model time equals that of the CHREST turtle's attention clock
-; (set during the first "generate-plan" invocation), i.e. the time visual-spatial field construction completes.
+; 3) For the second time "generate-plan" is invoked, the visual STM hypothesis 
+;    of the CHREST turtle will be replaced by a Node whose productions contain 
+;    a sequence of 2 actions:
+;    ~ Action 1: move south from (2, 3) to (2, 2)
+;    ~ Action 2: move north from (2, 2) to (2, 3)
 ;
-; NOTE: the visual-spatial field constructed is not checked for correctness since this is handled by CHREST's testing.
+;    Both actions should be performed successfully when they are applied in the
+;    visual-spatial field and the CHREST turtle should fixate on the 
+;    visual-spatial field again since the actions may have created a new, valid,
+;    visual-spatial field state.
+;
+; The test then ends.
+;
+; Plan generation will not end since the CHREST turtle's "max-search-iteration"
+; is set to a number greater than 3 (the number of iterations performed in the 
+; test), the tile that can be pushed will not be pushed out of the visual-spatial
+; field or into a hole and the CHREST turtle's visual-spatial field avatar will
+; not be moved out of the visual-spatial field.
+; 
+; The number of fixations that can be made in a set by the CHREST turtle is set 
+; to 5 and each Fixation that can be made takes the same amount of time to 
+; perform.  This means that each one should be able to be performed when decided
+; upon. 
+;
+; The CHREST turtle's "probability-of-using-problem-solving" turtle variable will
+; also be set to 0.0 so that the CHREST turtle is guaranteed to use the actions in
+; the viusual STM hypotheses when deliberating.
+;
+; The CHREST turtle won't ever actually fixate on the visual-spatial field since its
+; not necessary (the CHREST turtle is provided with information to make a decision
+; using pattern-recognition).
 ;
 ;=====================================
 ;========== TESTS PERFORMED ==========
 ;=====================================
-; 
-; The following variables are checked at each time increment:
 ;
-; - CHREST attention clock: should be set greater than or equal to a minimum value and less than or equal to a maximum value since attention should be 
-;   consumed as a visual-spatial field should have been constructed.  An exact value isn't calculated since this is tested by CHREST's testing.
-; - "construct-visual-spatial-field?" turtle variable: should be set to boolean false since a visual-spatial field should have been constructed 
-;   and neither planning or execution of planned actions has occurred yet.
-; - "generate-plan?" turtle variable: should be set to boolean true since no end plan generation conditions should have been met at time t.
-; - Length of the "plan" turtle variable: should be set to 0 since no *actual* plan generation should have occurred at time t so no actions should have
-;   been added to the turtle's plan.
-; - "time-spent-deliberating-on-plan": should be set to 0 since no *actual* plan generation should have occurred at time t so no time should have been
-;   spent deliberating on a plan.
-; - "deliberation-finished-time": should be set to 0 since no end plan generation conditions should have been met at time t.
-; - "who-of-tile-last-pushed-in-plan" turtle variable: should be set to "" since no *actual* plan generation should have occurred at time t and thus no 
-;   tile could have been pushed in the CHREST turtle's visual-spatial field.
-; - "current-search-iteration" turtle variable: should be set to 0 since no *actual* plan generation should have occurred at time t so no search should have 
-;   occurred.
-; - "scene-to-learn" turtle variable: should be set to the CHREST turtle's current observable environment.
+; The following variables should be set to the following values:
+;
+; - "time-visual-spatial-field-can-be-used-for-planning": should be reset to -1 
+;   after the first "generate-plan?" invocation and shouldn't change for the 
+;   duration of the test.
+;
+; - episodic-memory: after each "generate-plan" invocation denoted, this variable
+;   should equal:
+;	~ Invocation 1: [] 
+;	~ Invocation 2: [[<[T 0 1]> <[PT 0 1]> time-generated -1]]
+;	~ Invocation 3: [
+;						[<[T 0 1]> <[PT 0 1]> time-generated -1]
+;						[<[H 1 0]> <[MV 180 1][MV 0 1]> time-generated -1]
+;					]
+;
+; - who-of-tile-last-pushed-in-plan: after each "generate-plan" invocation denoted, 
+;   this variable should equal:
+;   ~ Invocation 1: ""
+;   ~ Invocation 2: "1"
+;   ~ Invocation 3: ""
+;
+; - "chrest:get-attention-clock": after each "generate-plan" invocation denoted, 
+;   this variable should equal:
+;   ~ Invocation 1: time-to-retrieve-item-from-stm + 
+;					time-to-access-visual-spatial-field +
+;                   (time-to-move-visual-spatial-field-object * 2)
+;   ~ Invocation 2: time after invocation 1 + 
+;					time-to-retrieve-item-from-stm + 
+;                   time-to-access-visual-spatial-field + 
+;                   (time-to-move-visual-spatial-field-object * 4)
+;   ~ Invocation 3: time after invocation 2 + 
+;					time-to-retrieve-item-from-stm + 
+;                   time-to-access-visual-spatial-field + 
+;                   (time-to-move-visual-spatial-field-object * 2)
+;
+; - "current-search-iteration": should increase by 1 for every "generate-plan" 
+;   invocation.
+;
+; - "fixate-on-visual-spatial-field?": after each "generate-plan" invocation denoted, 
+;   this variable should equal:
+;   ~ Invocation 1: false
+;   ~ Invocation 2: true
+;   ~ Invocation 3: true
+;
+; - "time-spent-deliberating-on-plan": after each "generate-plan" invocation denoted, 
+;   this variable should equal:
+;   ~ Invocation 1: time-to-retrieve-item-from-stm + 
+;					time-to-access-visual-spatial-field +
+;                   (time-to-move-visual-spatial-field-object * 2)
+;   ~ Invocation 2: time after invocation 1 + 
+;					time-to-retrieve-item-from-stm + 
+;                   time-to-access-visual-spatial-field + 
+;                   (time-to-move-visual-spatial-field-object * 4)
+;   ~ Invocation 3: time after invocation 2 + 
+;					time-to-retrieve-item-from-stm + 
+;                   time-to-access-visual-spatial-field + 
+;                   (time-to-move-visual-spatial-field-object * 2)
+;
+; - "deliberation-finished-time": should be set to 0 for the duration of the test.
+;
+; - "execute-actions?": should be set to false for the duration of the test.
+;
+; - Visual-spatial field state: should equal the following after each "generate-plan"
+;   invocation denoted:
+;
+;   ~ Invocation 1:
+;
+;        |------|------|------|------|------|
+;     4  |      |      |      |      |      |
+;        |------|------|------|------|------|
+;     3  |      | 9(O) | 1(T) | 2(H) |      |
+;        |------|------|------|------|------|
+;     2  | 8(O) | 7(T) | 0(S) | 3(T) | 4(O) |
+;        |------|------|------|------|------|
+;     1  |      |      | 5(T) |      |      |
+;        |------|------|------|------|------|
+;     0  |      |      | 6(T) |      |      |
+;        |------|------|------|------|------|
+;            0      1      2      3      4    VISUAL-SPATIAL FIELD COORDINATES
+;
+;     ~ Invocation 2:
+;
+;        |------|------|------|------|------|
+;     4  |      |      | 1(T) |      |      |
+;        |------|------|------|------|------|
+;     3  |      | 9(O) | 0(S) | 2(H) |      |
+;        |------|------|------|------|------|
+;     2  | 8(O) | 7(T) |      | 3(T) | 4(O) |
+;        |------|------|------|------|------|
+;     1  |      |      | 5(T) |      |      |
+;        |------|------|------|------|------|
+;     0  |      |      | 6(T) |      |      |
+;        |------|------|------|------|------|
+;            0      1      2      3      4    VISUAL-SPATIAL FIELD COORDINATES
+;
+;     ~ Invocation 3:
+;
+;        |------|------|------|------|------|
+;     4  |      |      | 1(T) |      |      |
+;        |------|------|------|------|------|
+;     3  |      | 9(O) | 0(S) | 2(H) |      |
+;        |------|------|------|------|------|
+;     2  | 8(O) | 7(T) |      | 3(T) | 4(O) |
+;        |------|------|------|------|------|
+;     1  |      |      | 5(T) |      |      |
+;        |------|------|------|------|------|
+;     0  |      |      | 6(T) |      |      |
+;        |------|------|------|------|------|
+;            0      1      2      3      4    VISUAL-SPATIAL FIELD COORDINATES
+;
 ;
 <test>
-	create-chrest-turtles 1 [
-		set action-performance-time 10000
-		set action-selection-procedure "roulette-selection"
-		set add-link-time 10000
-		set can-plan? (true)
-		set discount-rate 0.5
-		set discrimination-time 10000
-		set familiarisation-time 2000
-		set max-length-of-episodic-memory 5
-		set max-search-iteration 9999
-		set number-fixations 4
-		set pattern-recognition? true
-		set play-time 14400000.0
-		set reinforce-actions? true
-		set reinforce-problem-solving? true
-		set reinforcement-learning-theory "profit_sharing_with_discount_rate" 
-		set sight-radius 1
-		set time-taken-to-use-pattern-recognition 200
-		set time-taken-to-problem-solve 1000
-		set visual-spatial-field-access-time 100
-		set visual-spatial-field-empty-square-placement-time 10
-		set visual-spatial-field-object-movement-time 50
-		set visual-spatial-field-object-placement-time 25
-		set visual-spatial-field-recognised-object-lifespan 10000
-		set visual-spatial-field-unrecognised-object-lifespan 50000
-	]
-	setup (true)
+	repeat 20 [
+		create-chrest-turtles 1 [
 
-	create-tiles 1 [ setxy ([pxcor] of turtle 0) (([pycor] of turtle 0) + 1) ]
-	create-holes 1 [ setxy (([pxcor] of turtle 0) + 1) (([pycor] of turtle 0) + 1) ]
-	create-chrest-turtles 1 [ setxy (([pxcor] of turtle 0) + 1) ([pycor] of turtle 0) ]
-	create-tiles 1 [ setxy (([pxcor] of turtle 0) + 1) (([pycor] of turtle 0) - 1) ]
-	create-holes 1 [ setxy ([pxcor] of turtle 0) (([pycor] of turtle 0) - 1 )]
-	create-chrest-turtles 1 [ setxy (([pxcor] of turtle 0) - 1) (([pycor] of turtle 0) - 1) ]
-	create-tiles 1 [ setxy (([pxcor] of turtle 0) - 1) ([pycor] of turtle 0) ]
-	create-holes 1 [ setxy (([pxcor] of turtle 0) - 1) (([pycor] of turtle 0) + 1) ]
+			;Set variables that affect test
+			set can-plan? (true)
+			set can-use-pattern-recognition? (true)
+			set max-fixations-in-set (5)
+			set max-search-iteration (99999)
+			set probability-of-using-problem-solving (0.0)
+			set time-to-retrieve-item-from-stm (1)
+			set time-to-access-visual-spatial-field (1)
+			set time-to-move-visual-spatial-field-object (1)
 
-	ask turtle 0[
-		generate-plan
-		
-		let total-number-patches-visible ( ((sight-radius * 2) + 1) ^ 2 )
-		let number-non-empty-patches (count turtles)
-		let number-empty-patches (total-number-patches-visible - number-non-empty-patches)
-		
-		;When calculating the time taken to encode squares, 1 is subtracted since the scene 
-		;creator (calling turtle) does not incur an object encoding time cost when the 
-		;visual-spatial field is constructed.
-
-		let minimum-attention-free-time
-		(
-			visual-spatial-field-access-time +
-			(visual-spatial-field-empty-square-placement-time * (total-number-patches-visible - 1))
-		)
-
-		let maximum-attention-free-time
-		(
-			visual-spatial-field-access-time +
-			(visual-spatial-field-empty-square-placement-time * number-empty-patches) +
-			(visual-spatial-field-object-placement-time * (number-non-empty-patches - 1))
-		)
-
-		let attn-clock (chrest:get-attention-clock)
-
-		while[report-current-time < attn-clock][
-			generate-plan
-
-			check-equal ( (attn-clock >= minimum-attention-free-time) and (attn-clock <= maximum-attention-free-time) ) (true) ("when checking the attention clock")
-			check-equal (construct-visual-spatial-field?) (false) ("when checking the 'construct-visual-spatial-field?' variable")
-			check-equal (generate-plan?) (true) ("when checking the 'generate-plan?' variable")
-			check-equal (length (plan)) (0) ("when checking the length of the plan")
-			check-equal (time-spent-deliberating-on-plan) (0) ("when checking the time spent deliberating on the plan")
-			check-equal (deliberation-finished-time) (0) ("when checking the time deliberation finishes")
-			check-equal (who-of-tile-last-pushed-in-plan) ("") ("when checking 'who-of-tile-last-pushed-in-plan'")
-			check-equal (current-search-iteration) (0) ("when checking the 'current-search-iteration' turtle variable")
-			check-equal (chrest:Scene.get-as-netlogo-list (scene-to-learn)) (chrest:Scene.get-as-netlogo-list (chrest:Scene.new (get-observable-environment) (""))) ("when checking the 'scene-to-learn' turtle variable")
-
-			set current-training-time (current-training-time + 1)
+			;Set variables that have to be set but have no bearing on the test
+			set add-production-time (10000)
+			set discount-rate (0.5)
+			set discrimination-time (10000)
+			set familiarisation-time (2000)
+			set initial-fixation-threshold (2)
+			set peripheral-item-fixation-max-attempts (3)
+			set play-time (14400000.0)
+			set reinforcement-learning-theory ("profit_sharing_with_discount_rate")
+			set saccade-time (1)
+			set sight-radius (2)
+			set time-taken-to-decide-upon-ahead-of-agent-fixations (1)
+			set time-taken-to-decide-upon-movement-fixations (1)
+			set time-taken-to-decide-upon-peripheral-item-fixations (1)
+			set time-taken-to-decide-upon-peripheral-square-fixations (1)
+			set time-taken-to-decide-upon-salient-object-fixations (1)
+			set time-to-retrieve-fixation-from-perceiver (1)
+			set time-to-generate-action-when-no-tile-seen (1)
+			set time-to-generate-action-when-tile-seen (2)
+			set time-to-encode-recognised-scene-object-as-visual-spatial-field-object (1)
+			set time-to-encode-unrecognised-empty-square-scene-object-as-visual-spatial-field-object (1)
+			set time-to-encode-unrecognised-non-empty-square-scene-object-as-visual-spatial-field-object (1)
+			set time-to-process-unrecognised-scene-object-during-visual-spatial-field-construction (1)
+			set unknown-visual-spatial-field-object-replacement-probabilities (list (list (1.0) (empty-patch-token)))
+			set recognised-visual-spatial-field-object-lifespan (10000000)
+			set unrecognised-visual-spatial-field-object-lifespan (10000000)
 		]
+		setup (true)
+
+
+		let visual-spatial-field-state-1 (list 
+			( list
+				(list (list (empty-patch-token)))
+				(list (list (empty-patch-token)))
+				(list (list ("8") (opponent-token)))
+				(list (list (empty-patch-token)))
+				(list (list (empty-patch-token)))
+			)
+			( list
+				(list (list (empty-patch-token)))
+				(list (list (empty-patch-token)))
+				(list (list ("7") (tile-token)))
+				(list (list ("9") (opponent-token)))
+				(list (list (empty-patch-token)))
+			)
+			(list
+				(list (list ("6") (tile-token)))
+				(list (list ("5") (tile-token)))
+				(list (list ("0") (self-token)))
+				(list (list ("1") (tile-token)))
+				(list (list (empty-patch-token)))
+			)
+			(list
+				(list (list (empty-patch-token)))
+				(list (list (empty-patch-token)))
+				(list (list ("3") (tile-token)))
+				(list (list ("2") (hole-token)))
+				(list (list (empty-patch-token)))
+			)
+			(list
+				(list (list (empty-patch-token)))
+				(list (list (empty-patch-token)))
+				(list (list ("4") (opponent-token)))
+				(list (list (empty-patch-token)))
+				(list (list (empty-patch-token)))
+			)
+		)
+
+		let visual-spatial-field-state-2 (list 
+			( list
+				(list (list (empty-patch-token)))
+				(list (list (empty-patch-token)))
+				(list (list ("8") (opponent-token)))
+				(list (list (empty-patch-token)))
+				(list (list (empty-patch-token)))
+			)
+			( list
+				(list (list (empty-patch-token)))
+				(list (list (empty-patch-token)))
+				(list (list ("7") (tile-token)))
+				(list (list ("9") (opponent-token)))
+				(list (list (empty-patch-token)))
+			)
+			(list
+				(list (list ("6") (tile-token)))
+				(list (list ("5") (tile-token)))
+				(list (list (empty-patch-token)))
+				(list (list ("0") (self-token)))
+				(list (list ("1") (tile-token)))
+			)
+			(list
+				(list (list (empty-patch-token)))
+				(list (list (empty-patch-token)))
+				(list (list ("3") (tile-token)))
+				(list (list ("2") (hole-token)))
+				(list (list (empty-patch-token)))
+			)
+			(list
+				(list (list (empty-patch-token)))
+				(list (list (empty-patch-token)))
+				(list (list ("4") (opponent-token)))
+				(list (list (empty-patch-token)))
+				(list (list (empty-patch-token)))
+			)
+		)
+
+		ask turtle 0 [
+
+			;==========================;
+			;== SET TURTLE VARIABLES ==;
+			;==========================;
+
+			set generate-plan? (true)
+			set execute-actions? (false)
+
+			;=================================;
+			;== SET EXPECTED TEST VARIABLES ==;
+			;=================================;
+
+			let expected-time-visual-spatial-field-can-be-used-for-planning (-1)
+			let expected-episodic-memory ([])
+			let expected-who-of-tile-last-pushed-in-plan ("")
+			let expected-chrest-attention-clock (0)
+			let expected-current-search-iteration (0)
+			let expected-fixate-on-visual-spatial-field? (false)
+			let expected-time-spent-deliberating-on-plan (0)
+			let expected-deliberation-finished-time (0)
+			let expected-execute-actions? (false)
+			let expected-visual-spatial-field-state (visual-spatial-field-state-1)
+
+			;==============================;
+			;== INVOCATION AND TEST LOOP ==;
+			;==============================;
+
+			let invocation-counter (0)
+			while[invocation-counter < 3][
+				
+				chrest:TileworldModelTests#generate-plan.test-1 (invocation-counter) (current-training-time)
+				
+				;Set variables that will prevent plan-generation if not set correctly.
+				set time-visual-spatial-field-can-be-used-for-planning (0)
+				set fixate-on-visual-spatial-field? (false)
+				
+				generate-plan
+				set current-training-time (chrest:get-attention-clock)
+
+				;===================================;
+				;== PREPARE VARIABLES FOR TESTING ==;
+				;===================================;
+
+				;;; Prepare episodic memory (ListPatterns need to be converted to Strings) ;;;
+
+				let episodic-memory-test (map 
+					([ (list 
+						(chrest:ListPattern.get-as-string (item (0) (?)))
+						(chrest:ListPattern.get-as-string (item (1) (?)))
+						(item (2) (?))
+						(item (3) (?))
+					) ]) 
+					(episodic-memory)
+				)
+
+				;;; Prepare visual-spatial-field-state
+
+				let visual-spatial-field-state-as-is ( chrest:Scene.get-as-netlogo-list 
+					(chrest:get-visual-spatial-field-as-scene 
+						(current-training-time) 
+						(unknown-visual-spatial-field-object-replacement-probabilities) 
+					)
+				)
+
+				let col (0)
+				let row (0)
+				let visual-spatial-field-state []
+				foreach (visual-spatial-field-state-as-is)[
+
+					let row-list []
+					foreach(?)[
+						
+						let object-info (item (0) (?))
+
+						let object-details []
+						ifelse(chrest:SceneObject.get-object-type (object-info) = empty-patch-token)[
+							set object-details (lput 
+								(list 
+									(chrest:SceneObject.get-object-type (object-info))
+								) 
+								(object-details)
+							)
+						]
+						[
+							set object-details (lput 
+								(list 
+									(chrest:SceneObject.get-identifier (object-info))
+									(chrest:SceneObject.get-object-type (object-info))
+								) 
+								(object-details)
+							)
+						]
+
+						set row-list (lput (object-details) (row-list))
+					]
+
+					set visual-spatial-field-state (lput (row-list) (visual-spatial-field-state))
+				]
+
+				;====================================;
+				;== UPDATE EXPECTED TEST VARIABLES ==;
+				;====================================;
+
+				if(invocation-counter = 0)[
+					set expected-chrest-attention-clock (
+						expected-chrest-attention-clock +
+						time-to-retrieve-item-from-stm + 
+						time-to-access-visual-spatial-field +
+               			(time-to-move-visual-spatial-field-object * 2)
+               		)
+
+               		set expected-current-search-iteration (1)
+
+               		set expected-time-spent-deliberating-on-plan (
+               			expected-time-spent-deliberating-on-plan +
+               			time-to-retrieve-item-from-stm + 
+						time-to-access-visual-spatial-field +
+               			(time-to-move-visual-spatial-field-object * 2)
+               		)
+				]
+
+				if(invocation-counter = 1)[
+
+					set expected-episodic-memory (lput 
+						(list 
+							(chrest:ListPattern.get-as-string (chrest:ListPattern.new 
+								(list (chrest:ItemSquarePattern.new ("T") (0) (1))) 
+								(chrest:Modality.value-of ("VISUAL"))
+							))
+							(chrest:ListPattern.get-as-string (chrest:ListPattern.new 
+								(list (chrest:ItemSquarePattern.new ("PT") (0) (1))) 
+								(chrest:Modality.value-of ("ACTION"))
+							)) 
+							(expected-chrest-attention-clock + time-to-retrieve-item-from-stm)
+							(-1)
+						)
+						(expected-episodic-memory)
+					)
+
+					set expected-who-of-tile-last-pushed-in-plan ("1")
+
+					set expected-chrest-attention-clock (
+						expected-chrest-attention-clock +
+						time-to-retrieve-item-from-stm + 
+						time-to-access-visual-spatial-field +
+						(time-to-move-visual-spatial-field-object * 4)
+               		)
+
+               		set expected-current-search-iteration (2)
+
+               		set expected-fixate-on-visual-spatial-field? (true)
+
+               		set expected-time-spent-deliberating-on-plan (
+               			expected-time-spent-deliberating-on-plan + 
+               			time-to-retrieve-item-from-stm + 
+						time-to-access-visual-spatial-field +
+						(time-to-move-visual-spatial-field-object * 4)
+               		)
+
+               		set expected-visual-spatial-field-state (visual-spatial-field-state-2)
+				]
+
+				if(invocation-counter = 2)[
+
+					set expected-episodic-memory (lput 
+						(list 
+							(chrest:ListPattern.get-as-string (chrest:ListPattern.new 
+								(list (chrest:ItemSquarePattern.new ("H") (1) (0))) 
+								(chrest:Modality.value-of ("VISUAL"))
+							))
+							(chrest:ListPattern.get-as-string (chrest:ListPattern.new 
+								(list 
+									(chrest:ItemSquarePattern.new ("MV") (180) (1)) 
+									(chrest:ItemSquarePattern.new ("MV") (0) (1))
+								)
+								(chrest:Modality.value-of ("ACTION"))
+							))
+							(expected-chrest-attention-clock + time-to-retrieve-item-from-stm)
+							(-1)
+						)
+						(expected-episodic-memory)
+					)
+
+					set expected-who-of-tile-last-pushed-in-plan ("")
+
+					set expected-chrest-attention-clock (
+						expected-chrest-attention-clock +
+						time-to-retrieve-item-from-stm + 
+						time-to-access-visual-spatial-field +
+						(time-to-move-visual-spatial-field-object * 2)
+               		)
+
+               		set expected-current-search-iteration (3)
+
+               		set expected-fixate-on-visual-spatial-field? (true)
+
+               		set expected-time-spent-deliberating-on-plan (
+               			expected-time-spent-deliberating-on-plan + 
+               			time-to-retrieve-item-from-stm + 
+						time-to-access-visual-spatial-field +
+						(time-to-move-visual-spatial-field-object * 2)
+               		)
+
+               		set expected-visual-spatial-field-state (visual-spatial-field-state-2)
+				]
+
+				;===========;
+				;== TESTS ==;
+				;===========;
+
+				check-equal 
+					(time-visual-spatial-field-can-be-used-for-planning) 
+					(expected-time-visual-spatial-field-can-be-used-for-planning) 
+					(word "occurred when checking the 'time-visual-spatial-field-can-be-used-for-planning' variable after invocation " (invocation-counter + 1))
+
+				check-equal
+					(episodic-memory-test)
+					(expected-episodic-memory)
+					(word "occurred when checking the 'episodic-memory' variable after invocation " (invocation-counter + 1))
+
+				check-equal
+					(who-of-tile-last-pushed-in-plan)
+					(expected-who-of-tile-last-pushed-in-plan)
+					(word "occurred when checking the 'who-of-tile-last-pushed-in-plan' variable after invocation " (invocation-counter + 1))
+
+				check-equal
+					(chrest:get-attention-clock)
+					(expected-chrest-attention-clock)
+					(word "occurred when checking the 'attention clock' variable after invocation " (invocation-counter + 1))
+
+				check-equal
+					(current-search-iteration)
+					(expected-current-search-iteration)
+					(word "occurred when checking the 'current-search-iteration' variable after invocation " (invocation-counter + 1))
+
+				check-equal
+					(fixate-on-visual-spatial-field?)
+					(expected-fixate-on-visual-spatial-field?)
+					(word "occurred when checking the 'fixate-on-visual-spatial-field?' variable after invocation " (invocation-counter + 1))
+
+				check-equal
+					(time-spent-deliberating-on-plan)
+					(expected-time-spent-deliberating-on-plan)
+					(word "occurred when checking the 'time-spent-deliberating-on-plan' variable after invocation " (invocation-counter + 1))
+
+				check-equal
+					(deliberation-finished-time)
+					(expected-deliberation-finished-time)
+					(word "occurred when checking the 'deliberation-finished-time' variable after invocation " (invocation-counter + 1))
+
+				check-equal
+					(execute-actions?)
+					(expected-execute-actions?)
+					(word "occurred when checking the 'execute-actions?' variable after invocation " (invocation-counter + 1))
+
+				check-equal
+					(visual-spatial-field-state)
+					(expected-visual-spatial-field-state)
+					(word "occurred when checking the '' variable after invocation " (invocation-counter + 1))
+
+
+				set invocation-counter (invocation-counter + 1)
+			]	
+		]
+		reset (true)
 	]
 </test>

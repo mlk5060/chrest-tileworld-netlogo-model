@@ -1,0 +1,97 @@
+Test progress
+
+|-------------------------------------------------|------|
+| PROCEDURE                                       | PASS |
+|-------------------------------------------------|------|
+| age                                             | Yes  |
+
+| get-observable-environment                      |      |
+
+| generate-action-when-tile-can-be-seen           | Yes  |
+| add-episode-to-episodic-memory                  |      | 
+| deliberate                                      | Yes  |
+| generate-visual-spatial-field-moves             | Yes  |
+| are-visual-spatial-field-squares-valid-at-time? | Yes  |
+| end-plan-generation                             |      |
+| generate-plan                                   |      |
+
+| push-tile                                       | Yes  |
+| move                                            | Yes  |
+| perform-action                                  |      |
+| schedule-or-execute-next-episode-actions        | Yes  |
+
+
+
+play
+|
+|--age
+|
+|--chrest-turtles-act
+   |
+   |--get-observable-environment
+   |
+   |--generate-plan
+   |  |
+   |  |--deliberate
+   |  |  |
+   |  |  |--generate-action-when-tile-can-be-seen
+   |  |  |
+   |  |  |--add-episode-to-episodic-memory
+   |  |
+   |  |--generate-visual-spatial-field-moves
+   |  |
+   |  |--are-visual-spatial-field-squares-valid-at-time?
+   |  |
+   |  |--end-plan-generation
+   |
+   |--execute-next-action
+      |
+      |--perform-action
+  	     |
+         |--push-tile
+      	 |
+         |--move
+
+
+
+
+
+- Visual information learned:
+	+ When fixating on observable environment (OK)
+	+ When fixating on visual-spatial field (OK)
+	+ From episodic memory
+
+- Action information learned:
+	+ From episodic memory
+
+- Productions learned:
+	+ From episodic memory
+
+- Productions reinforced:
+	+ From episodic memory
+
+
+CHREST turtle execution cycle
+=============================
+
+fixate-on-reality?
+fixate-on-visual-spatial-field?
+
+generate-plan?
+
+execute-actions?
+time-to-begin-action-execution
+
+reinforce-productions?
+
+1. Try to fixate
+   - CHREST turtle will be learning visual-information from fixations
+   - When finished, the CHREST turtle will be primed to clear its episodic memory.
+
+2. Try to generate plan (add items to episodic memory)
+   - Can only do this when attention is free, i.e. when fixation set has completed
+   - If the CHREST turtle is primed to clear its episodic memory, it will now and will
+     reset the variable that controls this so that it doesn't happen until a new plan
+     should be generated.
+
+3. Try to execute plan (execute actions in episodic memory)

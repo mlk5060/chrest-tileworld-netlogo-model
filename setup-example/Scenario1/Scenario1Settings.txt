@@ -1,10 +1,10 @@
 <run>create-chrest-turtles 1</run>
 
 tile-lifespan
-600000
+60000
 
 hole-lifespan
-600000
+60000
 
 tile-birth-prob
 0.9
@@ -16,21 +16,21 @@ reward-value
 1.0
 
 tile-born-every
-100
+500
 
 hole-born-every
-100
+500
 
 action-performance-time
 0:0
-
-action-selection-procedure
-0:roulette-selection
 
 add-production-time
 0:10000
 
 can-plan?
+0:true
+
+can-use-pattern-recognition?
 0:true
 
 discount-rate
@@ -43,16 +43,13 @@ familiarisation-time
 0:2000
 
 initial-fixation-threshold
-0:3
+0:2
 
 max-fixations-in-set
-0:10
+0:5
 
 max-search-iteration
 0:3
-
-pattern-recognition?
-0:true
 
 peripheral-item-fixation-max-attempts
 0:3
@@ -60,14 +57,11 @@ peripheral-item-fixation-max-attempts
 play-time
 0:14400000.0
 
+probability-of-using-problem-solving
+0:0.4
+
 recognised-visual-spatial-field-object-lifespan
 0:10000
-
-reinforce-actions?
-0:true
-
-reinforce-problem-solving?
-0:true
 
 reinforcement-learning-theory
 0:profit_sharing_with_discount_rate
@@ -87,23 +81,29 @@ time-to-encode-unrecognised-empty-square-scene-object-as-visual-spatial-field-ob
 time-to-encode-unrecognised-non-empty-square-scene-object-as-visual-spatial-field-object
 0:35
 
+time-to-generate-action-when-no-tile-seen
+0:100
+
+time-to-generate-action-when-tile-seen
+0:200
+
 time-to-move-visual-spatial-field-object
 0:50
-
-time-to-problem-solve
-0:1000
 
 time-to-process-unrecognised-scene-object-during-visual-spatial-field-construction
 0:50
 
-time-to-use-pattern-recognition
-0:200
+time-to-retrieve-fixation-from-perceiver
+0:100
+
+time-to-retrieve-item-from-stm
+0:50
 
 training-time
 0:0.0
 
 unknown-visual-spatial-field-object-replacement-probabilities
-0:[[1.0 blind-patch-token]]
+0:(list (list (1.0) (blind-patch-token)))
 
 unrecognised-visual-spatial-field-object-lifespan
 0:7000

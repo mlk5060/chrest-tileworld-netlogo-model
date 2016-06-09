@@ -1,0 +1,449 @@
+;====================;
+;===== TEST AIM =====;
+;====================;
+;
+; To determine if the "schedule-or-execute-next-episode-actions" schedules
+; actions for performance correctly when only the first few actions of an 
+; episode can be performed.
+;
+; This tests if scenarios 1 and 4 in the procedure documentation for the
+; 'schedule-or-execute-next-episode-actions' are handled correctly.
+;
+;============================;
+;===== TEST DESCRIPTION =====;
+;============================;
+;
+; - A CHREST turtle is created and the environment is configured so it can
+;   perform the first two actions in its second episode (the episode whose actions
+;   will be scheduled for execution) but not its third.
+; - The CHREST turtle's 'actions-to-perform' variable is left as an empty list.
+; - The CHREST turtle's 'episodic-memory' is populated with three episodes: 
+;   the second and third episode are set-up so that they have not been performed 
+;   while the first is set-up so that it has been.  This tests that the procedure 
+;   will find the next unperformed episode correctly in this case, the second 
+;   episode.
+; - The second episode's action is composed of more than 1 action to test if 
+;   multiple actions in the same episode are handled correctly.
+;
+;===========================
+;===== EXPECTED OUTPUT =====
+;===========================
+;
+; See code.
+;
+<test>
+	repeat 50[
+    	create-chrest-turtles 1[
+
+      		;Set variables that affect the test's outcome.
+	      	set time-taken-to-move (10)
+	      	set time-taken-to-push-tile (20)
+	      
+			;Set variables unrelated to test but required to get the
+			;test to work
+			set can-plan? (false)
+			set can-use-pattern-recognition? (true)
+			set max-fixations-in-set (10)
+			set initial-fixation-threshold (3)
+			set peripheral-item-fixation-max-attempts (3)
+			set play-time (14400000.0)
+			set probability-of-using-problem-solving (0.0)
+			set reinforcement-learning-theory ("profit_sharing_with_discount_rate")
+			set recognised-visual-spatial-field-object-lifespan (0)
+			set time-to-access-visual-spatial-field (0)
+			set time-to-encode-recognised-scene-object-as-visual-spatial-field-object (0)
+			set time-to-encode-unrecognised-empty-square-scene-object-as-visual-spatial-field-object (0)
+			set time-to-encode-unrecognised-non-empty-square-scene-object-as-visual-spatial-field-object (0)
+			set time-to-move-visual-spatial-field-object (0)
+			set time-to-process-unrecognised-scene-object-during-visual-spatial-field-construction (0)
+			set time-to-retrieve-item-from-stm (50)
+			set unrecognised-visual-spatial-field-object-lifespan (0)
+	    ]
+	    setup (true)
+
+	    create-tiles 1 [
+	    	set xcor ([xcor] of turtle 0)
+	    	set ycor ([ycor] of turtle 0 + 1)
+	    	set heading 0
+	    ]
+
+	    ;The hole will be 'in-the-way' of the turtle when
+	    ;it attempts to move to the east of the tile.
+	    create-holes 1 [
+	    	set xcor ([xcor] of turtle 0 + 1)
+	    	set ycor ([ycor] of turtle 0 + 2)
+	    	set heading 0
+	    ]
+
+	    ask turtle 0 [
+
+	    	;Mock-up the "acting" variable values that the CHREST turtle should have if
+	    	;it gets to this point during normal model operation.
+	    	set execute-actions? (true)
+	    	set fixate-on-reality? (false)
+
+			;======================;
+			;== CREATE EPISODE 1 ==;
+			;======================;
+
+			let episode-1-vision (list chrest:ItemSquarePattern.new (tile-token) (0) (2))
+			set episode-1-vision (chrest:ListPattern.new (episode-1-vision) (chrest:Modality.value-of ("VISUAL")))
+
+			let episode-1-action (list chrest:ItemSquarePattern.new (move-token) (0) (1))
+			set episode-1-action (chrest:ListPattern.new (episode-1-action) (chrest:Modality.value-of ("ACTION")))
+
+			let episode-1-generated-time (3000)
+
+			add-episode-to-episodic-memory (episode-1-vision) (episode-1-action) (episode-1-generated-time)
+
+			;======================;
+			;== CREATE EPISODE 2 ==;
+			;======================;
+
+			let episode-2-vision (list chrest:ItemSquarePattern.new (tile-token) (0) (1))
+			set episode-2-vision (chrest:ListPattern.new (episode-2-vision) (chrest:Modality.value-of ("VISUAL")))
+
+			let episode-2-action (list 
+				chrest:ItemSquarePattern.new (push-tile-token) (0) (1)
+				chrest:ItemSquarePattern.new (move-token) (90) (1)
+				chrest:ItemSquarePattern.new (move-token) (0) (1)
+				chrest:ItemSquarePattern.new (push-tile-token) (270) (1)
+			)
+			set episode-2-action (chrest:ListPattern.new (episode-2-action) (chrest:Modality.value-of ("ACTION")))
+
+			let episode-2-generated-time (6000)
+
+			add-episode-to-episodic-memory (episode-2-vision) (episode-2-action) (episode-2-generated-time)
+
+			;======================;
+			;== CREATE EPISODE 3 ==;
+			;======================;
+
+			let episode-3-vision (list chrest:ItemSquarePattern.new (tile-token) (-1) (0))
+			set episode-3-vision (chrest:ListPattern.new (episode-3-vision) (chrest:Modality.value-of ("VISUAL")))
+
+			let episode-3-action (list chrest:ItemSquarePattern.new (push-tile-token) (270) (1))
+			set episode-3-action (chrest:ListPattern.new (episode-3-action) (chrest:Modality.value-of ("ACTION")))
+
+			let episode-3-generated-time (9000)
+
+			add-episode-to-episodic-memory (episode-3-vision) (episode-3-action) (episode-3-generated-time)
+
+			;=======================================;
+			;== SET PERFORMANCE TIME OF EPISODE 1 ==;
+			;=======================================;
+
+			let episode-1-performance-time (12000)
+			let episode-1 (item (0) (episodic-memory))
+			set episode-1 (replace-item (3) (episode-1) (episode-1-performance-time))
+			set episodic-memory (replace-item (0) (episodic-memory) (episode-1))
+
+			;==============;
+			;== SET TIME ==;
+			;==============;
+
+			set current-training-time (20000)
+
+			;===============================;
+			;== SET-UP EXPECTED VARIABLES ==;
+			;===============================;
+
+			let expected-episodic-memory (list
+				(list (episode-1-vision) (episode-1-action) (episode-1-generated-time) (episode-1-performance-time))
+				(list (episode-2-vision) (episode-2-action) (episode-2-generated-time) (-1))
+				(list (episode-3-vision) (episode-3-action) (episode-3-generated-time) (-1))
+			)
+
+			let expected-actions-to-perform (list 
+				(list (1) (list push-tile-token 0 1) (current-training-time + time-taken-to-push-tile) (false))
+				(list (1) (list move-token 90 1) (current-training-time + time-taken-to-push-tile + time-taken-to-move) (false))
+				(list (1) (list move-token 0 1) (current-training-time + time-taken-to-push-tile + (time-taken-to-move * 2)) (false))
+				(list (1) (list push-tile-token 270 1) (current-training-time + (time-taken-to-push-tile * 2) + (time-taken-to-move * 2)) (false))
+			)
+
+			;==========================================================;
+			;== INVOKE PROCEDURE (SHOULD SCHEDULE EPISODE 2 ACTIONS) ==;
+			;==========================================================;
+
+			schedule-or-execute-next-episode-actions 
+
+			;Check 'actions-to-perform'
+			let i (0)
+
+			check-equal 
+				(length actions-to-perform) 
+				(length expected-actions-to-perform) 
+				("when checking the length of the turtle's 'actions-to-perform' variable after first procedure invocation")
+
+			while[i < length actions-to-perform][
+				let result (item (i) (actions-to-perform))
+				let expected (item (i) (expected-actions-to-perform))
+
+				check-equal (item (0) (result)) (item (0) (expected)) (word "when checking the episode index of action " i " to perform after first procedure invocation")
+				check-equal (item (1) (result)) (item (1) (expected)) (word "when checking the action of action " i " to perform after first procedure invocation")
+				check-equal (item (2) (result)) (item (2) (expected)) (word "when checking the performance time of action " i " to perform after first procedure invocation")
+				check-equal (item (3) (result)) (item (3) (expected)) (word "when checking performance status of action " i " to perform after first procedure invocation")
+				set i (i + 1)
+			]
+
+			;Check 'episodic-memory' (nothing should have changed)
+			set i (0)
+
+			check-equal 
+				(length episodic-memory) 
+				(length expected-episodic-memory) 
+				("when checking the length of the turtle's 'episodic-memory' variable after first procedure invocation")
+
+			while[i < length episodic-memory][
+				let result (item (i) (episodic-memory))
+				let expected (item (i) (expected-episodic-memory))
+
+				check-equal 
+					(chrest:ListPattern.get-as-string (item (0) (result))) 
+					(chrest:ListPattern.get-as-string (item (0) (expected))) 
+					(word "when checking the visual part of episode " i " in episodic memory after first procedure invocation")
+
+				check-equal 
+					(chrest:ListPattern.get-as-string (item (1) (result))) 
+					(chrest:ListPattern.get-as-string (item (1) (expected)))
+					(word "when checking the action part of episode " i " in episodic memory after first procedure invocation")
+
+				check-equal (item (2) (result)) (item (2) (expected)) (word "when checking the generation time of episode " i " after first procedure invocation")
+				check-equal (item (3) (result)) (item (3) (expected)) (word "when checking performance time of episode " i " after first procedure invocation")
+				set i (i + 1)
+			]
+
+			
+			;====================================================;
+			;== INVOKE PROCEDURE UNTIL THIRD ACTION PERFORMED ==;
+			;====================================================;
+
+			let counter (0)
+			while[counter < 3][
+
+				;===============================================================;
+				;== CONTINUE INVOCATION UNTIL NEXT ACTION IS TO BE PERFORMED ==;
+				;===============================================================;
+
+				;Invoke procedure until the millisecond before the next action 
+				;is performed.
+				
+				set current-training-time (current-training-time + 1)
+				let action (item (counter) (actions-to-perform))
+
+				while[current-training-time < (item (2) (action))][
+					schedule-or-execute-next-episode-actions 
+					
+					; The turtle's 'actions-to-perform' variable shouldn't change.
+					set i (0)
+					check-equal 
+						(length actions-to-perform) 
+						(length expected-actions-to-perform) 
+						(word "when checking the length of the turtle's 'actions-to-perform' variable (" counter ".1)")
+
+					while[i < length actions-to-perform][
+						let result (item (i) (actions-to-perform))
+						let expected (item (i) (expected-actions-to-perform))
+
+						check-equal (item (0) (result)) (item (0) (expected)) (word "when checking the episode index of action " i " to perform (" counter ".1)")
+						check-equal (item (1) (result)) (item (1) (expected)) (word "when checking the action of action " i " to perform (" counter ".1)")
+						check-equal (item (2) (result)) (item (2) (expected)) (word "when checking the performance time of action " i " to perform (" counter ".1)")
+						check-equal (item (3) (result)) (item (3) (expected)) (word "when checking performance status of action " i " to perform (" counter ".1)")
+						
+						set i (i + 1)
+					]
+
+					; The turtle's 'episodic-memory' variable shouldn't change.
+					set i (0)
+					check-equal 
+						(length episodic-memory) 
+						(length expected-episodic-memory) 
+						(word "when checking the length of the turtle's 'episodic-memory' variable (" counter ".1)")
+
+					while[i < length episodic-memory][
+						let result (item (i) (episodic-memory))
+						let expected (item (i) (expected-episodic-memory))
+
+						check-equal 
+							(chrest:ListPattern.get-as-string (item (0) (result))) 
+							(chrest:ListPattern.get-as-string (item (0) (expected))) 
+							(word "when checking the visual part of episode " i " in episodic memory (" counter ".1)")
+
+						check-equal 
+							(chrest:ListPattern.get-as-string (item (1) (result))) 
+							(chrest:ListPattern.get-as-string (item (1) (expected)))
+							(word "when checking the action part of episode " i " in episodic memory (" counter ".1)")
+
+						check-equal (item (2) (result)) (item (2) (expected)) (word "when checking the generation time of episode " i " (" counter ".1)")
+						check-equal (item (3) (result)) (item (3) (expected)) (word "when checking performance time of episode " i " (" counter ".1)")
+						set i (i + 1)
+					]
+
+					set current-training-time (current-training-time + 1)
+				]
+
+				;=========================;
+				;== PERFORM NEXT ACTION ==;
+				;=========================;
+
+				schedule-or-execute-next-episode-actions 
+
+				; Check the turtle's 'actions-to-perform' variable.  The next action to be performed's 
+				; 'performance' flag should be set to true instead of false now unless this is the third
+				; action to perform, in which case, the 'actions-to-perform' variable should be cleared
+				
+				ifelse(counter = 2)[
+					set expected-actions-to-perform []
+				]
+				[
+					let expected-action (item (counter) (expected-actions-to-perform))
+					set expected-action (replace-item (3) (expected-action) (true))
+					set expected-actions-to-perform (replace-item (counter) (expected-actions-to-perform) (expected-action))
+				]
+
+				set i (0)
+				check-equal 
+					(length actions-to-perform) 
+					(length expected-actions-to-perform) 
+					(word "when checking the length of the turtle's 'actions-to-perform' variable (" counter ".2)")
+
+				while[i < length actions-to-perform][
+					let result (item (i) (actions-to-perform))
+					let expected (item (i) (expected-actions-to-perform))
+
+					check-equal (item (0) (result)) (item (0) (expected)) (word "when checking the episode index of action " i " to perform (" counter ".2)")
+					check-equal (item (1) (result)) (item (1) (expected)) (word "when checking the action of action " i " to perform (" counter ".2)")
+					check-equal (item (2) (result)) (item (2) (expected)) (word "when checking the performance time of action " i " to perform (" counter ".2)")
+					check-equal (item (3) (result)) (item (3) (expected)) (word "when checking performance status of action " i " to perform (" counter ".2)")
+					
+					set i (i + 1)
+				]
+
+				;Check the turtle's 'episodic-memory' variable.  After each action performed successfully,
+				;the episode's performance time should be set to the current time.  Thus, when the third 
+				;action is performed, this variable shouldn't be updated.
+				;
+				;In addition, when the third action is performed, episode 2's actions should consist of 
+				;the first two actions only and the turtle's 'episodic-memory' should consist of episodes
+				;1 and 2 only.
+				let expected-episode-2 (item (1) (expected-episodic-memory))
+				if (counter < 2)[ set expected-episode-2 (replace-item (3) (expected-episode-2) (report-current-time)) ]
+				set expected-episodic-memory (replace-item (1) (expected-episodic-memory) (expected-episode-2))
+
+				if(counter = 2)[
+					set expected-episode-2 (replace-item 
+						(1) 
+						(expected-episode-2) 
+						(chrest:ListPattern.new 
+							(list 
+								chrest:ItemSquarePattern.new (push-tile-token) (0) (1)
+								chrest:ItemSquarePattern.new (move-token) (90) (1)
+							)
+							(chrest:Modality.value-of ("ACTION"))
+						)
+					)
+					set expected-episodic-memory (replace-item (1) (expected-episodic-memory) (expected-episode-2))
+					set expected-episodic-memory (sublist (expected-episodic-memory) (0) (2))
+				]
+
+				set i (0)
+
+				check-equal 
+					(length episodic-memory) 
+					(length expected-episodic-memory) 
+					(word"when checking the length of the turtle's 'episodic-memory' variable (" counter ".2)")
+
+				while[i < length episodic-memory][
+					let result (item (i) (episodic-memory))
+					let expected (item (i) (expected-episodic-memory))
+
+					check-equal 
+						(chrest:ListPattern.get-as-string (item (0) (result))) 
+						(chrest:ListPattern.get-as-string (item (0) (expected))) 
+						(word "when checking the visual part of episode " i " in episodic memory (" counter ".2)")
+
+					check-equal 
+						(chrest:ListPattern.get-as-string (item (1) (result))) 
+						(chrest:ListPattern.get-as-string (item (1) (expected)))
+						(word "when checking the action part of episode " i " in episodic memory (" counter ".2)")
+
+					check-equal (item (2) (result)) (item (2) (expected)) (word "when checking the generation time of episode " i " (" counter ".2)")
+					check-equal (item (3) (result)) (item (3) (expected)) (word "when checking performance time of episode " i " (" counter ".2)")
+					set i (i + 1)
+				]
+
+				set counter (counter + 1)
+			]
+
+			;Check other relevant turtle variables. Note that its only the 
+			check-equal (reinforce-productions?) (false) ("when checking the turtle's 'reinforce-productions?' variable")
+			check-equal (episode-to-reinforce) (-1) ("when checking the turtle's 'episode-to-reinforce' variable")
+			check-equal (time-last-hole-filled) (-1) ("when checking the turtle's 'time-last-hole-filled' variable")
+			check-equal (execute-actions?) (false) ("when checking the turtle's 'execute-actions?' variable")
+			check-equal (fixate-on-reality?) (true) ("when checking the turtle's 'fixate-on-reality?' variable")
+
+			;================================;
+			;== INVOKE PROCEDURE ONCE MORE ==;
+			;================================;
+
+			; This shouldn't have any effect.
+
+			set current-training-time (current-training-time + 1)
+			schedule-or-execute-next-episode-actions 
+
+			set i (0)
+				check-equal 
+					(length actions-to-perform) 
+					(length expected-actions-to-perform) 
+					(word "when checking the length of the turtle's 'actions-to-perform' variable after episode 3's actions should be scheduled")
+
+				while[i < length actions-to-perform][
+					let result (item (i) (actions-to-perform))
+					let expected (item (i) (expected-actions-to-perform))
+
+					check-equal (item (0) (result)) (item (0) (expected)) (word "when checking the episode index of action " i " to perform after episode 3's actions should be scheduled")
+					check-equal (item (1) (result)) (item (1) (expected)) (word "when checking the action of action " i " to perform after episode 3's actions should be scheduled")
+					check-equal (item (2) (result)) (item (2) (expected)) (word "when checking the performance time of action " i " to perform after episode 3's actions should be scheduled")
+					check-equal (item (3) (result)) (item (3) (expected)) (word "when checking performance status of action " i " to perform after episode 3's actions should be scheduled")
+					
+					set i (i + 1)
+				]
+
+			; Episodic memory should remain unchanged
+
+			set i (0)
+
+			check-equal 
+				(length episodic-memory) 
+				(length expected-episodic-memory) 
+				(word"when checking the length of the turtle's 'episodic-memory' variable after episode 3's actions should be scheduled")
+
+			while[i < length episodic-memory][
+				let result (item (i) (episodic-memory))
+				let expected (item (i) (expected-episodic-memory))
+
+				check-equal 
+					(chrest:ListPattern.get-as-string (item (0) (result))) 
+					(chrest:ListPattern.get-as-string (item (0) (expected))) 
+					(word "when checking the visual part of episode " i " in episodic memory after episode 3's actions should be scheduled")
+
+				check-equal 
+					(chrest:ListPattern.get-as-string (item (1) (result))) 
+					(chrest:ListPattern.get-as-string (item (1) (expected)))
+					(word "when checking the action part of episode " i " in episodic memory after episode 3's actions should be scheduled")
+
+				check-equal (item (2) (result)) (item (2) (expected)) (word "when checking the generation time of episode " i " after episode 3's actions should be scheduled")
+				check-equal (item (3) (result)) (item (3) (expected)) (word "when checking performance time of episode " i " after episode 3's actions should be scheduled")
+				set i (i + 1)
+			]
+
+			;All other relevant turtle variables should remain unchanged.
+			check-equal (reinforce-productions?) (false) ("when checking the turtle's 'reinforce-productions?' variable after unsuccessful action performance")
+			check-equal (episode-to-reinforce) (-1) ("when checking the turtle's 'episode-to-reinforce' variable after unsuccessful action performance")
+			check-equal (time-last-hole-filled) (-1) ("when checking the turtle's 'time-last-hole-filled' variable after unsuccessful action performance")
+			check-equal (execute-actions?) (false) ("when checking the turtle's 'execute-actions?' variable after unsuccessful action performance")
+			check-equal (fixate-on-reality?) (true) ("when checking the turtle's 'fixate-on-reality?' variable after unsuccessful action performance")
+		]
+		reset (true)
+  	]
+</test>
