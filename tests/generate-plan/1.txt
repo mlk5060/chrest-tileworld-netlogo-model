@@ -128,12 +128,9 @@
 ;   invocation.
 ;
 ; - "fixate-on-visual-spatial-field?": after each "generate-plan" invocation denoted, 
-;   this variable should equal:
-;   ~ Invocation 1: false
-;   ~ Invocation 2: true
-;   ~ Invocation 3: true
+;   this variable should equal true
 ;
-; - "time-spent-deliberating-on-plan": after each "generate-plan" invocation denoted, 
+; - "time-spent-deliberating": after each "generate-plan" invocation denoted, 
 ;   this variable should equal:
 ;   ~ Invocation 1: time-to-retrieve-item-from-stm + 
 ;					time-to-access-visual-spatial-field +
@@ -333,13 +330,13 @@
 			;== SET EXPECTED TEST VARIABLES ==;
 			;=================================;
 
-			let expected-time-visual-spatial-field-can-be-used-for-planning (-1)
+			let expected-time-visual-spatial-field-can-be-used-for-planning (0)
 			let expected-episodic-memory ([])
 			let expected-who-of-tile-last-pushed-in-plan ("")
 			let expected-chrest-attention-clock (0)
 			let expected-current-search-iteration (0)
-			let expected-fixate-on-visual-spatial-field? (false)
-			let expected-time-spent-deliberating-on-plan (0)
+			let expected-fixate-on-visual-spatial-field? (true)
+			let expected-time-spent-deliberating (0)
 			let expected-deliberation-finished-time (0)
 			let expected-execute-actions? (false)
 			let expected-visual-spatial-field-state (visual-spatial-field-state-1)
@@ -359,6 +356,7 @@
 				
 				generate-plan
 				set current-training-time (chrest:get-attention-clock)
+				set generate-plan? (true)
 
 				;===================================;
 				;== PREPARE VARIABLES FOR TESTING ==;
@@ -434,8 +432,8 @@
 
                		set expected-current-search-iteration (1)
 
-               		set expected-time-spent-deliberating-on-plan (
-               			expected-time-spent-deliberating-on-plan +
+               		set expected-time-spent-deliberating (
+               			expected-time-spent-deliberating +
                			time-to-retrieve-item-from-stm + 
 						time-to-access-visual-spatial-field +
                			(time-to-move-visual-spatial-field-object * 2)
@@ -460,8 +458,6 @@
 						(expected-episodic-memory)
 					)
 
-					set expected-who-of-tile-last-pushed-in-plan ("1")
-
 					set expected-chrest-attention-clock (
 						expected-chrest-attention-clock +
 						time-to-retrieve-item-from-stm + 
@@ -473,8 +469,8 @@
 
                		set expected-fixate-on-visual-spatial-field? (true)
 
-               		set expected-time-spent-deliberating-on-plan (
-               			expected-time-spent-deliberating-on-plan + 
+               		set expected-time-spent-deliberating (
+               			expected-time-spent-deliberating + 
                			time-to-retrieve-item-from-stm + 
 						time-to-access-visual-spatial-field +
 						(time-to-move-visual-spatial-field-object * 4)
@@ -504,8 +500,6 @@
 						(expected-episodic-memory)
 					)
 
-					set expected-who-of-tile-last-pushed-in-plan ("")
-
 					set expected-chrest-attention-clock (
 						expected-chrest-attention-clock +
 						time-to-retrieve-item-from-stm + 
@@ -517,8 +511,8 @@
 
                		set expected-fixate-on-visual-spatial-field? (true)
 
-               		set expected-time-spent-deliberating-on-plan (
-               			expected-time-spent-deliberating-on-plan + 
+               		set expected-time-spent-deliberating (
+               			expected-time-spent-deliberating + 
                			time-to-retrieve-item-from-stm + 
 						time-to-access-visual-spatial-field +
 						(time-to-move-visual-spatial-field-object * 2)
@@ -562,9 +556,9 @@
 					(word "occurred when checking the 'fixate-on-visual-spatial-field?' variable after invocation " (invocation-counter + 1))
 
 				check-equal
-					(time-spent-deliberating-on-plan)
-					(expected-time-spent-deliberating-on-plan)
-					(word "occurred when checking the 'time-spent-deliberating-on-plan' variable after invocation " (invocation-counter + 1))
+					(time-spent-deliberating)
+					(expected-time-spent-deliberating)
+					(word "occurred when checking the 'time-spent-deliberating' variable after invocation " (invocation-counter + 1))
 
 				check-equal
 					(deliberation-finished-time)

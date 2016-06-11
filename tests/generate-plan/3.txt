@@ -3,44 +3,44 @@
 ;==============================
 ;
 ; 1) To determine if plan generation correctly proceeds until a CHREST 
-;    turtle pushes a tile onto a hole in its visual-spatial field.
+;    turtle pushes its avatar out of its visual-spatial field.
 ;
 ;======================================
 ;========== TEST DESCRIPTION ==========
 ;======================================
 ;
-; A CHREST turtle repeatedly invokes "generate-plan" until it pushes a 
-; tile onto a hole in its visual-spatial field.  The CHREST turtle 
-; should use problem-solving to achieve this (pattern-recognition is 
-; tested in other tests).
+; A CHREST turtle repeatedly invokes "generate-plan" until it moves its
+; visual-spatial field avatar out of its visual-spatial field.  The 
+; CHREST turtle should use problem-solving to achieve this 
+; (pattern-recognition is tested in other tests).
 ;
 ; To fully test the "generate-plan" procedure with respect to 
-; ending plan generation when a tile has been pushed onto a hole in a 
-; visual-spatial field, four initial states are created with each 
-; one only allowing the tile in question to be moved in one cardinal 
-; compass direction.  The four initial visual-spatial field states 
-; and expected final states are depicted visually below.  Each object 
-; is denoted by its "who" number followed by the class of the object 
-; in parenthesis.
+; ending plan generation when a CHREST turtle's avatar has been 
+; pushed out of visual-spatial range, four initial states are created 
+; with each one only allowing the CHREST turtle's avatr to be moved 
+; in one cardinal compass direction.  The four initial visual-spatial 
+; field states and expected final states are depicted visually below.  
+; Each object is denoted by its "who" number followed by the class 
+; of the object in parenthesis.
 ;
 ; NOTE: the CHREST turtle's maximum search iteration is set to a 
 ;       very high (unreachable) value so that plan generation 
 ;       doesn't end due to the search iteration number check.  Also,
 ;       each VisualSpatialFieldObject terminus is set to "null" so 
 ;       that VisualSpatialFieldObjects will not decay.  Finally, no
-;       tile or the CHREST turtle's avatar can not be moved out of the 
-;       visual-spatial field so the only reason plan generation 
-;       should end is because of the moveable tile being pushed onto 
-;       the hole in the visual-spatial field.
+;       tile can be pushed out of the visual-spatial field so the 
+;       only reason plan generation should end is because of the
+;       CHREST turtle moving its avatar out of the visual-spatial 
+;       field.
 ; 
 ; Since the CHREST turtle continues to call the "generate-plan" 
-; procedure until the tile has been moved onto the hole in its 
-; visual-spatial field, this means that, if the test never ends, 
-; there is most likely an error in the "generate-plan" procedure 
-; code.  However, this condition will not be picked up by the test 
-; code since the non-determinism of the "deliberate" procedure means 
-; that it is impossible to enforce a strict boundary on when the test 
-; should complete, if at all (the CHREST turtle may repeatedly generate a 
+; procedure until its avatar has been moved out of its visual-spatial 
+; field, this means that, if the test never ends, there is most 
+; likely an error in the "generate-plan" procedure code.  However, 
+; this condition will not be picked up by the test code since the 
+; non-determinism of the "deliberate" procedure means that it is 
+; impossible to enforce a strict boundary on when the test should 
+; complete, if at all (the CHREST turtle may repeatedly generate a 
 ; valid visual spatial state, V, then an invalid state, V', forever).  
 ; It is therefore the responsibility of the tester to investigate 
 ; why an infinite loop occurs if this test is run.  Note that the test 
@@ -48,49 +48,39 @@
 ; all output variation from the "deliberation" procedure is handled 
 ; correctly.
 ;
-; LEGEND
-; ======
+;LEGEND
+;------
 ;
-; - H: hole
-; - O: opponent
-; - T: tile
-; - S: self
+; A = CHREST turtle
+; H = hole
+; O = opponent
 ;
-; INITIAL VISUAL-SPATIAL FIELD STATES
-; -----------------------------------
+;INITIAL VISUAL-SPATIAL FIELD STATES
+;-----------------------------------
 ;
-;   TILE & HOLE TO THE NORTH                 TILE & HOLE TO THE EAST                  TILE & HOLE TO THE SOUTH               TILE & HOLE TO THE WEST
+; OPEN CHANNEL TO NORTH    OPEN CHANNEL TO EAST     OPEN CHANNEL TO SOUTH    OPEN CHANNEL TO WEST
 ;
-;   |------|------|------|------|------|     |------|------|------|------|------|     |------|------|------|------|------|     |------|------|------|------|------|
-; 4 |      |      | 2(H) |      |      |   4 |      |      |      |      |      |   4 |      |      | 6(O) |      |      |   4 |      |      |      |      |      |
-;   |------|------|------|------|------|     |------|------|------|------|------|     |------|------|------|------|------|     |------|------|------|------|------|
-; 3 |      | 9(O) | 1(T) | 3(O) |      |   3 |      | 7(O) | 8(H) | 9(O) |      |   3 |      | 5(O) |      | 7(O) |      |   3 |      | 3(O) | 4(H) | 5(O) |      |
-;   |------|------|------|------|------|     |------|------|------|------|------|     |------|------|------|------|------|     |------|------|------|------|------|
-; 2 |      | 8(H) | 0(S) | 4(H) |      |   2 | 6(O) |      | 0(S) | 1(T) | 2(H) |   2 |      | 4(H) | 0(S) | 8(H) |      |   2 | 2(H) | 1(T) | 0(S) |      | 6(O) |
-;   |------|------|------|------|------|     |------|------|------|------|------|     |------|------|------|------|------|     |------|------|------|------|------|
-; 1 |      | 7(O) |      | 5(O) |      |   1 |      | 5(O) | 4(H) | 3(O) |      |   1 |      | 3(O) | 1(T) | 9(O) |      |   1 |      | 9(O) | 8(H) | 7(O) |      |
-;   |------|------|------|------|------|     |------|------|------|------|------|     |------|------|------|------|------|     |------|------|------|------|------|
-; 0 |      |      | 6(O) |      |      |   0 |      |      |      |      |      |   0 |      |      | 2(H) |      |      |   0 |      |      |      |      |      |
-;   |------|------|------|------|------|     |------|------|------|------|------|     |------|------|------|------|------|     |------|------|------|------|------|
-;       0      1      2      3      4            0      1      2      3      4            0      1      2      3      4            0      1      2      3      4
+; |------|------|------|   |------|------|------|   |------|------|------|   |------|------|------|
+; | 5(O) |      | 1(H) |   |      | 4(H) | 5(O) |   |      | 3(H) |      |   | 1(H) | 2(H) |      |
+; |------|------|------|   |------|------|------|   |------|------|------|   |------|------|------|
+; | 4(H) | 0(S) | 2(H) |   | 3(H) | 0(S) |      |   | 2(H) | 0(S) | 4(H) |   |      | 0(S) | 3(H) |
+; |------|------|------|   |------|------|------|   |------|------|------|   |------|------|------|
+; |      | 3(H) |      |   |      | 2(H) | 1(H) |   | 1(H) |      | 5(O) |   | 5(O) | 4(H) |      |
+; |------|------|------|   |------|------|------|   |------|------|------|   |------|------|------|
 ;
 ; FINAL VISUAL-SPATIAL FIELD STATES
 ; ---------------------------------
 ;
-;   |------|------|------|------|------|     |------|------|------|------|------|     |------|------|------|------|------|     |------|------|------|------|------|
-; 4 |      |      | 2(H) |      |      |   4 |      |      |      |      |      |   4 |      |      | 6(O) |      |      |   4 |      |      |      |      |      |
-;   |      |      | 1(T) |      |      |     |------|------|------|------|------|     |------|------|------|------|------|     |------|------|------|------|------|
-;   |------|------|------|------|------|   3 |      | 7(O) | 8(H) | 9(O) |      |   3 |      | 5(O) |      | 7(O) |      |   3 |      | 3(O) | 4(H) | 5(O) |      |
-; 3 |      | 9(O) | 0(S) | 3(O) |      |     |------|------|------|------|------|     |------|------|------|------|------|     |------|------|------|------|------|
-;   |------|------|------|------|------|   2 | 6(O) |      |      | 0(S) | 2(H) |   2 |      | 4(H) |      | 8(H) |      |   2 | 2(H) | 0(S) |      |      | 6(O) |
-; 2 |      | 8(H) |      | 4(H) |      |     |      |      |      |      | 1(T) |     |------|------|------|------|------|     | 1(T) |      |      |      |      |
-;   |------|------|------|------|------|     |------|------|------|------|------|   1 |      | 3(O) | 0(S) | 9(O) |      |     |------|------|------|------|------|
-; 1 |      | 7(O) |      | 5(O) |      |   1 |      | 5(O) | 4(H) | 3(O) |      |     |------|------|------|------|------|   1 |      | 9(O) | 8(H) | 7(O) |      |
-;   |------|------|------|------|------|     |------|------|------|------|------|   0 |      |      | 2(H) |      |      |     |------|------|------|------|------|
-; 0 |      |      | 6(O) |      |      |   0 |      |      |      |      |      |     |      |      | 1(T) |      |      |   0 |      |      |      |      |      |
-;   |------|------|------|------|------|     |------|------|------|------|------|     |------|------|------|------|------|     |------|------|------|------|------|
-;       0      1      2      3      4            0      1      2      3      4            0      1      2      3      4            0      1      2      3      4
-;                                        
+; OPEN CHANNEL TO NORTH    OPEN CHANNEL TO EAST     OPEN CHANNEL TO SOUTH    OPEN CHANNEL TO WEST
+;
+; |------|------|------|   |------|------|------|   |------|------|------|   |------|------|------|
+; | 5(O) |      | 1(H) |   |      | 4(H) | 5(O) |   |      | 3(H) |      |   | 1(H) | 2(H) |      |
+; |------|------|------|   |------|------|------|   |------|------|------|   |------|------|------|
+; | 4(H) |      | 2(H) |   | 3(H) |      |      |   | 2(H) |      | 4(H) |   |      |      | 3(H) |
+; |------|------|------|   |------|------|------|   |------|------|------|   |------|------|------|
+; |      | 3(H) |      |   |      | 2(H) | 1(H) |   | 1(H) |      | 5(O) |   | 5(O) | 4(H) |      |
+; |------|------|------|   |------|------|------|   |------|------|------|   |------|------|------|
+;
 ;=====================================
 ;========== TESTS PERFORMED ==========
 ;=====================================
@@ -98,9 +88,9 @@
 ; See code.
 ;
 <test>
-	let tile-and-hole-headings [0 90 180 270] 
-	foreach (tile-and-hole-headings)[
-		let tile-and-hole-heading (?)
+	let open-channel-headings [0 90 180 270] 
+	foreach (open-channel-headings)[
+		let open-channel-heading (?)
 
 		repeat 10 [
 
@@ -151,324 +141,157 @@
 			let expected-initial-visual-spatial-field []
 			let expected-final-visual-spatial-field []
 
-			;Since the visual-spatial field status will be as a Scene, only 1 VisualSpatialFieldObject
-			;will be encoded per VisualSpatialField coordinate.  Therefore, the list representing the 
-			;final state of each VisualSpatialField should just contain the moveable tile on the 
-			;VisualSpatialField coordinate that the hole which will be filled is in since, when the 
-			;VisualSpatialField is returned as a Scene, the most recent VisualSpatialFieldObject on 
-			;the coordinates will be returned and this will be the tile.
-
-			if(tile-and-hole-heading = 0)[
+			if(open-channel-heading = 0)[
 
 				set expected-initial-visual-spatial-field (list 
 					( list
 						(list (list (empty-patch-token)))
-						(list (list (empty-patch-token)))
-						(list (list (empty-patch-token)))
-						(list (list (empty-patch-token)))
-						(list (list (empty-patch-token)))
+						(list (list ("4") (hole-token)))
+						(list (list ("5") (opponent-token)))
 					)
-					( list
-						(list (list (empty-patch-token)))
-						(list (list ("7") (opponent-token)))
-						(list (list ("8") (hole-token)))
-						(list (list ("9") (opponent-token)))
-						(list (list (empty-patch-token)))
-					)
-					( list
-						(list (list ("6") (opponent-token)))
-						(list (list (empty-patch-token)))
+					(list
+						(list (list ("3") (hole-token)))
 						(list (list ("0") (self-token)))
-						(list (list ("1") (tile-token)))					
-						(list (list ("2") (hole-token)))
+						(list (list (empty-patch-token)))
 					)
 					(list
 						(list (list (empty-patch-token)))
-						(list (list ("5") (opponent-token)))
-						(list (list ("4") (hole-token)))
-						(list (list ("3") (opponent-token)))
-						(list (list (empty-patch-token)))
-					)
-					( list
-						(list (list (empty-patch-token)))
-						(list (list (empty-patch-token)))
-						(list (list (empty-patch-token)))
-						(list (list (empty-patch-token)))
-						(list (list (empty-patch-token)))
+						(list (list ("2") (hole-token)))
+						(list (list ("1") (hole-token)))
 					)
 				)
 
 				set expected-final-visual-spatial-field (list
 					( list
 						(list (list (empty-patch-token)))
-						(list (list (empty-patch-token)))
-						(list (list (empty-patch-token)))
-						(list (list (empty-patch-token)))
-						(list (list (empty-patch-token)))
+						(list (list ("4") (hole-token)))
+						(list (list ("5") (opponent-token)))
 					)
-					( list
-						(list (list (empty-patch-token)))
-						(list (list ("7") (opponent-token)))
-						(list (list ("8") (hole-token)))
-						(list (list ("9") (opponent-token)))
-						(list (list (empty-patch-token)))
-					)
-					( list
-						(list (list ("6") (opponent-token)))
+					(list
+						(list (list ("3") (hole-token)))
 						(list (list (empty-patch-token)))
 						(list (list (empty-patch-token)))
-						(list (list ("0") (self-token)))
-						(list (list ("1") (tile-token)))
 					)
 					(list
 						(list (list (empty-patch-token)))
-						(list (list ("5") (opponent-token)))
-						(list (list ("4") (hole-token)))
-						(list (list ("3") (opponent-token)))
-						(list (list (empty-patch-token)))
-					)
-					( list
-						(list (list (empty-patch-token)))
-						(list (list (empty-patch-token)))
-						(list (list (empty-patch-token)))
-						(list (list (empty-patch-token)))
-						(list (list (empty-patch-token)))
+						(list (list ("2") (hole-token)))
+						(list (list ("1") (hole-token)))
 					)
 				)
 			]
 
-			if(tile-and-hole-heading = 90)[
+			if(open-channel-heading = 90)[
 				
 				set expected-initial-visual-spatial-field (list
 					( list
 						(list (list (empty-patch-token)))
-						(list (list (empty-patch-token)))
-						(list (list ("6") (opponent-token)))
-						(list (list (empty-patch-token)))
+						(list (list ("3") (hole-token)))
 						(list (list (empty-patch-token)))
 					)
-					( list
+					(list
+						(list (list ("2") (hole-token)))
+						(list (list ("0") (self-token)))
+						(list (list ("4") (hole-token)))
+					)
+					(list
+						(list (list ("1") (hole-token)))
 						(list (list (empty-patch-token)))
 						(list (list ("5") (opponent-token)))
-						(list (list (empty-patch-token)))
-						(list (list ("7") (opponent-token)))
-						(list (list (empty-patch-token)))
-					)
-					(list
-						(list (list (empty-patch-token)))
-						(list (list ("4") (hole-token)))
-						(list (list ("0") (self-token)))
-						(list (list ("8") (hole-token)))
-						(list (list (empty-patch-token)))
-					)
-					(list
-						(list (list (empty-patch-token)))
-						(list (list ("3") (opponent-token)))
-						(list (list ("1") (tile-token)))
-						(list (list ("9") (opponent-token)))
-						(list (list (empty-patch-token)))
-					)
-					( list
-						(list (list (empty-patch-token)))
-						(list (list (empty-patch-token)))
-						(list (list ("2") (hole-token)))
-						(list (list (empty-patch-token)))
-						(list (list (empty-patch-token)))
 					)
 				)
 
 				set expected-final-visual-spatial-field (list
 					( list
 						(list (list (empty-patch-token)))
-						(list (list (empty-patch-token)))
-						(list (list ("6") (opponent-token)))
-						(list (list (empty-patch-token)))
-						(list (list (empty-patch-token)))
-					)
-					( list
-						(list (list (empty-patch-token)))
-						(list (list ("5") (opponent-token)))
-						(list (list (empty-patch-token)))
-						(list (list ("7") (opponent-token)))
+						(list (list ("3") (hole-token)))
 						(list (list (empty-patch-token)))
 					)
 					(list
+						(list (list ("2") (hole-token)))
 						(list (list (empty-patch-token)))
 						(list (list ("4") (hole-token)))
-						(list (list (empty-patch-token)))
-						(list (list ("8") (hole-token)))
-						(list (list (empty-patch-token)))
 					)
 					(list
+						(list (list ("1") (hole-token)))
 						(list (list (empty-patch-token)))
-						(list (list ("3") (opponent-token)))
-						(list (list ("0") (self-token)))
-						(list (list ("9") (opponent-token)))
-						(list (list (empty-patch-token)))
-					)
-					( list
-						(list (list (empty-patch-token)))
-						(list (list (empty-patch-token)))
-						(list (list ("1") (tile-token)))
-						(list (list (empty-patch-token)))
-						(list (list (empty-patch-token)))
+						(list (list ("5") (opponent-token)))
 					)
 				)
 			]
 
-			if(tile-and-hole-heading = 180)[
+			if(open-channel-heading = 180)[
 				
 				set expected-initial-visual-spatial-field (list 
 					( list
-						(list (list (empty-patch-token)))
-						(list (list (empty-patch-token)))
-						(list (list (empty-patch-token)))
-						(list (list (empty-patch-token)))
-						(list (list (empty-patch-token)))
-					)
-					( list
-						(list (list (empty-patch-token)))
-						(list (list ("3") (opponent-token)))
-						(list (list ("4") (hole-token)))
-						(list (list ("5") (opponent-token)))
-						(list (list (empty-patch-token)))
-					)
-					( list
+						(list (list ("1") (hole-token)))
 						(list (list ("2") (hole-token)))
-						(list (list ("1") (tile-token)))
+						(list (list (empty-patch-token)))	            
+					)
+					( list
+						(list (list (empty-patch-token)))
 						(list (list ("0") (self-token)))
-						(list (list (empty-patch-token)))
-						(list (list ("6") (opponent-token)))	            
+						(list (list ("3") (hole-token)))
 					)
 					( list
-						(list (list (empty-patch-token)))
-						(list (list ("9") (opponent-token)))
-						(list (list ("8") (hole-token)))
-						(list (list ("7") (opponent-token)))
-						(list (list (empty-patch-token)))
-					)
-					( list
-						(list (list (empty-patch-token)))
-						(list (list (empty-patch-token)))
-						(list (list (empty-patch-token)))
-						(list (list (empty-patch-token)))
+						(list (list ("5") (opponent-token)))
+						(list (list ("4") (hole-token)))
 						(list (list (empty-patch-token)))
 					)
 				)
 
 				set expected-final-visual-spatial-field (list
 					( list
-						(list (list (empty-patch-token)))
-						(list (list (empty-patch-token)))
-						(list (list (empty-patch-token)))
-						(list (list (empty-patch-token)))
+						(list (list ("1") (hole-token)))
+						(list (list ("2") (hole-token)))
 						(list (list (empty-patch-token)))
 					)
 					( list
 						(list (list (empty-patch-token)))
-						(list (list ("3") (opponent-token)))
-						(list (list ("4") (hole-token)))
+						(list (list (empty-patch-token)))
+						(list (list ("3") (hole-token)))
+					)
+					( list
 						(list (list ("5") (opponent-token)))
-						(list (list (empty-patch-token)))
-					)
-					( list
-						(list (list ("1") (tile-token)))
-						(list (list ("0") (self-token)))
-						(list (list (empty-patch-token)))
-						(list (list (empty-patch-token)))
-						(list (list ("6") (opponent-token)))	            
-					)
-					( list
-						(list (list (empty-patch-token)))
-						(list (list ("9") (opponent-token)))
-						(list (list ("8") (hole-token)))
-						(list (list ("7") (opponent-token)))
-						(list (list (empty-patch-token)))
-					)
-					( list
-						(list (list (empty-patch-token)))
-						(list (list (empty-patch-token)))
-						(list (list (empty-patch-token)))
-						(list (list (empty-patch-token)))
+						(list (list ("4") (hole-token)))
 						(list (list (empty-patch-token)))
 					)
 				)
 			]
 
-			if(tile-and-hole-heading = 270)[
+			if(open-channel-heading = 270)[
 				
 				set expected-initial-visual-spatial-field (list
 					(list
-						(list (list (empty-patch-token)))
-						(list (list (empty-patch-token)))
-						(list (list ("2") (hole-token)))
-						(list (list (empty-patch-token)))
-						(list (list (empty-patch-token)))
-					)
-					(list
-						(list (list (empty-patch-token)))
-						(list (list ("9") (opponent-token)))
-						(list (list ("1") (tile-token)))
-						(list (list ("3") (opponent-token)))
-						(list (list (empty-patch-token)))
-					)
-					(list
-						(list (list (empty-patch-token)))
-						(list (list ("8") (hole-token)))
-						(list (list ("0") (self-token)))
-						(list (list ("4") (hole-token)))
-						(list (list (empty-patch-token)))
-					)
-					( list
-						(list (list (empty-patch-token)))
-						(list (list ("7") (opponent-token)))
-						(list (list (empty-patch-token)))
 						(list (list ("5") (opponent-token)))
 						(list (list (empty-patch-token)))
+						(list (list ("1") (hole-token)))
+					)
+					(list
+						(list (list ("4") (hole-token)))
+						(list (list ("0") (self-token)))
+						(list (list ("2") (hole-token)))
 					)
 					( list
 						(list (list (empty-patch-token)))
-						(list (list (empty-patch-token)))
-						(list (list ("6") (opponent-token)))
-						(list (list (empty-patch-token)))
+						(list (list ("3") (hole-token)))
 						(list (list (empty-patch-token)))
 					)
 				)
 
 				set expected-final-visual-spatial-field (list
 					(list
-						(list (list (empty-patch-token)))
-						(list (list (empty-patch-token)))
-						(list (list ("1") (tile-token)))
-						(list (list (empty-patch-token)))
-						(list (list (empty-patch-token)))
-					)
-					(list
-						(list (list (empty-patch-token)))
-						(list (list ("9") (opponent-token)))
-						(list (list ("0") (self-token)))
-						(list (list ("3") (opponent-token)))
-						(list (list (empty-patch-token)))
-					)
-					(list
-						(list (list (empty-patch-token)))
-						(list (list ("8") (hole-token)))
-						(list (list (empty-patch-token)))
-						(list (list ("4") (hole-token)))
-						(list (list (empty-patch-token)))
-					)
-					( list
-						(list (list (empty-patch-token)))
-						(list (list ("7") (opponent-token)))
-						(list (list (empty-patch-token)))
 						(list (list ("5") (opponent-token)))
 						(list (list (empty-patch-token)))
+						(list (list ("1") (hole-token)))
+					)
+					(list
+						(list (list ("4") (hole-token)))
+						(list (list (empty-patch-token)))
+						(list (list ("2") (hole-token)))
 					)
 					( list
 						(list (list (empty-patch-token)))
-						(list (list (empty-patch-token)))
-						(list (list ("6") (opponent-token)))
-						(list (list (empty-patch-token)))
+						(list (list ("3") (hole-token)))
 						(list (list (empty-patch-token)))
 					)
 				)
@@ -480,7 +303,7 @@
 				;== SET-UP VISUAL-SPATIAL FIELD ==;
 				;=================================;
 
-				chrest:TileworldModelTests#generate-plan.test-4 (tile-and-hole-heading)
+				chrest:TileworldModelTests#generate-plan.test-3 (open-channel-heading)
 
 				;==========================;
 				;== SET TURTLE VARIABLES ==;
@@ -678,7 +501,7 @@
 					]
 
 					let error-msg-prepend (word "occurred when checking the ")
-					let error-msg-postpend (word " when visual-spatial-field is not in its final state and when the tile/hole location is set to " tile-and-hole-heading)
+					let error-msg-postpend (word " when visual-spatial-field is not in its final state and when the open channel heading is set to " open-channel-heading)
 
 					check-equal
 						(time-visual-spatial-field-can-be-used-for-planning)
@@ -731,7 +554,6 @@
 
 					set current-training-time (current-training-time + 1)
 				]
-
 			]
 
 			reset (true)

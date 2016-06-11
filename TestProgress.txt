@@ -12,12 +12,11 @@ Test progress
 | deliberate                                      | Yes  |
 | generate-visual-spatial-field-moves             | Yes  |
 | are-visual-spatial-field-squares-valid-at-time? | Yes  |
-| end-plan-generation                             |      |
-| generate-plan                                   |      |
+| generate-plan                                   | Yes  |
 
 | push-tile                                       | Yes  |
 | move                                            | Yes  |
-| perform-action                                  |      |
+| perform-action                                  | Yes  |
 | schedule-or-execute-next-episode-actions        | Yes  |
 
 
