@@ -1,0 +1,271 @@
+; Test determines if the "schedule-or-execute-next-episode-actions" schedules
+; actions for performance correctly when all relevant episode actions can 
+; be performed with no problems and a tile is pushed into a hole as expected,
+; i.e. the final action in the final episode is to push a tile into a hole.
+;
+; Test does not check if actions are scheduled for execution correctly: this 
+; should have been done in previous tests.
+;
+<test>
+	repeat 50[
+    	create-chrest-turtles 1[
+
+      		;Set variables that affect the test's outcome.
+	      	set time-taken-to-move (10)
+	      	set time-taken-to-push-tile (20)
+	      
+			;Set variables unrelated to test but required to get the
+			;test to work
+			set add-production-time (10000)
+			set can-create-semantic-links? (true)
+			set can-create-templates? (true)
+			set can-plan? (true)
+			set can-use-pattern-recognition? (true)
+			set discount-rate (0.5)
+			set discrimination-time (10000)
+			set familiarisation-time (2000)
+			set initial-fixation-threshold (2)
+			set ltm-link-traversal-time (10)
+			set max-fixations-in-set (5)
+			set max-search-iteration (3)
+			set maximum-semantic-link-search-distance (3)
+			set minimum-depth-of-node-in-network-to-be-a-template (3)
+			set minimum-item-or-position-occurrences-in-node-images-to-be-a-slot-value (3)
+			set node-comparison-time (50)
+			set node-image-similarity-threshold (2)
+			set peripheral-item-fixation-max-attempts (3)
+			set play-time (14000000)
+			set probability-of-using-problem-solving (0.5)
+			set recognised-visual-spatial-field-object-lifespan (10000)
+			set reinforce-production-time (10000)
+			set reinforcement-learning-theory ("profit_sharing_with_discount_rate")
+			set rho (0.3)
+			set saccade-time (30)
+			set sight-radius (2)
+			set time-taken-to-decide-upon-ahead-of-agent-fixations (150)
+			set time-taken-to-decide-upon-movement-fixations (150)
+			set time-taken-to-decide-upon-peripheral-item-fixations (150)
+			set time-taken-to-decide-upon-peripheral-square-fixations (150)
+			set time-taken-to-decide-upon-salient-object-fixations (150)
+			set time-to-access-visual-spatial-field (100)
+			set time-to-create-semantic-link (10000)
+			set time-to-encode-recognised-scene-object-as-visual-spatial-field-object (50)
+			set time-to-encode-unrecognised-empty-square-scene-object-as-visual-spatial-field-object (100)
+			set time-to-encode-unrecognised-non-empty-square-scene-object-as-visual-spatial-field-object (150)
+			set time-to-generate-action-when-no-tile-seen (100)
+			set time-to-generate-action-when-tile-seen (200)
+			set time-to-move-visual-spatial-field-object (250)
+			set time-to-process-unrecognised-scene-object-during-visual-spatial-field-construction (50)
+			set time-to-retrieve-fixation-from-perceiver (50)
+			set time-to-retrieve-item-from-stm (50)
+			set time-to-update-stm (50)
+			set training-time (140000000)
+			set unknown-visual-spatial-field-object-replacement-probabilities (list (list 1.0 blind-patch-token))
+			set unrecognised-visual-spatial-field-object-lifespan (5000)
+	    ]
+	    setup (true)
+
+	    create-tiles 1 [
+	    	set xcor ([xcor] of turtle 0)
+	    	set ycor ([ycor] of turtle 0 + 1)
+	    	set heading 0
+	    ]
+
+	    create-holes 1 [
+	    	set xcor ([xcor] of turtle 0 - 2)
+	    	set ycor ([ycor] of turtle 0 + 3)
+	    ]
+
+	    ask turtle 0 [
+
+			;======================;
+			;== CREATE EPISODE 1 ==;
+			;======================;
+
+			let episode-1-vision (list chrest:ItemSquarePattern.new (tile-token) (0) (1))
+			set episode-1-vision (chrest:ListPattern.new (episode-1-vision) (chrest:Modality.value-of ("VISUAL")))
+
+			let episode-1-action (list chrest:ItemSquarePattern.new (push-tile-token) (0) (1))
+			set episode-1-action (chrest:ListPattern.new (episode-1-action) (chrest:Modality.value-of ("ACTION")))
+
+			let episode-1-generated-time (3000)
+
+			add-episode-to-episodic-memory (episode-1-vision) (episode-1-action) (episode-1-generated-time)
+
+			;======================;
+			;== CREATE EPISODE 2 ==;
+			;======================;
+
+			let episode-2-vision (list chrest:ItemSquarePattern.new (tile-token) (0) (1))
+			set episode-2-vision (chrest:ListPattern.new (episode-2-vision) (chrest:Modality.value-of ("VISUAL")))
+
+			let episode-2-action (list 
+				chrest:ItemSquarePattern.new (push-tile-token) (0) (1)
+				chrest:ItemSquarePattern.new (move-token) (90) (1)
+				chrest:ItemSquarePattern.new (move-token) (0) (1)
+				chrest:ItemSquarePattern.new (push-tile-token) (270) (1)
+			)
+			set episode-2-action (chrest:ListPattern.new (episode-2-action) (chrest:Modality.value-of ("ACTION")))
+
+			let episode-2-generated-time (6000)
+
+			add-episode-to-episodic-memory (episode-2-vision) (episode-2-action) (episode-2-generated-time)
+
+			;======================;
+			;== CREATE EPISODE 3 ==;
+			;======================;
+
+			let episode-3-vision (list chrest:ItemSquarePattern.new (tile-token) (-1) (0))
+			set episode-3-vision (chrest:ListPattern.new (episode-3-vision) (chrest:Modality.value-of ("VISUAL")))
+
+			let episode-3-action (list chrest:ItemSquarePattern.new (push-tile-token) (270) (1))
+			set episode-3-action (chrest:ListPattern.new (episode-3-action) (chrest:Modality.value-of ("ACTION")))
+
+			let episode-3-generated-time (9000)
+
+			add-episode-to-episodic-memory (episode-3-vision) (episode-3-action) (episode-3-generated-time)
+
+			;==============;
+			;== SET TIME ==;
+			;==============;
+
+			set current-training-time (20000)
+			let time-action-execution-begins (current-training-time)
+
+			;====================================================================;
+			;== INVOKE PROCEDURE UNTIL TURTLE SHOULD NO LONGER EXECUTE ACTIONS ==;
+			;====================================================================;
+
+			;Mock-up the "acting" variable values that the CHREST turtle should have if
+	    	;it gets to this point during normal model operation.
+
+	    	set execute-actions? (true)
+	    	set fixate-on-reality? (false)
+
+			;If there is something wrong with the procedure code, this loop will run
+			;forever since the test is set-up so that, eventually, action execution
+			;should end.
+
+			while[execute-actions?][
+				;Check variables other than 'episodic-memory' and 'actions-to-perform'
+				;that can be changed by the procedure to ensure that they aren't altered
+				;unexpectedly during procedure invocation.
+
+				check-equal (reinforce-productions?) (false) ("when checking the turtle's 'reinforce-productions?' variable while procedure invocation occurring")
+				check-equal (episode-to-reinforce) (-1) ("when checking the turtle's 'episode-to-reinforce' variable while procedure invocation occurring")
+				check-equal (time-last-hole-filled) (-1) ("when checking the turtle's 'time-last-hole-filled' variable while procedure invocation occurring")
+				check-equal (execute-actions?) (true) ("when checking the turtle's 'execute-actions?' variable while procedure invocation occurring")
+				check-equal (fixate-on-reality?) (false) ("when checking the turtle's 'fixate-on-reality?' variable while procedure invocation occurring")
+
+				schedule-or-execute-next-episode-actions
+
+				set current-training-time (current-training-time + 1)
+			]
+
+			;============================;
+			;== SET EXPECTED VARIABLES ==;
+			;============================;
+
+			;When setting/understanding the performed time of an episode, remember that, in 1ms,
+			;actions may either be scheduled for execution or executed.  Therefore, when episode 1's
+			;actions are performed, execution of episode 2's actions starts a millisecond later.  
+			;This is why 1 and 2 are added to the 'time-action-execution-begins' for the performance
+			;times of episodes 2 and 3.  Episode 1's actions are scheduled and execution of them begins
+			;immediately afterwards (in the same millisecond), however.
+
+			let expected-episodic-memory (list
+				(list
+					(episode-1-vision)
+					(episode-1-action)
+					(episode-1-generated-time)
+					(time-action-execution-begins + time-taken-to-push-tile)
+				)
+				(list
+					(episode-2-vision)
+					(episode-2-action)
+					(episode-2-generated-time)
+					(time-action-execution-begins + 1 + (time-taken-to-push-tile * 3) + (time-taken-to-move * 2))
+				)
+				(list
+					(episode-3-vision)
+					(episode-3-action)
+					(episode-3-generated-time)
+					(time-action-execution-begins + 2 + (time-taken-to-push-tile * 4) + (time-taken-to-move * 2))
+				)
+			)
+
+			;===========;
+			;== TESTS ==;
+			;===========;
+
+			;Check episodic-memory.
+
+			check-equal 
+				(length episodic-memory) 
+				(length expected-episodic-memory) 
+				("when checking the length of the turtle's 'episodic-memory' variable")
+
+			let episode-index (0)
+			while[episode-index < length episodic-memory][
+
+				let result (item (episode-index) (episodic-memory))
+				let expected (item (episode-index) (expected-episodic-memory))
+
+				check-equal 
+					(chrest:ListPattern.get-as-string (item (0) (result))) 
+					(chrest:ListPattern.get-as-string (item (0) (expected))) 
+					(word "when checking the visual part of episode " episode-index " in episodic memory")
+
+				check-equal 
+					(chrest:ListPattern.get-as-string (item (1) (result))) 
+					(chrest:ListPattern.get-as-string (item (1) (expected)))
+					(word "when checking the action part of episode " episode-index " in episodic memory")
+
+				check-equal 
+					(item (2) (result)) 
+					(item (2) (expected)) 
+					(word "when checking the generation time of episode " episode-index)
+
+				check-equal 
+					(item (3) (result)) 
+					(item (3) (expected)) 
+					(word "when checking performance time of episode " episode-index)
+
+				set episode-index (episode-index + 1)
+			]
+
+			;Check other relevant variables
+
+			check-equal 
+				(actions-to-perform) 
+				([]) 
+				("when checking the 'actions-to-perform' variable")
+			
+			check-equal 
+				(reinforce-productions?) 
+				(true) 
+				("when checking the turtle's 'reinforce-productions?' variable")
+			
+			check-equal 
+				(episode-to-reinforce) 
+				(2) 
+				("when checking the turtle's 'episode-to-reinforce' variable")
+			
+			check-equal 
+				(time-last-hole-filled) 
+				(time-action-execution-begins + 2 + (time-taken-to-push-tile * 4) + (time-taken-to-move * 2)) 
+				("when checking the turtle's 'time-last-hole-filled' variable")
+			
+			check-equal 
+				(execute-actions?) 
+				(false) 
+				("when checking the turtle's 'execute-actions?' variable")
+			
+			check-equal 
+				(fixate-on-reality?) 
+				(true) 
+				("when checking the turtle's 'fixate-on-reality?' variable")
+		]
+		reset (true)
+  	]
+</test>

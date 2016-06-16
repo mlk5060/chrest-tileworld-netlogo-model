@@ -1,0 +1,235 @@
+;Checks whether an intermediate episode in episodic memory has its actions scheduled
+;for execution correctly.
+;
+;The intermediate episode contains multiple actions to check if multiple actions are 
+;scheduled correctly,  If this test passes then scheduling for intermediate episodes 
+;containing only 1 action must pass too. 
+;
+<test>
+	repeat 50[
+		;===========================;
+		;== SET-UP CHREST TURTLES ==;
+		;===========================;
+
+		create-chrest-turtles 1[
+
+			;Set variables that have an influence on the test 
+
+			set time-taken-to-move (10)
+	      	set time-taken-to-push-tile (20)
+
+	      	;Set other variables that must be set but have no influence
+	      	;on the test
+	  		
+	  		set add-production-time (10000)
+			set can-create-semantic-links? (true)
+			set can-create-templates? (true)
+			set can-plan? (true)
+			set can-use-pattern-recognition? (true)
+			set discount-rate (0.5)
+			set discrimination-time (10000)
+			set familiarisation-time (2000)
+			set initial-fixation-threshold (2)
+			set ltm-link-traversal-time (10)
+			set max-fixations-in-set (5)
+			set max-search-iteration (3)
+			set maximum-semantic-link-search-distance (3)
+			set minimum-depth-of-node-in-network-to-be-a-template (3)
+			set minimum-item-or-position-occurrences-in-node-images-to-be-a-slot-value (3)
+			set node-comparison-time (50)
+			set node-image-similarity-threshold (2)
+			set peripheral-item-fixation-max-attempts (3)
+			set play-time (14000000)
+			set probability-of-using-problem-solving (0.5)
+			set recognised-visual-spatial-field-object-lifespan (10000)
+			set reinforce-production-time (10000)
+			set reinforcement-learning-theory ("profit_sharing_with_discount_rate")
+			set rho (0.3)
+			set saccade-time (30)
+			set sight-radius (2)
+			set time-taken-to-decide-upon-ahead-of-agent-fixations (150)
+			set time-taken-to-decide-upon-movement-fixations (150)
+			set time-taken-to-decide-upon-peripheral-item-fixations (150)
+			set time-taken-to-decide-upon-peripheral-square-fixations (150)
+			set time-taken-to-decide-upon-salient-object-fixations (150)
+			set time-to-access-visual-spatial-field (100)
+			set time-to-create-semantic-link (10000)
+			set time-to-encode-recognised-scene-object-as-visual-spatial-field-object (50)
+			set time-to-encode-unrecognised-empty-square-scene-object-as-visual-spatial-field-object (100)
+			set time-to-encode-unrecognised-non-empty-square-scene-object-as-visual-spatial-field-object (150)
+			set time-to-generate-action-when-no-tile-seen (100)
+			set time-to-generate-action-when-tile-seen (200)
+			set time-to-move-visual-spatial-field-object (250)
+			set time-to-process-unrecognised-scene-object-during-visual-spatial-field-construction (50)
+			set time-to-retrieve-fixation-from-perceiver (50)
+			set time-to-retrieve-item-from-stm (50)
+			set time-to-update-stm (50)
+			set training-time (140000000)
+			set unknown-visual-spatial-field-object-replacement-probabilities (list (list 1.0 blind-patch-token))
+			set unrecognised-visual-spatial-field-object-lifespan (5000)
+	    ]
+	    setup (true)
+
+	    ask turtle 0 [
+
+	    	set current-training-time (5000)
+
+	    	;=========================================;
+	    	;== POPULATE TURTLE'S 'episodic-memory' ==;
+	    	;=========================================;
+
+	    	let episode-1 (list 
+	    		(chrest:ListPattern.new 
+					(list 
+						(chrest:ItemSquarePattern.new (tile-token) (0) (2))
+						(chrest:ItemSquarePattern.new (tile-token) (1) (2))
+					) 
+					(chrest:Modality.value-of ("VISUAL"))
+				) 
+	    		(chrest:ListPattern.new 
+					(list 
+						(chrest:ItemSquarePattern.new (move-token) (0) (1))
+						(chrest:ItemSquarePattern.new (push-tile-token) (0) (1))
+						(chrest:ItemSquarePattern.new (move-token) (90) (1))
+						(chrest:ItemSquarePattern.new (push-tile-token) (90) (1))
+					) 
+					(chrest:Modality.value-of ("ACTION"))
+				)  
+	    		(1000) 
+	    		(4000)
+	    	)
+
+	    	let episode-2 (list 
+	    		(chrest:ListPattern.new 
+					(list 
+						(chrest:ItemSquarePattern.new (tile-token) (0) (-1))
+					) 
+					(chrest:Modality.value-of ("VISUAL"))
+				) 
+	    		(chrest:ListPattern.new 
+					(list 
+						(chrest:ItemSquarePattern.new (push-tile-token) (0) (1))
+						(chrest:ItemSquarePattern.new (move-token) (90) (1))
+					) 
+					(chrest:Modality.value-of ("ACTION"))
+				)  
+	    		(2000) 
+	    		(-1)
+	    	)
+
+	    	let episode-3 (list 
+	    		(chrest:ListPattern.new 
+					(list 
+						(chrest:ItemSquarePattern.new (tile-token) (0) (-1))
+					) 
+					(chrest:Modality.value-of ("VISUAL"))
+				) 
+	    		(chrest:ListPattern.new 
+					(list 
+						(chrest:ItemSquarePattern.new (move-token) (270) (1))
+					) 
+					(chrest:Modality.value-of ("ACTION"))
+				)  
+	    		(3000) 
+	    		(-1)
+	    	)
+
+	    	set episodic-memory (list
+	    		episode-1
+	    		episode-2
+	    		episode-3
+	    	)
+
+	    	;=========================================================;
+	    	;== SET PROCEDURE VARIABLES TO ENSURE SCHEDULING OCCURS ==;
+	    	;=========================================================;
+
+	    	set execute-actions? (true)
+
+	    	;This should be empty since, after an episode's actions have
+	    	;been performed, it should be emptied.  Since episode-1's actions
+	    	;should have been completely performed, ensure it is empty now.
+
+	    	set actions-to-perform ([]) 
+
+	    	;In normal model operation, the turtle's 'fixate-on-reality?' variable
+	    	;would be set to false if the procedure is invoked and scheduling occurs.
+	    	;Therefore, set it to false manually here.
+
+	    	set fixate-on-reality? (false)
+
+	    	;======================;
+	    	;== INVOKE PROCEDURE ==;
+	    	;======================;
+
+	    	schedule-or-execute-next-episode-actions
+
+	    	;=================================;
+	    	;== SET EXPECTED TEST VARIABLES ==;
+	    	;=================================;
+
+	    	let expected-actions-to-perform (list
+	    		(list 
+	    			(1) 
+					(list (push-tile-token) (0) (1)) 
+					(current-training-time + time-taken-to-push-tile) 
+					(false)
+				)
+	    		(list 
+	    			(1) 
+	    			(list (move-token) (90) (1)) 
+	    			(current-training-time + time-taken-to-move + time-taken-to-push-tile) 
+	    			(false)
+	    		)
+	    	)
+
+	    	let expected-episodic-memory (list
+	    		(list
+	    			(chrest:ListPattern.get-as-string (item (0) (episode-1)))
+	    			(chrest:ListPattern.get-as-string (item (1) (episode-1)))
+	    			(item (2) (episode-1))
+	    			(item (3) (episode-1))
+	    		)
+	    		(list
+	    			(chrest:ListPattern.get-as-string (item (0) (episode-2)))
+	    			(chrest:ListPattern.get-as-string (item (1) (episode-2)))
+	    			(item (2) (episode-2))
+	    			(item (3) (episode-2))
+	    		)
+	    		(list
+	    			(chrest:ListPattern.get-as-string (item (0) (episode-3)))
+	    			(chrest:ListPattern.get-as-string (item (1) (episode-3)))
+	    			(item (2) (episode-3))
+	    			(item (3) (episode-3))
+	    		)
+	    	)
+
+	    	;===========;
+	    	;== TESTS ==;
+	    	;===========;
+
+	    	check-equal (actions-to-perform) (expected-actions-to-perform) ("when checking the turtle's 'actions-to-perform' variable")
+
+			check-equal 
+			(map 
+				([(list 
+					(chrest:ListPattern.get-as-string (item (0) (?))) 
+					(chrest:ListPattern.get-as-string (item (1) (?))) 
+					(item (2) (?)) 
+					(item (3) (?))
+				)]) 
+				(episodic-memory)
+			) 
+			(expected-episodic-memory)
+			("when checking the turtle's 'episodic-memory' variable")
+				
+			check-equal (reinforce-productions?) (false) ("when checking the 'reinforce-productions?' variable")
+	        check-equal (episode-to-reinforce) (-1) ("when checking the 'episode-to-reinforce' variable")
+	        check-equal (time-last-hole-filled) (-1) ("when checking the 'time-last-hole-filled' variable")
+			check-equal (execute-actions?) (true) ("when checking the turtle's 'execute-actions?' variable")
+			check-equal (fixate-on-reality?) (false) ("when checking the turtle's 'fixate-on-reality?' variable")
+	    ]
+
+	    reset (true)
+	]
+</test>

@@ -1,0 +1,179 @@
+<test>
+	foreach(movement-headings)[
+		let movement-heading (?)
+
+		repeat 50[
+
+			;===========================;
+			;== SET-UP CHREST TURTLES ==;
+			;===========================;
+
+	    	create-chrest-turtles 1[
+
+	      		set add-production-time (10000)
+				set can-create-semantic-links? (true)
+				set can-create-templates? (true)
+				set can-plan? (true)
+				set can-use-pattern-recognition? (true)
+				set discount-rate (0.5)
+				set discrimination-time (10000)
+				set familiarisation-time (2000)
+				set initial-fixation-threshold (2)
+				set ltm-link-traversal-time (10)
+				set max-fixations-in-set (5)
+				set max-search-iteration (3)
+				set maximum-semantic-link-search-distance (3)
+				set minimum-depth-of-node-in-network-to-be-a-template (3)
+				set minimum-item-or-position-occurrences-in-node-images-to-be-a-slot-value (3)
+				set node-comparison-time (50)
+				set node-image-similarity-threshold (2)
+				set peripheral-item-fixation-max-attempts (3)
+				set play-time (14000000)
+				set probability-of-using-problem-solving (0.5)
+				set recognised-visual-spatial-field-object-lifespan (10000)
+				set reinforce-production-time (10000)
+				set reinforcement-learning-theory ("profit_sharing_with_discount_rate")
+				set rho (0.3)
+				set saccade-time (30)
+				set sight-radius (2)
+				set time-taken-to-decide-upon-ahead-of-agent-fixations (150)
+				set time-taken-to-decide-upon-movement-fixations (150)
+				set time-taken-to-decide-upon-peripheral-item-fixations (150)
+				set time-taken-to-decide-upon-peripheral-square-fixations (150)
+				set time-taken-to-decide-upon-salient-object-fixations (150)
+				set time-taken-to-move (1)
+		      	set time-taken-to-push-tile (1)
+				set time-to-access-visual-spatial-field (100)
+				set time-to-create-semantic-link (10000)
+				set time-to-encode-recognised-scene-object-as-visual-spatial-field-object (50)
+				set time-to-encode-unrecognised-empty-square-scene-object-as-visual-spatial-field-object (100)
+				set time-to-encode-unrecognised-non-empty-square-scene-object-as-visual-spatial-field-object (150)
+				set time-to-generate-action-when-no-tile-seen (100)
+				set time-to-generate-action-when-tile-seen (200)
+				set time-to-move-visual-spatial-field-object (250)
+				set time-to-process-unrecognised-scene-object-during-visual-spatial-field-construction (50)
+				set time-to-retrieve-fixation-from-perceiver (50)
+				set time-to-retrieve-item-from-stm (50)
+				set time-to-update-stm (50)
+				set training-time (140000000)
+				set unknown-visual-spatial-field-object-replacement-probabilities (list (list 1.0 blind-patch-token))
+				set unrecognised-visual-spatial-field-object-lifespan (5000)
+		    ]
+		    setup (true)
+
+		    ask turtle 0 [
+
+		    	;Set the turtle's 'heading-when-plan-execution-begins' variable to a known value
+		    	;and that isn't a heading which can be used in the model.  This will allow the
+		    	;test to verify that the variable value is reassigned correctly on the first loop.
+		    	;On the second loop, the variable will be set to whatever it was set to at the end
+		    	;of the first loop and the new value for the variable should be different so there's
+		    	;no need to set this twice.
+
+		    	set heading-when-plan-execution-begins (40)
+
+		    	;===============;
+		    	;== TEST LOOP ==;
+		    	;===============;
+
+		    	;Loop the main part of the test twice to verify that setting and maintenance of the 
+		    	;'heading-when-plan-execution-begins' works consistently.
+
+		    	let repeat-counter (1)
+		    	repeat 2[
+
+		    		;=======================================;
+		    		;== SET PROCEDURE-DEPENDENT VARIABLES ==;
+		    		;=======================================;
+
+		    		set heading (movement-heading)
+
+			    	;Mock-up the "acting" variable values that the CHREST turtle should have if
+			    	;it gets to this point during normal model operation.
+
+			    	set execute-actions? (true)
+			    	set fixate-on-reality? (false)
+
+			    	;Empty episodic memory since it will have been populated after the first 
+			    	;loop and, during normal model operation, it will have been emptied when 
+			    	;a new plan is generated. However, since plan generation is performed 
+			    	;manually in this test (population of episodic-memory), it will not have
+			    	;been programatically emptied.  If this isn't done, the second loop will
+			    	;not set the 'heading-when-plan-execution-begins' as expected since the
+			    	;first episode in the second loop will have an episode index of 3 in the
+			    	;'action-to-perform' data structure meaning that the check on whether this
+			    	;is the first action of the first episode in a plan will evaluate to false
+			    	;so the 'heading-when-plan-execution-begins' is not set correctly.
+
+			    	set episodic-memory ([])
+
+			    	;================================;
+			    	;== POPULATE 'episodic-memory' ==;
+			    	;================================;
+
+					;== CREATE EPISODE 1 ==;
+
+					let episode-1-vision (chrest:ListPattern.new (list chrest:ItemSquarePattern.new (tile-token) (0) (1)) (chrest:Modality.value-of ("VISUAL")))
+					let episode-1-action (list 
+						chrest:ItemSquarePattern.new (move-token) (0) (1)
+						chrest:ItemSquarePattern.new (move-token) (90) (1)
+					)
+					set episode-1-action (chrest:ListPattern.new (episode-1-action) (chrest:Modality.value-of ("ACTION")))
+					let episode-1-generated-time (current-training-time + 1)
+
+					;== CREATE EPISODE 2 ==;
+
+					let episode-2-vision (chrest:ListPattern.new (list chrest:ItemSquarePattern.new (tile-token) (1) (1)) (chrest:Modality.value-of ("VISUAL")))
+					let episode-2-action (list 
+						chrest:ItemSquarePattern.new (move-token) (180) (1)
+						chrest:ItemSquarePattern.new (move-token) (270) (1)
+					)
+					set episode-2-action (chrest:ListPattern.new (episode-2-action) (chrest:Modality.value-of ("ACTION")))
+					let episode-2-generated-time (current-training-time + 2)
+
+					;== CREATE EPISODE 3 ==;
+
+					let episode-3-vision (list chrest:ItemSquarePattern.new (tile-token) (1) (0))
+					set episode-3-vision (chrest:ListPattern.new (episode-3-vision) (chrest:Modality.value-of ("VISUAL")))
+					let episode-3-action (list 
+						chrest:ItemSquarePattern.new (move-token) (0) (1)
+						chrest:ItemSquarePattern.new (move-token) (180) (1)
+					)
+					set episode-3-action (chrest:ListPattern.new (episode-3-action) (chrest:Modality.value-of ("ACTION")))
+					let episode-3-generated-time (current-training-time + 3)
+
+					;== ADD EPISODES TO 'episodic-memory' ==;
+
+					add-episode-to-episodic-memory (episode-1-vision) (episode-1-action) (episode-1-generated-time)
+					add-episode-to-episodic-memory (episode-2-vision) (episode-2-action) (episode-2-generated-time)
+					add-episode-to-episodic-memory (episode-3-vision) (episode-3-action) (episode-3-generated-time)
+
+					;==========================;
+					;== PROCEDURE INVOCATION ==;
+					;==========================;
+
+			    	;Keep invoking procedure until 'execute-actions?' is set to false, i.e. all actions
+			    	;in episodic-memory have been performed.
+
+			   		while[execute-actions?][
+			   			schedule-or-execute-next-episode-actions
+			   			set current-training-time (current-training-time + 1)
+			    	]
+
+			    	;==========;
+			    	;== TEST ==;
+			    	;==========;
+
+			    	check-equal (heading-when-plan-execution-begins) (movement-heading) (word "occurred during repeat " repeat-counter)
+
+			    	set movement-heading (movement-heading + 90)
+			    	if(movement-heading >= 360)[ set movement-heading (movement-heading - 360) ]
+			    	set repeat-counter (repeat-counter + 1)
+			    ]
+
+		   	]
+
+		   	reset(true)
+		]
+	]
+</test>
