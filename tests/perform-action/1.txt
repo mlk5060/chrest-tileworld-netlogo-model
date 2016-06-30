@@ -10,7 +10,7 @@
 ;========== TEST DESCRIPTION ==========
 ;====================================== 
 ; 
-; There are 3 parameters that control access through the CHREST turtle section 
+; There are 5 parameters that control access through the CHREST turtle section 
 ; of the "generate-plan" procedure and each parameter can be set to a varying 
 ; number of values. These parameters can be combined in a number of ways 
 ; producing a large number of different scenarios that can be tested.  The 
@@ -20,6 +20,18 @@
 ;   ~ Move action
 ;   ~ Move randomly action
 ;   ~ Push tile action
+;
+; - Current heading of turtle
+;   ~ 0
+;   ~ 90
+;   ~ 180
+;   ~ 270
+;
+; - Action heading
+;   ~ 0
+;   ~ 90
+;   ~ 180
+;   ~ 270
 ;
 ; - Is there a hole avaialble to push a tile into?
 ;   ~ True
@@ -38,20 +50,31 @@
 ; has already been tested, a new combination is generated.  This will continue until 
 ; the parameter values set have not occurred before in the test.
 ;
-; NOTE: The action performed will always have a heading of 0 (due north) and number of patches = 1.
-; 
+; NOTE: The action performed will always have the number of patches traversed = 1.
+;       
 ;=====================================
 ;========== TESTS PERFORMED ==========
 ;=====================================
 ;
-; The success of action performance is checked after each invocation of the procedure.
+; The success of action performance is checked after each invocation of the procedure
+; along with the location of the turtle performing the action.
+;
+; NOTE: If the turtle is to push a tile, the location of the tile is not checked since
+;       it complicates matters to determine what tiles should be checked and what their
+;       locations should be.  Furthermore, this is tested in the 'push-tile' tests so 
+;       should not be repeated here.  The location of the turtle performing the action 
+;       is checked however, despite the fact that such a check is performed in the 
+;       'move' procedure tests to see if the correct action heading is calculated.
 ; 
 <test>
 	let scenarios-tested []
 	let number-perform-action-repetitions (200)
 	let number-scenarios (
 		(length (possible-actions)) *
-		(2 ^ 2)
+		(length (movement-headings)) * 
+		(length (movement-headings)) *
+		2 *
+		2
 	)
 
 	while[length scenarios-tested < number-scenarios][
@@ -60,24 +83,32 @@
 		;== SETUP SCENARIO ==;
 		;====================;
 
-		let action 										(one-of (possible-actions))
-		let hole-available                              (one-of (list (true) (false)))
-		let action-performed-successfully? 				(one-of (list (true) (false)))
+		let action 								(one-of (possible-actions))
+		let heading-when-plan-execution-starts  (one-of (movement-headings))
+		let action-heading                  	(one-of (movement-headings))
+		let hole-available?                 	(one-of (list (true) (false)))
+		let action-performed-successfully? 		(one-of (list (true) (false)))
 
 		let scenario (word 
 			action " "
-			hole-available " "
+			heading-when-plan-execution-starts " "
+			action-heading " "
+			hole-available? " "
 			action-performed-successfully?
 		)
 
 		while[member? scenario scenarios-tested][
-			set action 										(one-of (possible-actions))
-			set hole-available                              (one-of (list (true) (false)))
-			set action-performed-successfully? 				(one-of (list (true) (false)))
+			set action 								(one-of (possible-actions))
+			set heading-when-plan-execution-starts  (one-of (movement-headings))
+			set action-heading                  	(one-of (movement-headings))
+			set hole-available?                 	(one-of (list (true) (false)))
+			set action-performed-successfully? 		(one-of (list (true) (false)))
 			
 			set scenario (word 
 				action " "
-				hole-available " "
+				heading-when-plan-execution-starts " "
+				action-heading " "
+				hole-available? " "
 				action-performed-successfully?
 			)
 		]
@@ -87,139 +118,652 @@
 			(scenarios-tested)
 		)
 
-		;=========================;
-		;== SETUP CHREST TURTLE ==;
-		;=========================;
+		repeat 50[
 
-		create-chrest-turtles 1[
-			set can-plan? (false)
-			set can-use-pattern-recognition? (true)
-			set max-fixations-in-set (10)
-			set initial-fixation-threshold (3)
-			set peripheral-item-fixation-max-attempts (3)
-			set play-time (14400000.0)
-			set probability-of-using-problem-solving (0.0)
-			set reinforcement-learning-theory ("profit_sharing_with_discount_rate")
-			set recognised-visual-spatial-field-object-lifespan (0)
-			set time-to-access-visual-spatial-field (0)
-			set time-to-encode-recognised-scene-object-as-visual-spatial-field-object (0)
-			set time-to-encode-unrecognised-empty-square-scene-object-as-visual-spatial-field-object (0)
-			set time-to-encode-unrecognised-non-empty-square-scene-object-as-visual-spatial-field-object (0)
-			set time-to-move-visual-spatial-field-object (0)
-			set time-to-process-unrecognised-scene-object-during-visual-spatial-field-construction (0)
-			set time-to-retrieve-item-from-stm (50)
-			set unrecognised-visual-spatial-field-object-lifespan (0)
-		]
-		setup(true)
+			;=========================;
+			;== SETUP CHREST TURTLE ==;
+			;=========================;
 
-		;=========================;
-		;== SET EXPECTED VALUES ==;
-		;=========================;
+			; None of the CHREST turtle's parameters matter in this test.  They're just
+			; set to appease the variable checker in the model code.
 
-		let expected-success-of-action-performance (action-performed-successfully?)
-
-		; If the action is to push a tile then the "perform-action" procedure will report a list since that is what 
-		; is reported by the "push-tile" procedure when invoked.  The list will contain two elements, the first states 
-		; whether the action was performed successfully or not and its expected value is dependent on the value of the 
-		; 'action-performed-successfully?' scenario parameter.  The second element stipulates whether a hole was filled 
-		; when a tile was pushed.  This value is dependent first on the value of the "action-performed-successfully?"
-		; scenario paramater then the value of the "hole-available" scenario parameter.  If the 
-		; "action-performed-successfully?" parameter is set to 'true' then the tile may be pushed and may/may not be
-		; pushed into a hole.  If the "action-performed-successfully?" parameter is set to 'false' then a hole will
-		; never be filled.
-		if (action = push-tile-token)[
-			ifelse (action-performed-successfully?)[
-				set expected-success-of-action-performance (list (true) (hole-available))
+			create-chrest-turtles 1[
+				set add-production-time (1)
+				set can-create-semantic-links? (true)
+				set can-create-templates? (true)
+				set can-plan? (true)
+				set can-use-pattern-recognition? (true)
+				set discount-rate (0.5)
+				set discrimination-time (1)
+				set familiarisation-time (1)
+				set initial-fixation-threshold (1)
+				set ltm-link-traversal-time (1)
+				set max-fixations-in-set (5)
+				set max-search-iteration (3)
+				set maximum-semantic-link-search-distance (3)
+				set minimum-depth-of-node-in-network-to-be-a-template (3)
+				set minimum-item-or-position-occurrences-in-node-images-to-be-a-slot-value (3)
+				set node-comparison-time (1)
+				set node-image-similarity-threshold (2)
+				set peripheral-item-fixation-max-attempts (3)
+				set play-time (1400000)
+				set probability-of-using-problem-solving (0.0)
+				set recognised-visual-spatial-field-object-lifespan (1)
+				set reinforce-production-time (1)
+				set reinforcement-learning-theory ("profit_sharing_with_discount_rate")
+				set rho (1.0)
+				set saccade-time (1)
+				set sight-radius (2)
+				set time-taken-to-decide-upon-ahead-of-agent-fixations (1)
+				set time-taken-to-decide-upon-movement-fixations (1)
+				set time-taken-to-decide-upon-peripheral-item-fixations (1)
+				set time-taken-to-decide-upon-peripheral-square-fixations (1)
+				set time-taken-to-decide-upon-salient-object-fixations (1)
+				set time-taken-to-move (1)
+				set time-taken-to-push-tile (1)
+				set time-to-access-visual-spatial-field (1)
+				set time-to-create-semantic-link (1)
+				set time-to-encode-recognised-scene-object-as-visual-spatial-field-object (1)
+				set time-to-encode-unrecognised-empty-square-scene-object-as-visual-spatial-field-object (1)
+				set time-to-encode-unrecognised-non-empty-square-scene-object-as-visual-spatial-field-object (1)
+				set time-to-generate-action-when-no-tile-seen (1)
+				set time-to-generate-action-when-tile-seen (1)
+				set time-to-move-visual-spatial-field-object (1)
+				set time-to-process-unrecognised-scene-object-during-visual-spatial-field-construction (1)
+				set time-to-retrieve-fixation-from-perceiver (1)
+				set time-to-retrieve-item-from-stm (1)
+				set time-to-update-stm (1)
+				set training-time (0)
+				set unknown-visual-spatial-field-object-replacement-probabilities (list (list 1.0 blind-patch-token))
+				set unrecognised-visual-spatial-field-object-lifespan (1)
 			]
-			[
-				set expected-success-of-action-performance (list (false) (false))
+			setup(true)
+
+			;===========================================;
+			;== SET CHREST TURTLE'S STARTING LOCATION ==;
+			;===========================================;
+
+			;Set the turtle's starting patch to be the centre of the environment to save dealing with 
+			;environment-wrapping when calculating expected locations of the turtle after 
+			;'perform-action' invocations,. If the turtle is placed randomly, it may be placed on a 
+			;patch whose pxcor is equal to the max-pxcor of the environment.  If the action then causes
+			;the turtle to move east, its new location will be the min-pxcor of the environment.  
+			;Compensating for this complicates testing unnecessarily.
+			;
+			;NOTE: this must be done after the call to the 'setup' procedure above since 'setup' places
+			;      the CHREST turtle randomly in the environment.  The location of the CHREST turtle 
+			;      must also be set before modifying the environment below since the CHREST turtle is 
+			;      the anchor point around which the environment is modified.
+			ask turtle 0[
+				setxy 0 0
 			]
-		]
 
-		;===================================================;
-		;== MODIFY CHREST TURTLE'S OBSERVABLE ENVIRONMENT ==;
-		;===================================================;
+			;===================================================;
+			;== MODIFY CHREST TURTLE'S OBSERVABLE ENVIRONMENT ==;
+			;===================================================;
 
-		; If the action should be performed successfully then, since most actions are simple movements of the CHREST turtle 1 patch north, 
-		; the patch ahead of the CHREST turtle should not contain any other turtles (holes/tiles/opponents) so don't add any turtles.
-		; If the action is to push a tile then things are a little more complex:
-		;
-		; - If the scenario stipulates that the action should be performed successfully then add a tile.
-		; - If the scenario also stipulates that a hole should be available, create a hole in front of the tile otherwise, the action won't
-		;   actually be performed successfully.
-		if(
-			action = push-tile-token and 
-			action-performed-successfully?
-		)[
-			create-tiles 1 [setxy ([pxcor] of turtle 0) (([pycor] of turtle 0) + 1)]
+			; If the the action is just to move the turtle and the action should be performed 
+			; successfully, the patch ahead of the CHREST turtle according to the 
+			; 'heading-when-plan-execution-starts' and 'action-heading' variables should not 
+			; contain any holes/tiles/opponents.  Otherwise, if the action should not be performed 
+			; successfully, the patch ahead of the CHREST turtle should contain an immoveable object.
+			if(action = move-token)[
 
-			if(hole-available)[
-				create-holes 1 [setxy ([pxcor] of turtle 0) (([pycor] of turtle 0) + 2)]
+				if(heading-when-plan-execution-starts = 0)[
+					ifelse(action-performed-successfully?)[
+						create-holes 3
+
+						if(action-heading = 0)[
+							ask turtle 1 [ (setxy ([pxcor] of turtle 0 + 1) ([pycor] of turtle 0)) ]
+							ask turtle 2 [ (setxy ([pxcor] of turtle 0) ([pycor] of turtle 0) - 1) ]
+							ask turtle 3 [ (setxy ([pxcor] of turtle 0 - 1) ([pycor] of turtle 0)) ]
+						]
+						if(action-heading = 90)[
+							ask turtle 1 [ (setxy ([pxcor] of turtle 0) ([pycor] of turtle 0) + 1) ]
+							ask turtle 2 [ (setxy ([pxcor] of turtle 0) ([pycor] of turtle 0) - 1) ]
+							ask turtle 3 [ (setxy ([pxcor] of turtle 0 - 1) ([pycor] of turtle 0)) ]
+						]
+						if(action-heading = 180)[
+							ask turtle 1 [ (setxy ([pxcor] of turtle 0) ([pycor] of turtle 0) + 1) ]
+							ask turtle 2 [ (setxy ([pxcor] of turtle 0 + 1) ([pycor] of turtle 0)) ]
+							ask turtle 3 [ (setxy ([pxcor] of turtle 0 - 1) ([pycor] of turtle 0)) ]
+						]
+						if(action-heading = 270)[
+							ask turtle 1 [ (setxy ([pxcor] of turtle 0) ([pycor] of turtle 0) + 1) ]
+							ask turtle 2 [ (setxy ([pxcor] of turtle 0 + 1) ([pycor] of turtle 0)) ]
+							ask turtle 3 [ (setxy ([pxcor] of turtle 0) ([pycor] of turtle 0) - 1) ]
+						]
+					]
+					[
+						create-holes 1
+
+						if(action-heading = 0)[
+							ask turtle 1 [ (setxy ([pxcor] of turtle 0) ([pycor] of turtle 0) + 1) ]
+						]
+						if(action-heading = 90)[
+							ask turtle 1 [ (setxy ([pxcor] of turtle 0 + 1) ([pycor] of turtle 0)) ]
+						]
+						if(action-heading = 180)[
+							ask turtle 1 [ (setxy ([pxcor] of turtle 0) ([pycor] of turtle 0) - 1) ]
+						]
+						if(action-heading = 270)[
+							ask turtle 1 [ (setxy ([pxcor] of turtle 0 - 1) ([pycor] of turtle 0)) ]
+						]
+					]
+				]
+
+				if(heading-when-plan-execution-starts = 90)[
+					ifelse(action-performed-successfully?)[
+						create-holes 3
+
+						if(action-heading = 0)[
+							ask turtle 1 [ (setxy ([pxcor] of turtle 0) ([pycor] of turtle 0) + 1) ]
+							ask turtle 2 [ (setxy ([pxcor] of turtle 0) ([pycor] of turtle 0) - 1) ]
+							ask turtle 3 [ (setxy ([pxcor] of turtle 0 - 1) ([pycor] of turtle 0)) ]
+						]
+						if(action-heading = 90)[
+							ask turtle 1 [ (setxy ([pxcor] of turtle 0) ([pycor] of turtle 0) + 1) ]
+							ask turtle 2 [ (setxy ([pxcor] of turtle 0 + 1) ([pycor] of turtle 0)) ]
+							ask turtle 3 [ (setxy ([pxcor] of turtle 0 - 1) ([pycor] of turtle 0)) ]
+						]
+						if(action-heading = 180)[
+							ask turtle 1 [ (setxy ([pxcor] of turtle 0) ([pycor] of turtle 0) + 1) ]
+							ask turtle 2 [ (setxy ([pxcor] of turtle 0 + 1) ([pycor] of turtle 0)) ]
+							ask turtle 3 [ (setxy ([pxcor] of turtle 0) ([pycor] of turtle 0) - 1) ]
+						]
+						if(action-heading = 270)[
+							ask turtle 1 [ (setxy ([pxcor] of turtle 0 + 1) ([pycor] of turtle 0)) ]
+							ask turtle 2 [ (setxy ([pxcor] of turtle 0) ([pycor] of turtle 0) - 1) ]
+							ask turtle 3 [ (setxy ([pxcor] of turtle 0 - 1) ([pycor] of turtle 0)) ]
+						]
+					]
+					[
+						create-holes 1
+
+						if(action-heading = 0)[
+							ask turtle 1 [ (setxy ([pxcor] of turtle 0 + 1) ([pycor] of turtle 0)) ]
+						]
+						if(action-heading = 90)[
+							ask turtle 1 [ (setxy ([pxcor] of turtle 0) ([pycor] of turtle 0) - 1) ]
+						]
+						if(action-heading = 180)[
+							ask turtle 1 [ (setxy ([pxcor] of turtle 0 - 1) ([pycor] of turtle 0)) ]
+						]
+						if(action-heading = 270)[
+							ask turtle 1 [ (setxy ([pxcor] of turtle 0) ([pycor] of turtle 0) + 1) ]
+						]
+					]
+				]
+
+				if(heading-when-plan-execution-starts = 180)[
+					ifelse(action-performed-successfully?)[
+						create-holes 3
+
+						if(action-heading = 0)[
+							ask turtle 1 [ (setxy ([pxcor] of turtle 0) ([pycor] of turtle 0) + 1) ]
+							ask turtle 2 [ (setxy ([pxcor] of turtle 0 + 1) ([pycor] of turtle 0)) ]
+							ask turtle 3 [ (setxy ([pxcor] of turtle 0 - 1) ([pycor] of turtle 0)) ]
+						]
+						if(action-heading = 90)[
+							ask turtle 1 [ (setxy ([pxcor] of turtle 0) ([pycor] of turtle 0) + 1) ]
+							ask turtle 2 [ (setxy ([pxcor] of turtle 0 + 1) ([pycor] of turtle 0)) ]
+							ask turtle 3 [ (setxy ([pxcor] of turtle 0) ([pycor] of turtle 0) - 1) ]
+						]
+						if(action-heading = 180)[
+							ask turtle 1 [ (setxy ([pxcor] of turtle 0 + 1) ([pycor] of turtle 0)) ]
+							ask turtle 2 [ (setxy ([pxcor] of turtle 0) ([pycor] of turtle 0) - 1) ]
+							ask turtle 3 [ (setxy ([pxcor] of turtle 0 - 1) ([pycor] of turtle 0)) ]
+						]
+						if(action-heading = 270)[
+							ask turtle 1 [ (setxy ([pxcor] of turtle 0) ([pycor] of turtle 0) + 1) ]
+							ask turtle 2 [ (setxy ([pxcor] of turtle 0) ([pycor] of turtle 0) - 1) ]
+							ask turtle 3 [ (setxy ([pxcor] of turtle 0 - 1) ([pycor] of turtle 0)) ]
+						]
+					]
+					[
+						create-holes 1
+
+						if(action-heading = 0)[
+							ask turtle 1 [ (setxy ([pxcor] of turtle 0) ([pycor] of turtle 0) - 1) ]
+						]
+						if(action-heading = 90)[
+							ask turtle 1 [ (setxy ([pxcor] of turtle 0 - 1) ([pycor] of turtle 0)) ]
+						]
+						if(action-heading = 180)[
+							ask turtle 1 [ (setxy ([pxcor] of turtle 0) ([pycor] of turtle 0) + 1) ]
+						]
+						if(action-heading = 270)[
+							ask turtle 1 [ (setxy ([pxcor] of turtle 0 + 1) ([pycor] of turtle 0)) ]
+						]
+					]
+				]
+
+				if(heading-when-plan-execution-starts = 270)[
+					ifelse(action-performed-successfully?)[
+						create-holes 3
+
+						if(action-heading = 0)[
+							ask turtle 1 [ (setxy ([pxcor] of turtle 0) ([pycor] of turtle 0) + 1) ]
+							ask turtle 2 [ (setxy ([pxcor] of turtle 0 + 1) ([pycor] of turtle 0)) ]
+							ask turtle 3 [ (setxy ([pxcor] of turtle 0) ([pycor] of turtle 0) - 1) ]
+						]
+						if(action-heading = 90)[
+							ask turtle 1 [ (setxy ([pxcor] of turtle 0 + 1) ([pycor] of turtle 0)) ]
+							ask turtle 2 [ (setxy ([pxcor] of turtle 0) ([pycor] of turtle 0) - 1) ]
+							ask turtle 3 [ (setxy ([pxcor] of turtle 0 - 1) ([pycor] of turtle 0)) ]
+						]
+						if(action-heading = 180)[
+							ask turtle 1 [ (setxy ([pxcor] of turtle 0) ([pycor] of turtle 0) + 1) ]
+							ask turtle 2 [ (setxy ([pxcor] of turtle 0) ([pycor] of turtle 0) - 1) ]
+							ask turtle 3 [ (setxy ([pxcor] of turtle 0 - 1) ([pycor] of turtle 0)) ]
+						]
+						if(action-heading = 270)[
+							ask turtle 1 [ (setxy ([pxcor] of turtle 0) ([pycor] of turtle 0) + 1) ]
+							ask turtle 2 [ (setxy ([pxcor] of turtle 0 + 1) ([pycor] of turtle 0)) ]
+							ask turtle 3 [ (setxy ([pxcor] of turtle 0 - 1) ([pycor] of turtle 0)) ]
+						]
+					]
+					[
+						create-holes 1
+
+						if(action-heading = 0)[
+							ask turtle 1 [ (setxy ([pxcor] of turtle 0 - 1) ([pycor] of turtle 0)) ]
+						]
+						if(action-heading = 90)[
+							ask turtle 1 [ (setxy ([pxcor] of turtle 0) ([pycor] of turtle 0) + 1) ]
+						]
+						if(action-heading = 180)[
+							ask turtle 1 [ (setxy ([pxcor] of turtle 0 + 1) ([pycor] of turtle 0)) ]
+						]
+						if(action-heading = 270)[
+							ask turtle 1 [ (setxy ([pxcor] of turtle 0) ([pycor] of turtle 0) - 1) ]
+						]
+					]
+				]
 			]
-		]
 
-		if(
-			action != push-tile-token and not action-performed-successfully?
-		)[
-			create-tiles 1 [setxy ([pxcor] of turtle 0) (([pycor] of turtle 0) + 1)]
-		]
+			; If the action is to push a tile then:
+			;
+			; - If the scenario stipulates that the action should be performed successfully then 
+			;   add a tile to the patch it is expected on according to the 
+			;   'heading-when-plan-execution-starts' and 'action-heading' variables.  Otherwise, 
+			;   if the action is not to be performed successfully, tiles will be available, but 
+			;   not on the patch expected.  This tests that the heading for the action to be 
+			;   performed in context of is calculated correctly since, if it is, no other tile
+			;   should be pushed.
+			; - If the scenario also stipulates that a hole should be available and that the action
+			;   should be performed successfully, create a hole on the patch that the tile would be 
+			;   moved to so that the hole can be filled.  Otherwise, don't do anything since the 
+			;   'hole-available?' variable is only relevant if a tile is to be pushed successfully. 
+			if(action = push-tile-token)[
 
-		;===================;
-		;== PERFORM TEST  ==;
-		;===================;
+				if(heading-when-plan-execution-starts = 0)[
+					ifelse(action-performed-successfully?)[
+						create-tiles 1
 
-		ask turtle 0 [
+						if(action-heading = 0)[
+							ask turtle 1 [ (setxy ([pxcor] of turtle 0) ([pycor] of turtle 0) + 1) ]
+						]
+						if(action-heading = 90)[
+							ask turtle 1 [ (setxy ([pxcor] of turtle 0 + 1) ([pycor] of turtle 0)) ]
+						]
+						if(action-heading = 180)[
+							ask turtle 1 [ (setxy ([pxcor] of turtle 0) ([pycor] of turtle 0) - 1) ]
+						]
+						if(action-heading = 270)[
+							ask turtle 1 [ (setxy ([pxcor] of turtle 0 - 1) ([pycor] of turtle 0)) ]
+						]
 
-			; Get the current location of the CHREST turtle and store it so that its position can be reset after every "perform-action"
-			; procedure invocation.  This ensures that the CHREST turtle will/will not perform the action successfully (depending upon
-			; relevant scenario parameters).
-			let turtle-0-original-location (list xcor ycor)
+						if(hole-available?)[
+							create-holes 1
 
-			let scenario-description (word "during the following scenario:\n"
-			    "1. Action performed = " action "\n"
-			    "2. Hole available = " hole-available "\n"
-			    "3. Action performed successfully = " action-performed-successfully?
-		    )
+							if(action-heading = 0)[
+								ask turtle 2 [ (setxy ([pxcor] of turtle 0) ([pycor] of turtle 0) + 2) ]
+							]
+							if(action-heading = 90)[
+								ask turtle 2 [ (setxy ([pxcor] of turtle 0 + 2) ([pycor] of turtle 0)) ]
+							]
+							if(action-heading = 180)[
+								ask turtle 2 [ (setxy ([pxcor] of turtle 0) ([pycor] of turtle 0) - 2) ]
+							]
+							if(action-heading = 270)[
+								ask turtle 2 [ (setxy ([pxcor] of turtle 0 - 2) ([pycor] of turtle 0)) ]
+							]
+						]
+					]
+					[
+						create-tiles 3
 
-		    ;======================================;
-		    ;== "PERFORM-ACTION" INVOCATION LOOP ==;
-		    ;======================================;
+						if(action-heading = 0)[
+							ask turtle 1 [ (setxy ([pxcor] of turtle 0 + 1) ([pycor] of turtle 0)) ]
+							ask turtle 2 [ (setxy ([pxcor] of turtle 0) ([pycor] of turtle 0) - 1) ]
+							ask turtle 3 [ (setxy ([pxcor] of turtle 0 - 1) ([pycor] of turtle 0)) ]
+						]
+						if(action-heading = 90)[
+							ask turtle 1 [ (setxy ([pxcor] of turtle 0) ([pycor] of turtle 0) + 1) ]
+							ask turtle 2 [ (setxy ([pxcor] of turtle 0) ([pycor] of turtle 0) - 1) ]
+							ask turtle 3 [ (setxy ([pxcor] of turtle 0 - 1) ([pycor] of turtle 0)) ]
+						]
+						if(action-heading = 180)[
+							ask turtle 1 [ (setxy ([pxcor] of turtle 0) ([pycor] of turtle 0) + 1) ]
+							ask turtle 2 [ (setxy ([pxcor] of turtle 0 + 1) ([pycor] of turtle 0)) ]
+							ask turtle 3 [ (setxy ([pxcor] of turtle 0 - 1) ([pycor] of turtle 0)) ]
+						]
+						if(action-heading = 270)[
+							ask turtle 1 [ (setxy ([pxcor] of turtle 0) ([pycor] of turtle 0) + 1) ]
+							ask turtle 2 [ (setxy ([pxcor] of turtle 0 + 1) ([pycor] of turtle 0)) ]
+							ask turtle 3 [ (setxy ([pxcor] of turtle 0) ([pycor] of turtle 0) - 1) ]
+						]
+					]
+				]
 
-			repeat 50[
+				if(heading-when-plan-execution-starts = 90)[
+					ifelse(action-performed-successfully?)[
+						create-tiles 1
 
-				let action-performance-success (perform-action (list (action) (0) (1)))
+						if(action-heading = 0)[
+							ask turtle 1 [ (setxy ([pxcor] of turtle 0 + 1) ([pycor] of turtle 0)) ]
+						]
+						if(action-heading = 90)[
+							ask turtle 1 [ (setxy ([pxcor] of turtle 0) ([pycor] of turtle 0) - 1) ]
+						]
+						if(action-heading = 180)[
+							ask turtle 1 [ (setxy ([pxcor] of turtle 0 - 1) ([pycor] of turtle 0)) ]
+						]
+						if(action-heading = 270)[
+							ask turtle 1 [ (setxy ([pxcor] of turtle 0) ([pycor] of turtle 0) + 1) ]
+						]
 
-				;================================================;
-				;== CHECK FOR UN/SUCCESSFUL ACTION PERFORMANCE ==;
-				;================================================;
+						if(hole-available?)[
+							create-holes 1
+
+							if(action-heading = 0)[
+								ask turtle 2 [ (setxy ([pxcor] of turtle 0 + 2) ([pycor] of turtle 0)) ]
+							]
+							if(action-heading = 90)[
+								ask turtle 2 [ (setxy ([pxcor] of turtle 0) ([pycor] of turtle 0) - 2) ]
+							]
+							if(action-heading = 180)[
+								ask turtle 2 [ (setxy ([pxcor] of turtle 0 - 2) ([pycor] of turtle 0)) ]
+							]
+							if(action-heading = 270)[
+								ask turtle 2 [ (setxy ([pxcor] of turtle 0) ([pycor] of turtle 0) + 2) ]
+							]
+						]
+					]
+					[
+						create-tiles 3
+
+						if(action-heading = 0)[
+							ask turtle 1 [ (setxy ([pxcor] of turtle 0) ([pycor] of turtle 0) + 1) ]
+							ask turtle 2 [ (setxy ([pxcor] of turtle 0) ([pycor] of turtle 0) - 1) ]
+							ask turtle 3 [ (setxy ([pxcor] of turtle 0 - 1) ([pycor] of turtle 0)) ]
+						]
+						if(action-heading = 90)[
+							ask turtle 1 [ (setxy ([pxcor] of turtle 0) ([pycor] of turtle 0) + 1) ]
+							ask turtle 2 [ (setxy ([pxcor] of turtle 0 + 1) ([pycor] of turtle 0)) ]
+							ask turtle 3 [ (setxy ([pxcor] of turtle 0 - 1) ([pycor] of turtle 0)) ]
+						]
+						if(action-heading = 180)[
+							ask turtle 1 [ (setxy ([pxcor] of turtle 0) ([pycor] of turtle 0) + 1) ]
+							ask turtle 2 [ (setxy ([pxcor] of turtle 0 + 1) ([pycor] of turtle 0)) ]
+							ask turtle 3 [ (setxy ([pxcor] of turtle 0) ([pycor] of turtle 0) - 1) ]
+						]
+						if(action-heading = 270)[
+							ask turtle 1 [ (setxy ([pxcor] of turtle 0 + 1) ([pycor] of turtle 0)) ]
+							ask turtle 2 [ (setxy ([pxcor] of turtle 0) ([pycor] of turtle 0) - 1) ]
+							ask turtle 3 [ (setxy ([pxcor] of turtle 0 - 1) ([pycor] of turtle 0)) ]
+						]
+					]
+				]
+
+				if(heading-when-plan-execution-starts = 180)[
+					ifelse(action-performed-successfully?)[
+						create-tiles 1
+
+						if(action-heading = 0)[
+							ask turtle 1 [ (setxy ([pxcor] of turtle 0) ([pycor] of turtle 0) - 1) ]
+						]
+						if(action-heading = 90)[
+							ask turtle 1 [ (setxy ([pxcor] of turtle 0 - 1) ([pycor] of turtle 0)) ]
+						]
+						if(action-heading = 180)[
+							ask turtle 1 [ (setxy ([pxcor] of turtle 0) ([pycor] of turtle 0) + 1) ]
+						]
+						if(action-heading = 270)[
+							ask turtle 1 [ (setxy ([pxcor] of turtle 0 + 1) ([pycor] of turtle 0)) ]
+						]
+
+						if(hole-available?)[
+							create-holes 1
+
+							if(action-heading = 0)[
+								ask turtle 2 [ (setxy ([pxcor] of turtle 0) ([pycor] of turtle 0 - 2)) ]
+							]
+							if(action-heading = 90)[
+								ask turtle 2 [ (setxy ([pxcor] of turtle 0 - 2) ([pycor] of turtle 0)) ]
+							]
+							if(action-heading = 180)[
+								ask turtle 2 [ (setxy ([pxcor] of turtle 0) ([pycor] of turtle 0) + 2) ]
+							]
+							if(action-heading = 270)[
+								ask turtle 2 [ (setxy ([pxcor] of turtle 0 + 2) ([pycor] of turtle 0)) ]
+							]
+						]
+					]
+					[
+						create-tiles 3
+
+						if(action-heading = 0)[
+							ask turtle 1 [ (setxy ([pxcor] of turtle 0) ([pycor] of turtle 0) + 1) ]
+							ask turtle 2 [ (setxy ([pxcor] of turtle 0 + 1) ([pycor] of turtle 0)) ]
+							ask turtle 3 [ (setxy ([pxcor] of turtle 0 - 1) ([pycor] of turtle 0)) ]
+						]
+						if(action-heading = 90)[
+							ask turtle 1 [ (setxy ([pxcor] of turtle 0) ([pycor] of turtle 0) + 1) ]
+							ask turtle 2 [ (setxy ([pxcor] of turtle 0 + 1) ([pycor] of turtle 0)) ]
+							ask turtle 3 [ (setxy ([pxcor] of turtle 0) ([pycor] of turtle 0) - 1) ]
+						]
+						if(action-heading = 180)[
+							ask turtle 1 [ (setxy ([pxcor] of turtle 0 + 1) ([pycor] of turtle 0)) ]
+							ask turtle 2 [ (setxy ([pxcor] of turtle 0) ([pycor] of turtle 0) - 1) ]
+							ask turtle 3 [ (setxy ([pxcor] of turtle 0 - 1) ([pycor] of turtle 0)) ]
+						]
+						if(action-heading = 270)[
+							ask turtle 1 [ (setxy ([pxcor] of turtle 0) ([pycor] of turtle 0) + 1) ]
+							ask turtle 2 [ (setxy ([pxcor] of turtle 0) ([pycor] of turtle 0) - 1) ]
+							ask turtle 3 [ (setxy ([pxcor] of turtle 0 - 1) ([pycor] of turtle 0)) ]
+						]
+					]
+				]
+
+				if(heading-when-plan-execution-starts = 270)[
+					ifelse(action-performed-successfully?)[
+						create-tiles 1
+
+						if(action-heading = 0)[
+							ask turtle 1 [ (setxy ([pxcor] of turtle 0 - 1) ([pycor] of turtle 0)) ]
+						]
+						if(action-heading = 90)[
+							ask turtle 1 [ (setxy ([pxcor] of turtle 0) ([pycor] of turtle 0) + 1) ]
+						]
+						if(action-heading = 180)[
+							ask turtle 1 [ (setxy ([pxcor] of turtle 0 + 1) ([pycor] of turtle 0)) ]
+						]
+						if(action-heading = 270)[
+							ask turtle 1 [ (setxy ([pxcor] of turtle 0) ([pycor] of turtle 0) - 1) ]
+						]
+
+						if(hole-available?)[
+							create-holes 1
+
+							if(action-heading = 0)[
+								ask turtle 2 [ (setxy ([pxcor] of turtle 0 - 2) ([pycor] of turtle 0)) ]
+							]
+							if(action-heading = 90)[
+								ask turtle 2 [ (setxy ([pxcor] of turtle 0) ([pycor] of turtle 0) + 2) ]
+							]
+							if(action-heading = 180)[
+								ask turtle 2 [ (setxy ([pxcor] of turtle 0 + 2) ([pycor] of turtle 0)) ]
+							]
+							if(action-heading = 270)[
+								ask turtle 2 [ (setxy ([pxcor] of turtle 0) ([pycor] of turtle 0) - 2) ]
+							]
+						]
+					]
+					[
+						create-tiles 3
+
+						if(action-heading = 0)[
+							ask turtle 1 [ (setxy ([pxcor] of turtle 0) ([pycor] of turtle 0) + 1) ]
+							ask turtle 2 [ (setxy ([pxcor] of turtle 0 + 1) ([pycor] of turtle 0)) ]
+							ask turtle 3 [ (setxy ([pxcor] of turtle 0) ([pycor] of turtle 0) - 1) ]
+						]
+						if(action-heading = 90)[
+							ask turtle 1 [ (setxy ([pxcor] of turtle 0 + 1) ([pycor] of turtle 0)) ]
+							ask turtle 2 [ (setxy ([pxcor] of turtle 0) ([pycor] of turtle 0) - 1) ]
+							ask turtle 3 [ (setxy ([pxcor] of turtle 0 - 1) ([pycor] of turtle 0)) ]
+						]
+						if(action-heading = 180)[
+							ask turtle 1 [ (setxy ([pxcor] of turtle 0) ([pycor] of turtle 0) + 1) ]
+							ask turtle 2 [ (setxy ([pxcor] of turtle 0) ([pycor] of turtle 0) - 1) ]
+							ask turtle 3 [ (setxy ([pxcor] of turtle 0 - 1) ([pycor] of turtle 0)) ]
+						]
+						if(action-heading = 270)[
+							ask turtle 1 [ (setxy ([pxcor] of turtle 0) ([pycor] of turtle 0) + 1) ]
+							ask turtle 2 [ (setxy ([pxcor] of turtle 0 + 1) ([pycor] of turtle 0)) ]
+							ask turtle 3 [ (setxy ([pxcor] of turtle 0 - 1) ([pycor] of turtle 0)) ]
+						]
+					]
+				]
+			]
+
+			;==================================;
+			;== SET EXPECTED VARIABLE VALUES ==;
+			;==================================;
+
+			let expected-success-of-action-performance (action-performed-successfully?)
+
+			;Set the expected location of the turtle after performing the action.  The
+			;turtle's location should only change if the action is successful.
+
+			let expected-location-of-chrest-turtle-after-action-performance (list 0 0)
+
+			if (action-performed-successfully?)[
+				if(heading-when-plan-execution-starts = 0)[
+					if(action-heading = 0)[
+						set expected-location-of-chrest-turtle-after-action-performance (list 0 1)
+					]
+					if(action-heading = 90)[
+						set expected-location-of-chrest-turtle-after-action-performance (list 1 0)
+					]
+					if(action-heading = 180)[
+						set expected-location-of-chrest-turtle-after-action-performance (list 0 -1)
+					]
+					if(action-heading = 270)[
+						set expected-location-of-chrest-turtle-after-action-performance (list -1 0)
+					]
+				]
+				if(heading-when-plan-execution-starts = 90)[
+					if(action-heading = 0)[
+						set expected-location-of-chrest-turtle-after-action-performance (list 1 0)
+					]
+					if(action-heading = 90)[
+						set expected-location-of-chrest-turtle-after-action-performance (list 0 -1)
+					]
+					if(action-heading = 180)[
+						set expected-location-of-chrest-turtle-after-action-performance (list -1 0)
+					]
+					if(action-heading = 270)[
+						set expected-location-of-chrest-turtle-after-action-performance (list 0 1)
+					]
+				]
+				if(heading-when-plan-execution-starts = 180)[
+					if(action-heading = 0)[
+						set expected-location-of-chrest-turtle-after-action-performance (list 0 -1)
+					]
+					if(action-heading = 90)[
+						set expected-location-of-chrest-turtle-after-action-performance (list -1 0)
+					]
+					if(action-heading = 180)[
+						set expected-location-of-chrest-turtle-after-action-performance (list 0 1)
+					]
+					if(action-heading = 270)[
+						set expected-location-of-chrest-turtle-after-action-performance (list 1 0)
+					]
+				]
+				if(heading-when-plan-execution-starts = 270)[
+					if(action-heading = 0)[
+						set expected-location-of-chrest-turtle-after-action-performance (list -1 0)
+					]
+					if(action-heading = 90)[
+						set expected-location-of-chrest-turtle-after-action-performance (list 0 1)
+					]
+					if(action-heading = 180)[
+						set expected-location-of-chrest-turtle-after-action-performance (list 1 0)
+					]
+					if(action-heading = 270)[
+						set expected-location-of-chrest-turtle-after-action-performance (list 0 -1)
+					]
+				]
+			]
+
+			; If the action is to push a tile then the "perform-action" procedure will report a list since that is what 
+			; is reported by the "push-tile" procedure when invoked.  The list will contain two elements, the first states 
+			; whether the action was performed successfully or not and its expected value is dependent on the value of the 
+			; 'action-performed-successfully?' scenario parameter.  The second element stipulates whether a hole was filled 
+			; when a tile was pushed.  This value is dependent first on the value of the "action-performed-successfully?"
+			; scenario paramater then the value of the "hole-available" scenario parameter.  If the 
+			; "action-performed-successfully?" parameter is set to 'true' then the tile may be pushed and may/may not be
+			; pushed into a hole.  If the "action-performed-successfully?" parameter is set to 'false' then a hole will
+			; never be filled.
+			if (action = push-tile-token)[
+				ifelse (action-performed-successfully?)[
+					set expected-success-of-action-performance (list (true) (hole-available?))
+				]
+				[
+					set expected-success-of-action-performance (list (false) (false))
+				]
+			]
+
+			;===================;
+			;== PERFORM TEST  ==;
+			;===================;
+
+			ask turtle 0 [
+
+				;Set the turtle's 'heading-when-plan-execution-begins' variable to the 
+				;'heading-when-plan-execution-stars' so that actions are executed 
+				;relative to the heading specified.
+
+				set heading-when-plan-execution-begins (heading-when-plan-execution-starts)
+
+				let scenario-description (word "during the following scenario:\n"
+				    "1. Action performed = " action "\n"
+				    "2. Heading when plan execution starts = " heading-when-plan-execution-starts "\n"
+				    "3. Action heading  = " action-heading "\n"
+				    "2. Hole available = " hole-available? "\n"
+				    "3. Action performed successfully = " action-performed-successfully?
+			    )
+
+				let action-performance-success (perform-action (list (action) (action-heading) (1)))
+
+				;===========;
+				;== TESTS ==;
+				;============;
 
 				check-equal 
 					(action-performance-success) 
 					(expected-success-of-action-performance) 
 					(word "when checking if the action is performed successfully " scenario-description)
 
-				;===========================;
-				;== RESET TURTLE LOCATION ==;
-				;===========================;
-
-				setxy (item (0) (turtle-0-original-location)) (item (1) (turtle-0-original-location))
-				ask tiles [die]
-				ask holes [die]
-
-				if(action = push-tile-token and action-performed-successfully?)[
-					ask patch-at-heading-and-distance (0) (1) [sprout-tiles 1]
-
-					if(hole-available)[
-						ask patch-at-heading-and-distance (0) (2) [sprout-holes 1]
-					]
-				]
-
-				if(action != push-tile-token and not action-performed-successfully?)[
-					ask patch-at-heading-and-distance (0) (1) [sprout-tiles 1]
-				]
+				check-equal
+					((list pxcor pycor))
+					(expected-location-of-chrest-turtle-after-action-performance)
+					(word "when checking the location of the CHREST turtle after performing the action " scenario-description)
 			]
+			
+			reset (true)
 		]
-		
-		reset (true)
 	]
 </test>

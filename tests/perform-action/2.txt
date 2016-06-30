@@ -1,0 +1,229 @@
+;==============================
+;========== TEST AIM ==========
+;==============================
+;
+; To determine if the "perform-action" procedure behaves as expected for 
+; CHREST turtles when a sequence of actions are performed, i.e. are action
+; headings calculated relative to the turtle's 'heading-when-plan-execution-begins'
+; variable.
+;
+;======================================
+;========== TEST DESCRIPTION ==========
+;====================================== 
+; 
+; A CHREST turtle is created and placed on a known patch. For each 'movement-headings' 
+; element (m), the CHREST turtle's heading and 'heading-when-plan-execution-begins' 
+; variable is initialised to m. The CHREST turtle then invokes the 'perform-action' 
+; procedure 4 times with a different action-heading specified each time:
+;
+; 1st invocation: action-heading = 0
+; 2nd invocation: action-heading = 90
+; 3rd invocation: action-heading = 180
+; 4th invocation: action-heading = 270
+;
+; NOTE: The action performed will always have the number of patches traversed = 1.
+; 
+;=====================================
+;========== TESTS PERFORMED ==========
+;=====================================
+;
+; After each 'perform action invocation', the CHREST turtle's location is checked.
+; Essentially, the CHREST turtle should move in a circle with the 4th invocation
+; always returning the CHREST turtle back to its original patch however, the 
+; intermediate locations of the turtle should be different:
+;
+; When 'heading-when-plan-execution-begins' = 0:
+; - 1st invocation: turtle should be 1 patch north of original patch
+; - 2nd invocation: turtle should be 1 patch north and east of original patch
+; - 3rd invocation: turtle should be 1 patch east of original patch
+; 
+; When 'heading-when-plan-execution-begins' = 90:
+; - 1st invocation: turtle should be 1 patch east of original patch
+; - 2nd invocation: turtle should be 1 patch east and south of original patch
+; - 3rd invocation: turtle should be 1 patch south of original patch
+;
+; When 'heading-when-plan-execution-begins' = 180:
+; - 1st invocation: turtle should be 1 patch south of original patch
+; - 2nd invocation: turtle should be 1 patch south and west of original patch
+; - 3rd invocation: turtle should be 1 patch west of original patch
+;
+; When 'heading-when-plan-execution-begins' = 270:
+; - 1st invocation: turtle should be 1 patch north of original patch
+; - 2nd invocation: turtle should be 1 patch north and east of original patch
+; - 3rd invocation: turtle should be 1 patch east of original patch
+;
+<test>
+	foreach(movement-headings)[
+		repeat 50[
+
+			let movement-heading (?)
+
+			;=========================;
+			;== SETUP CHREST TURTLE ==;
+			;=========================;
+
+			; None of the CHREST turtle's parameters matter in this test.  They're just
+			; set to appease the variable checker in the model code.
+
+			create-chrest-turtles 1[
+				set add-production-time (1)
+				set can-create-semantic-links? (true)
+				set can-create-templates? (true)
+				set can-plan? (true)
+				set can-use-pattern-recognition? (true)
+				set discount-rate (0.5)
+				set discrimination-time (1)
+				set familiarisation-time (1)
+				set initial-fixation-threshold (1)
+				set ltm-link-traversal-time (1)
+				set max-fixations-in-set (5)
+				set max-search-iteration (3)
+				set maximum-semantic-link-search-distance (3)
+				set minimum-depth-of-node-in-network-to-be-a-template (3)
+				set minimum-item-or-position-occurrences-in-node-images-to-be-a-slot-value (3)
+				set node-comparison-time (1)
+				set node-image-similarity-threshold (2)
+				set peripheral-item-fixation-max-attempts (3)
+				set play-time (1400000)
+				set probability-of-using-problem-solving (0.0)
+				set recognised-visual-spatial-field-object-lifespan (1)
+				set reinforce-production-time (1)
+				set reinforcement-learning-theory ("profit_sharing_with_discount_rate")
+				set rho (1.0)
+				set saccade-time (1)
+				set sight-radius (2)
+				set time-taken-to-decide-upon-ahead-of-agent-fixations (1)
+				set time-taken-to-decide-upon-movement-fixations (1)
+				set time-taken-to-decide-upon-peripheral-item-fixations (1)
+				set time-taken-to-decide-upon-peripheral-square-fixations (1)
+				set time-taken-to-decide-upon-salient-object-fixations (1)
+				set time-taken-to-move (1)
+				set time-taken-to-push-tile (1)
+				set time-to-access-visual-spatial-field (1)
+				set time-to-create-semantic-link (1)
+				set time-to-encode-recognised-scene-object-as-visual-spatial-field-object (1)
+				set time-to-encode-unrecognised-empty-square-scene-object-as-visual-spatial-field-object (1)
+				set time-to-encode-unrecognised-non-empty-square-scene-object-as-visual-spatial-field-object (1)
+				set time-to-generate-action-when-no-tile-seen (1)
+				set time-to-generate-action-when-tile-seen (1)
+				set time-to-move-visual-spatial-field-object (1)
+				set time-to-process-unrecognised-scene-object-during-visual-spatial-field-construction (1)
+				set time-to-retrieve-fixation-from-perceiver (1)
+				set time-to-retrieve-item-from-stm (1)
+				set time-to-update-stm (1)
+				set training-time (0)
+				set unknown-visual-spatial-field-object-replacement-probabilities (list (list 1.0 blind-patch-token))
+				set unrecognised-visual-spatial-field-object-lifespan (1)
+			]
+			setup(true)
+
+
+			let action-1 (list (move-token) (0) (1))
+			let action-2 (list (move-token) (90) (1))
+			let action-3 (list (move-token) (180) (1))
+			let action-4 (list (move-token) (270) (1))
+
+			ask turtle 0[
+
+				;Set the turtle's starting patch to be the centre of the environment to save dealing with 
+				;environment-wrapping when calculating expected locations of the turtle after 
+				;'perform-action' invocations,. If the turtle is placed randomly, it may be placed on a 
+				;patch whose pxcor is equal to the max-pxcor of the environment.  If the action then causes
+				;the turtle to move east, its new location will be the min-pxcor of the environment.  
+				;Compensating for this complicates testing unnecessarily.
+				setxy 0 0
+
+				set heading-when-plan-execution-begins (movement-heading)
+				set heading (movement-heading)
+				let location-after-action []
+
+				;=================================================================;
+				;== PERFORM ACTION 1 AND CHECK LOCATION POST-ACTION PERFORMANCE ==;
+				;=================================================================;
+				
+				let ignore (perform-action (action-1))
+				
+				if(movement-heading = 0)[
+					set location-after-action (list 0 1)
+				]
+				if(movement-heading = 90)[
+					set location-after-action (list 1 0)
+				]
+				if(movement-heading = 180)[
+					set location-after-action (list 0 -1)
+				]
+				if(movement-heading = 270)[
+					set location-after-action (list -1 0)
+				]
+
+				check-equal 
+					((list pxcor pycor))
+					(location-after-action)
+					(word "occurred after performing action-1 and 'heading-when-plan-execution-begins' is equal to " heading-when-plan-execution-begins)
+
+				;=================================================================;
+				;== PERFORM ACTION 2 AND CHECK LOCATION POST-ACTION PERFORMANCE ==;
+				;=================================================================;
+
+				set ignore (perform-action (action-2))
+				
+				if(movement-heading = 0)[
+					set location-after-action (list 1 1)
+				]
+				if(movement-heading = 90)[
+					set location-after-action (list 1 -1)
+				]
+				if(movement-heading = 180)[
+					set location-after-action (list -1 -1)
+				]
+				if(movement-heading = 270)[
+					set location-after-action (list -1 1)
+				]
+
+				check-equal 
+					((list pxcor pycor))
+					(location-after-action)
+					(word "occurred after performing action-2 and 'heading-when-plan-execution-begins' is equal to " heading-when-plan-execution-begins)
+
+				;=================================================================;
+				;== PERFORM ACTION 3 AND CHECK LOCATION POST-ACTION PERFORMANCE ==;
+				;=================================================================;
+
+				set ignore (perform-action (action-3))
+				
+				if(movement-heading = 0)[
+					set location-after-action (list 1 0)
+				]
+				if(movement-heading = 90)[
+					set location-after-action (list 0 -1)
+				]
+				if(movement-heading = 180)[
+					set location-after-action (list -1 0)
+				]
+				if(movement-heading = 270)[
+					set location-after-action (list 0 1)
+				]
+
+				check-equal 
+					((list pxcor pycor))
+					(location-after-action)
+					(word "occurred after performing action-3 and 'heading-when-plan-execution-begins' is equal to " heading-when-plan-execution-begins)
+
+				;=================================================================;
+				;== PERFORM ACTION 4 AND CHECK LOCATION POST-ACTION PERFORMANCE ==;
+				;=================================================================;
+
+				set ignore (perform-action (action-4))
+				
+				set location-after-action (list 0 0)
+
+				check-equal 
+					((list pxcor pycor))
+					(location-after-action)
+					(word "occurred after performing action-4 and 'heading-when-plan-execution-begins' is equal to " heading-when-plan-execution-begins)
+			]
+
+			reset(true)
+		]
+	]
+</test>

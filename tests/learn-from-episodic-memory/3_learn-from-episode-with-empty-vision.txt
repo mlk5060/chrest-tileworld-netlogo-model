@@ -1,0 +1,209 @@
+<test>
+	repeat 50[
+		;=========================;
+		;== SETUP CHREST TURTLE ==;
+		;=========================;
+
+		; None of the CHREST turtle's parameters matter in this test.  They're just
+		; set to appease the variable checker in the model code.
+
+		create-chrest-turtles 1[
+			set add-production-time (1)
+			set can-create-semantic-links? (true)
+			set can-create-templates? (true)
+			set can-plan? (true)
+			set can-use-pattern-recognition? (true)
+			set discount-rate (0.5)
+			set discrimination-time (1)
+			set familiarisation-time (1)
+			set initial-fixation-threshold (1)
+			set ltm-link-traversal-time (1)
+			set max-fixations-in-set (5)
+			set max-search-iteration (3)
+			set maximum-semantic-link-search-distance (3)
+			set minimum-depth-of-node-in-network-to-be-a-template (3)
+			set minimum-item-or-position-occurrences-in-node-images-to-be-a-slot-value (3)
+			set node-comparison-time (1)
+			set node-image-similarity-threshold (2)
+			set peripheral-item-fixation-max-attempts (3)
+			set play-time (1400000)
+			set probability-of-using-problem-solving (0.0)
+			set recognised-visual-spatial-field-object-lifespan (1)
+			set reinforce-production-time (1)
+			set reinforcement-learning-theory ("profit_sharing_with_discount_rate")
+			set rho (1.0)
+			set saccade-time (1)
+			set sight-radius (2)
+			set time-taken-to-decide-upon-ahead-of-agent-fixations (1)
+			set time-taken-to-decide-upon-movement-fixations (1)
+			set time-taken-to-decide-upon-peripheral-item-fixations (1)
+			set time-taken-to-decide-upon-peripheral-square-fixations (1)
+			set time-taken-to-decide-upon-salient-object-fixations (1)
+			set time-taken-to-move (1)
+			set time-taken-to-push-tile (1)
+			set time-to-access-visual-spatial-field (1)
+			set time-to-create-semantic-link (1)
+			set time-to-encode-recognised-scene-object-as-visual-spatial-field-object (1)
+			set time-to-encode-unrecognised-empty-square-scene-object-as-visual-spatial-field-object (1)
+			set time-to-encode-unrecognised-non-empty-square-scene-object-as-visual-spatial-field-object (1)
+			set time-to-generate-action-when-no-tile-seen (1)
+			set time-to-generate-action-when-tile-seen (1)
+			set time-to-move-visual-spatial-field-object (1)
+			set time-to-process-unrecognised-scene-object-during-visual-spatial-field-construction (1)
+			set time-to-retrieve-fixation-from-perceiver (1)
+			set time-to-retrieve-item-from-stm (1)
+			set time-to-update-stm (1)
+			set training-time (0)
+			set unknown-visual-spatial-field-object-replacement-probabilities (list (list 1.0 blind-patch-token))
+			set unrecognised-visual-spatial-field-object-lifespan (1)
+		]
+		setup(true)
+
+		ask turtle 0[
+
+			;================================;
+			;== POPULATE 'episodic-memory' ==;
+			;================================;
+
+			;;; EPISODE 1 ;;;
+
+			let episode-1-vision (chrest:ListPattern.new 
+				(list) 
+				(chrest:Modality.value-of ("VISUAL"))
+			)
+			let episode-1-action (chrest:ListPattern.new 
+				(list 
+					(chrest:ItemSquarePattern.new (move-token) (0) (1))
+					(chrest:ItemSquarePattern.new (move-token) (90) (1))
+				)
+				(chrest:Modality.value-of ("ACTION"))
+			)
+			let episode-1-time-generated (2000)
+			add-episode-to-episodic-memory (episode-1-vision) (episode-1-action) (episode-1-time-generated)
+
+			;;; EPISODE 2 ;;;
+
+			let episode-2-vision (chrest:ListPattern.new 
+				(list
+					(chrest:ItemSquarePattern.new (tile-token) (0) (1))
+					(chrest:ItemSquarePattern.new (hole-token) (1) (1))
+				) 
+				(chrest:Modality.value-of ("VISUAL"))
+			)
+			let episode-2-action (chrest:ListPattern.new 
+				(list 
+					(chrest:ItemSquarePattern.new (move-token) (270) (1))
+					(chrest:ItemSquarePattern.new (move-token) (0) (1))
+				)
+				(chrest:Modality.value-of ("ACTION"))
+			)
+			let episode-2-time-generated (4000)
+			add-episode-to-episodic-memory (episode-2-vision) (episode-2-action) (episode-2-time-generated)
+
+			;;; EPISODE 3 ;;;
+
+			let episode-3-vision (chrest:ListPattern.new 
+				(list
+					(chrest:ItemSquarePattern.new (tile-token) (1) (0))
+					(chrest:ItemSquarePattern.new (hole-token) (2) (0))
+				) 
+				(chrest:Modality.value-of ("VISUAL"))
+			)
+			let episode-3-action (chrest:ListPattern.new 
+				(list 
+					(chrest:ItemSquarePattern.new (move-token) (270) (1))
+					(chrest:ItemSquarePattern.new (move-token) (90) (1))
+					(chrest:ItemSquarePattern.new (push-tile-token) (90) (1))
+				)
+				(chrest:Modality.value-of ("ACTION"))
+			)
+			let episode-3-time-generated (6000)
+			add-episode-to-episodic-memory (episode-3-vision) (episode-3-action) (episode-3-time-generated)
+
+			;======================;
+			;== INVOKE PROCEDURE ==;
+			;======================;
+
+			set current-training-time (episode-3-time-generated)
+
+			while[episode-to-learn-from = 0 and not learn-episode-vision?][
+				learn-from-episodic-memory
+				set current-training-time (current-training-time + 1)
+			]
+
+			;===========;
+			;== TESTS ==;
+			;===========;
+
+			;Since the first episode's vision is empty, the next episode's action will be 
+			;learned when the first episode's action is learned.  This is because the episode
+			;can't be learned as a production if its vision is empty.
+
+			check-equal (learn-episode-action?) (true) ("when checking the 'learn-episode-action?' variable")
+			check-equal (learn-episode-vision?) (false) ("when checking the 'learn-episode-vision?' variable")
+			check-equal (learn-episode-as-production?) (false) ("when checking the 'learn-episode-as-production?' variable")
+			check-equal (episode-to-learn-from) (1) ("when checking the 'episode-to-learn-from' variable") 
+			check-equal (learn-action-sequence?) (false) ("when checking the 'learn-action-sequence?' variable") 
+			check-equal (learn-action-sequence-as-production?) (false) ("when checking the 'learn-action-sequence-as-production?' variable") 
+			check-equal (reinforce-productions?) (false) ("when checking the 'reinforce-productions? ' variable") 
+			check-equal (episode-to-reinforce) (-1) ("when checking the 'episode-to-reinforce' variable") 
+			check-equal (learn-from-episodic-memory?) (true) ("when checking the 'learn-from-episodic-memory?' variable")
+
+			;Check that the turtle has learned.  Note that there's no precise expected results
+			;for the values of the turtle's attention and cognition clocks, simply checking that
+			;the results are greater than their default value is good enough (CHREST already checks
+			;that these clocks are set correctly in its own test suite).  The test does, however,
+			;check that there are the expected number of Nodes in visual and action LTM and the expected
+			;number of productions.
+
+			check-greater-than-or-equal-to 
+				(chrest:get-attention-clock) 
+				(0) 
+				("when checking the turtle's attention clock")
+
+			check-greater-than-or-equal-to 
+				(chrest:get-cognition-clock) 
+				(0) 
+				("when checking the turtle's cognition clock")
+
+			;The turtle will create 2 nodes, one for each primitive, i.e. 
+			;<[MV 0 1]> and <[MV 0 90]> then the Node containing <[MV 0 1]>
+			;will have <[MV 90 1]> added to its image.
+			check-equal
+				(chrest:get-ltm-modality-size (chrest:Modality.value-of ("ACTION")) (chrest:get-cognition-clock))
+				(2)
+				("when checking the number of nodes in the turtle's action LTM")
+
+			check-equal
+				(chrest:get-ltm-modality-size (chrest:Modality.value-of ("VISUAL")) (chrest:get-cognition-clock))
+				(0)
+				("when checking the number of nodes in the turtle's visual LTM")
+
+			check-equal
+				(chrest:get-production-count (chrest:get-cognition-clock))
+				(0)
+				("when checking the number of productions in the turtle's LTM")
+
+			;Check that visual STM is empty.
+
+			let visual-stm-contents (chrest:Stm.get-contents (chrest:get-stm (chrest:Modality.value-of ("VISUAL"))) (chrest:get-cognition-clock))
+			check-equal (empty? visual-stm-contents) (true) ("occurred when checking the contents of visual STM")
+
+			;Check that the action Node expected to be created has been and is present in action STM.
+
+			let action-stm-contents (chrest:Stm.get-contents (chrest:get-stm (chrest:Modality.value-of ("ACTION"))) (chrest:get-cognition-clock))
+			let action-node-in-stm-with-image-equal-to-episode-1-action (false)
+			foreach(action-stm-contents)[
+				let node-image-string (chrest:ListPattern.get-as-string (chrest:Node.get-image (?) (chrest:get-cognition-clock)))
+				if(node-image-string = (chrest:ListPattern.get-as-string (episode-1-action)))[
+					set action-node-in-stm-with-image-equal-to-episode-1-action (true)
+				]
+			]
+
+			check-equal (length action-stm-contents) (1) ("occurred when checking the size of action STM")
+			check-equal (action-node-in-stm-with-image-equal-to-episode-1-action) (true) ("occurred when checking if the Node expected to be in action STM is present")
+		]
+
+		reset(true)
+	]
+</test>

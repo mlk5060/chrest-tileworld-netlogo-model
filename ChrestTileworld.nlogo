@@ -63,12 +63,10 @@ globals [
   hole-birth-prob                ;Stores the probability that a hole will be created on each tick in the game.
   hole-lifespan                  ;Stores the length of time (in milliseconds) that a hole lives for after creation. 
   hole-token                     ;Stores the string used to indicate a hole in scene instances.
-  move-token                     ;Stores the string used to indicate that the calling turtle should move non randomly.
-  move-randomly-token            ;Stores the string used to indicate that the calling turtle should move randomly.
+  move-token                     ;Stores the string used to indicate that the calling turtle should move.
   movement-headings              ;Stores headings that agents can move along.
   ;output-interval                ;Stores the interval of time that must pass before data is output to the model's output area.
   possible-actions               ;Stores a list of action identifier strings.  If adding a new action, include its identifier in this list.
-  problem-solving-token          ;Stores the string used to indicate that a turtle used problem-solving to select an action.
   push-tile-token                ;Stores the string used to indicate that the calling turtle pushed a tile in action-patterns.
   reward-value                   ;Stores the value awarded to turtles when they push a tile into a hole.
   save-interface?                ;Stores a boolean value that indicates whether the user wishes to save an image of the interface when running the model.
@@ -76,7 +74,6 @@ globals [
   save-training-data?            ;Stores a boolean value that indicates whether or not data should be saved when training completes.
   save-world-data?               ;Stores a boolean value that indicates whether the user wishes to save world data when running the model.
   opponent-token                 ;Stores the string used to indicate an opponent in scene instances.
-  procedure-not-applicable-token ;Stores the string used to indicate that the procedure called during deliberation is not applicable given the current observable environment.
   self-token                     ;Stores the string used to indicate the turtle that generates a scene instance.
   setup-and-results-directory    ;Stores the directory that simulation setups are to be input from and results are to be output to.
   testing?                       ;Stores a boolean value that indicates whether the model is being executed in a training context or not.
@@ -96,7 +93,6 @@ chrest-turtles-own [
   ;;;;; ACTING VARIABLES ;;;;;
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   
-  can-plan?                                             ; Stores a boolean value indicating whether the turtle is capable of planning.    ; Yes
   deliberation-finished-time                            ; Stores the time (in milliseconds) that the turtle will finish deliberating.     ; No
                                                         ; Controls plan execution for planning turtles and action execution for           ;
                                                         ; non-planning turtles.                                                           ;
@@ -110,12 +106,16 @@ chrest-turtles-own [
   fixate-on-visual-spatial-field?                       ; Stores a boolean value that indicates if the turtle should make fixations on    ; No
                                                         ; its visual-spatial field                                                        ;
   generate-plan?                                        ; Stores a boolean value that indicates if the turtle should generate a plan      ; No
+  learn-action-sequence?
+  learn-action-sequence-as-production?
   learn-episode-action?                                 ; Stores a boolean value that indicates if the turtle should learn the action in  ; No
                                                         ; the episode indicated by 'episode-to-learn-from'                                ;
   learn-episode-vision?                                 ; Stores a boolean value that indicates if the turtle should learn the vision in  ; No
                                                         ; the episode indicated by 'episode-to-learn-from'                                ;
   learn-episode-as-production?                          ; Stores a boolean value that indicates if the turtle should learn the episode    ; No
                                                         ; indicated by 'episode-to-learn-from' as a production                            ;
+  learn-from-episodic-memory?                           ; Stores a boolean value that indicates if the turtle should learn from its       ; No
+                                                        ; 'episodic-memory'                                                               ;
   reinforce-productions?                                ; Boolean switch used to control whether the turtle should be reinforcing the     ; No
                                                         ; productions represented by its episodes in its episodic memory.                 ;
   time-visual-spatial-field-can-be-used-for-planning    ; Stores the time that the visual-spatial field can be used for planning          ; No
@@ -126,6 +126,11 @@ chrest-turtles-own [
   actions-to-perform                                                                        ; Stores the actions the CHREST turtle is scheduled to perform                    ; No
   add-production-time                                                                       ; Stores the length of time (in milliseconds) that it takes to add a production   ; Yes
                                                                                             ; in LTM.                                                                         ;
+  can-create-semantic-links?                                                                ; Stores a boolean value indicating whether the turtle can create semantic links  ; Yes
+                                                                                            ; in long-term memory.                                                            ;
+  can-create-templates?                                                                     ; Stores a boolean value indicating whether the turtle can create templates in    ; Yes
+                                                                                            ; long-term memory.                                                               ;
+  can-plan?                                                                                 ; Stores a boolean value indicating whether the turtle is capable of planning.    ; Yes
   can-use-pattern-recognition?                                                              ; Stores a boolean value that indicates whether pattern-recognition can be used   ; Yes
                                                                                             ; by the calling turtle or not.                                                   ;
   CHREST                                                                                    ; Stores an instance of the CHREST architecture.                                  ; No                                        ;
@@ -138,22 +143,41 @@ chrest-turtles-own [
   episodic-memory                                                                           ; Stores visual patterns generated, action patterns generated in response to that ; No
                                                                                             ; visual pattern, the time the action was performed and whether problem-solving   ; 
                                                                                             ; was used to determine the action in a FIFO list data structure.                 ;
-  
   familiarisation-time                                                                      ; Stores the length of time (in milliseconds) that it takes to extend the image   ; Yes
                                                                                             ; of a node in the LTM of the CHREST architecture.                                ;
-  
+  fixation-field-of-view                                                                    ; The number of squares that can be seen around a fixation point in each cardinal ; Yes
+                                                                                            ; and primary inter-cardinal compass point                                        ;
   frequency-of-problem-solving                                                              ; Stores the total number of times problem-solving has been used to generate an   ; No
                                                                                             ; action for the turtle.                                                          ;
   frequency-of-pattern-recognitions                                                         ; Stores the total number of times pattern recognition has been used to generate  ; No
                                                                                             ; an action for the CHREST turtle.                                                ;
+  heading-when-plan-execution-begins                                                        ; Stores the heading of the CHREST turtle when the first action in the current    ; No
+                                                                                            ; plan is performed.  This allows the turtle to orientate itself correctly when   ;
+                                                                                            ; performing a sequence of planned actions, i.e. if the turtle is facing south    ;
+                                                                                            ; when it starts executing the actions in its current plan and it is to perform 3 ;
+                                                                                            ; move actions along headings 0, 180 and 270 the turlte should move south, north  ;
+                                                                                            ; and east rather than south, north and west as it would if its current heading   ;
+                                                                                            ; is used to determine the action heading after each action is performed          ;                                                        ;
   initial-fixation-threshold                                                                ; Stores the number of Fixations that can be made before the turtle is no longer  ; Yes
                                                                                             ; considered to be making initial fixations in a set.                             ;
+  ltm-link-traversal-time                                                                   ; Stores the time (milliseconds) it takes for the CHREST turtle to traverse a     ; Yes
+                                                                                            ; link in its long-term memory.                                                   ;
   max-fixations-in-set                                                                      ; Stores the maximum number of Fixations the turtle can make in a set.            ; Yes
 ;  max-length-of-episodic-memory                                                              Stores the maximum length of the turtle's "episodic-memory" list.               ; ---
   max-search-iteration                                                                      ; Stores the maximum number of search iterations the turtle can make in a         ; Yes
                                                                                             ; planning cycle.                                                                 ;
-  moved-objects-on-visual-spatial-field                                                     ; Stores a boolean value indicating whether VisualSpatialFieldObjects have been   ; No
-                                                                                            ; moved on the turtle's VisualSpatialField in the current planning cycle.         ;                                                     ;
+  maximum-semantic-link-search-distance                                                     ; Stores the maximum number of Nodes traversed along when following the semantic  ; Yes
+                                                                                            ; links of a Node retrieved from long-term memory during recognition.             ;
+  minimum-depth-of-node-in-network-to-be-a-template                                         ; Stores how deep a Node must be in long-term memory before it can become a       ; Yes
+                                                                                            ; template                                                                        ;
+  minimum-item-or-position-occurrences-in-node-images-to-be-a-slot-value                    ; Stores how many times an item or position must occur in the                     ; Yes
+                                                                                            ; jchrest.lib.ItemSquarePatterns constituting a Node's image before that item or  ;
+                                                                                            ; position can become a slot value in the Node's parent that is a template.       ;
+  node-comparison-time                                                                      ; Stores the time (milliseconds) taken to compare two Nodes during cognitive      ; Yes
+                                                                                            ; operations                                                                      ;
+  node-image-similarity-threshold                                                           ; Stores the number of jchrest.lib.PrimitivePatterns in a jchrest.lib.ListPattern ; Yes
+                                                                                            ; that must be shared by the images of two nodes before they are considered       ;
+                                                                                            ; similar enough to have a semantic link created between them.                    ;
   peripheral-item-fixation-max-attempts                                                     ; Stores the maximum number of attempts this turtle will make to fixate on a      ; Yes
                                                                                             ; square containing an item when making a                                         ;
                                                                                             ; jchrest.domainSpecifics.fixations.PeripheralItemFixation.                       ;
@@ -164,9 +188,14 @@ chrest-turtles-own [
   recognised-visual-spatial-field-object-lifespan                                           ; Stores the length of time (in milliseconds) that a recognised visual-spatial    ; Yes
                                                                                             ; field object will persist in the turtle's visual-spatial field for before it    ;
                                                                                             ; decays after having attention focused on it.                                    ;
+  reinforce-production-time                                                                 ; Stores the time (milliseconds) it takes for the turtle to reinforce a           ; Yes
+                                                                                            ; production in long-term memory                                                  ;
   reinforcement-learning-theory                                                             ; Stores the name of the jchrest.lib.ReinforcementLearning class the turtle will  ; Yes
                                                                                             ; use to reinforce productions.                                                   ;
-  saccade-time
+  rho                                                                                       ; Stores how likely it is that the turtle will refuse to learn input passed to it.; Yes
+                                                                                            ; Should be between 0.0 and 1.0.                                                  ;
+  saccade-time                                                                              ; Stores the time (millisecond) it takes for the turtle to perform a saccade when ; Yes
+                                                                                            ; fixating on the environment/its visual-spatial field.                           ;
   score                                                                                     ; Stores the score of the turtle (the number of holes that have been filled by    ; No
                                                                                             ; it).                                                                            ; 
   sight-radius                                                                              ; Stores the number of patches that can be seen to the north/east/south/west of   ; Yes
@@ -187,6 +216,8 @@ chrest-turtles-own [
                                                                                             ; a tile.                                                                         ;                                      
   time-to-access-visual-spatial-field                                                       ; Stores the length of time (in milliseconds) required to access the turtle's     ; Yes
                                                                                             ; visual-spatial field.                                                           ;
+  time-to-create-semantic-link                                                              ; Stores the time (milleseconds) that it takes the turtle to create a semantic    ; Yes
+                                                                                            ; link in long-term memory.
   time-to-encode-recognised-scene-object-as-visual-spatial-field-object                     ; Stores the length of time (in milliseconds) that it takes to encode a           ; Yes
                                                                                             ; recognised scene object as a visual-spatial field object during visual-spatial  ;
                                                                                             ; field construction.                                                             ;
@@ -208,8 +239,9 @@ chrest-turtles-own [
   time-to-retrieve-fixation-from-perceiver                                                  ; Stores the time taken to retrieve a Fixation from the                           ; Yes
                                                                                             ; jchrest.architecture.Perceiver associated with the jchrest.architecture.Chrest  ;
                                                                                             ; instance for the calling turtle.                                                ;
-  time-to-retrieve-item-from-stm                                                            ; Stores the time taken to retrieve a Node from any STM modality                  ; Yes
-  training-time                                                                             ; Stores the length of time (in milliseconds) that the turtle can train for.      ; No
+  time-to-retrieve-item-from-stm                                                            ; Stores the time (milliseconds) taken to retrieve a Node from any STM modality   ; Yes
+  time-to-update-stm                                                                        ; Stores the time (milliseconds) taken to put a Node into any STM modality        ; Yes
+  training-time                                                                             ; Stores the length of time (in milliseconds) that the turtle can train for.      ; Yes
   unknown-visual-spatial-field-object-replacement-probabilities                             ; Stores a list of lists of the form [[probability object-token]] used as input   ; Yes
                                                                                             ; to the "get-visual-spatial-field-as-scene" CHREST extension primitive.          ;
   unrecognised-visual-spatial-field-object-lifespan                                         ; Stores the length of time (in milliseconds) that an unrecognised visual-spatial ; Yes
@@ -221,7 +253,7 @@ chrest-turtles-own [
                                                                                             ; field or pushed into a hole.  Also, allows for precise reversals of             ;
                                                                                             ; visual-spatial field moves that result in invalid visual-spatial field states.  ;
 ]
-    
+   
 tiles-own [ 
   lifespan
   time-created
@@ -246,10 +278,9 @@ holes-own [
 ;
 ;An episode is a Netlogo list with the following structure:
 ;
-; - Element 1: The visual information that generated the action 
-;              part of the episode.  Can be any type of data
-;              structure.
-; - Element 2: The action that was generated in response to the
+; - Element 1: The visual information that generated the action(s) 
+;              in the episode.  Can be any type of data structure.
+; - Element 2: The action(s) that was generated in response to the
 ;              visual part of the episode.  Can be any type of
 ;              data structure.
 ; - Element 3: The time the episode was generated.  This is a
@@ -307,10 +338,6 @@ end
 ;
 ;@author  Martyn Lloyd-Kelly <martynlk@liverpool.ac.uk>  
 to age
-  set debug-indent-level (debug-indent-level + 1)
-  output-debug-message ("EXECUTING THE 'age' PROCEDURE...") ("")
-  set debug-indent-level (debug-indent-level + 1)
-  
   ask tiles [
     if( (abs (time-created - report-current-time)) >= lifespan )[
       die
@@ -322,8 +349,6 @@ to age
       die
     ]
   ]
-  
-  set debug-indent-level (debug-indent-level - 2)
 end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -566,8 +591,8 @@ end
 ;;;;; "CHECK-VARIABLE-VALUES" PROCEDURE ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;Checks to see if all variable values are valid according to
-;the rules set-up for each data type in a respective procedure.
+;Checks to see if all variable values that need to be set are set and 
+;are valid.
 ;
 ;Global variables are checked first then turtle variables in the
 ;following order:
@@ -577,76 +602,98 @@ end
 ;@author  Martyn Lloyd-Kelly <martynlk@liverpool.ac.uk>  
 to check-variable-values
   
-;  ;======================;
-;  ;== GLOBAL VARIABLES ==;
-;  ;======================;
-;  
-;  ;Number type variables
+  ;======================;
+  ;== GLOBAL VARIABLES ==;
+  ;======================;
+  
+  ;Number type variables
 ;  let number-global-variable-names-min-and-max-values (list 
 ;    ( list ("hole-birth-prob") (false) (0.0) (1.0) )
-;    ( list ("hole-born-every") (false) (0.0) (false) )
-;    ( list ("hole-lifespan") (false) (0.0) (false) )
+;    ( list ("hole-born-every") (true) (1) (false) )
+;    ( list ("hole-lifespan") (true) (1) (false) )
 ;    ( list ("reward-value") (false) (0.0) (false) )
 ;    ( list ("tile-birth-prob") (false) (0.0) (1.0) )
-;    ( list ("tile-born-every") (false) (0.0) (false) )
-;    ( list ("tile-lifespan") (false) (0.0) (false) )
+;    ( list ("tile-born-every") (true) (1) (false) )
+;    ( list ("tile-lifespan") (true) (1) (false) )
 ;  )
 ;  
 ;  foreach(number-global-variable-names-min-and-max-values)[
 ;    check-number-variables ("") (item (0) (?)) (runresult (item (0) (?))) (item (1) (?)) (item (2) (?)) (item (3) (?))
 ;  ]
-;  
-;  ;Boolean type variables
-;  
-;  ;=============================;
-;  ;== CHREST-TURTLE VARIABLES ==;
-;  ;=============================;
-;  
-;  ask chrest-turtles[
-;    
-;    let max-time ( max (list (play-time) (training-time)) )
-;    
-;    ;Number type variables.
-;    let number-type-chrest-turtle-variables (list
-;      ( list ("action-performance-time") (false) (false) (false) )
-;      ( list ("add-production-time") (false) (0.0) (max-time) )
-;      ( list ("discount-rate") (false) (0.0) (1.0) ) 
-;      ( list ("discrimination-time") (false) (0.0) (max-time) )
-;      ( list ("familiarisation-time") (false) (0.0) (max-time) )
-;      ( list ("max-length-of-episodic-memory") (true) (1) (false) )
-;      ( list ("max-search-iteration") (true) (1) (false) )
-;      ( list ("number-fixations") (true) (1) (false) )
-;      ( list ("play-time") (false) (0.0) (false) )
-;      ( list ("sight-radius") (true) (1) (max-pxcor) )
-;      ( list ("sight-radius") (true) (1) (max-pycor) )
-;      ( list ("time-taken-to-act-randomly") (false) (0.0) (max-time) )
-;      ( list ("time-taken-to-use-pattern-recognition") (false) (0.0) (max-time) )
-;      ( list ("time-taken-to-problem-solve") (false) (0.0) (max-time) )
-;      ( list ("training-time") (false) (0.0) (false) )
-;      ( list ("visual-spatial-field-empty-square-placement-time") (true) (0.0) (false) )
-;      ( list ("visual-spatial-field-object-movement-time") (true) (1) (false) )
-;      ( list ("visual-spatial-field-object-placement-time") (true) (1) (false) )
-;      ( list ("visual-spatial-field-recognised-object-lifespan") (true) (false) (false) )
-;      ( list ("visual-spatial-field-unrecognised-object-lifespan") (true) (false) (false) )
-;    )
-;    
-;    foreach(number-type-chrest-turtle-variables)[
-;      check-number-variables (who) (item (0) (?)) (runresult (item (0) (?))) (item (1) (?)) (item (2) (?)) (item (3) (?))
-;    ]
-;    
-;    ;Boolean type variables
-;    let boolean-type-chrest-turtle-variables (list
-;      ( list ("can-plan?") )
-;      ( list ("generate-plan?") )
-;      ( list ("pattern-recognition?") )
-;      ( list ("reinforce-actions?") )
-;      ( list ("reinforce-problem-solving?") )
-;    )
-;    
-;    foreach(boolean-type-chrest-turtle-variables)[
-;      check-boolean-variables (who) (item (0) (?)) (runresult (item (0) (?)))
-;    ]
-;  ]
+  
+  ;Boolean type variables
+  
+  ;=============================;
+  ;== CHREST-TURTLE VARIABLES ==;
+  ;=============================;
+  
+  ask chrest-turtles[
+    
+    let max-time ( max (list (play-time) (training-time)) )
+    
+    ;Number type variables.
+    let number-type-chrest-turtle-variables (list
+      ( list ("add-production-time") (true) (1) (max-time) )
+      ( list ("discount-rate") (false) (0.0) (1.0) )
+      ( list ("discrimination-time") (true) (1) (max-time) )
+      ( list ("familiarisation-time") (true) (1) (max-time) )
+      ( list ("fixation-field-of-view") (true) (0) (min (list (max-pxcor) (max-pycor))) )
+      ( list ("initial-fixation-threshold") (true) (1) (max-fixations-in-set - 1) )
+      ( list ("ltm-link-traversal-time") (true) (1) (max-time) )
+      ( list ("max-fixations-in-set") (true) (1) (false) )
+      ( list ("max-search-iteration") (true) (1) (false) )
+      ( list ("maximum-semantic-link-search-distance") (true) (0) (false) )
+      ( list ("minimum-depth-of-node-in-network-to-be-a-template") (true) (1) (false) )
+      ( list ("minimum-item-or-position-occurrences-in-node-images-to-be-a-slot-value") (true) (1) (false) )
+      ( list ("node-comparison-time") (true) (1) (max-time) )
+      ( list ("node-image-similarity-threshold") (true) (1) (false) )
+      ( list ("peripheral-item-fixation-max-attempts") (true) (1) (false) )
+      ( list ("play-time") (true) (1) (false) )
+      ( list ("probability-of-using-problem-solving") (false) (0.0) (1.0) )
+      ( list ("recognised-visual-spatial-field-object-lifespan") (true) (1) (max-time) )
+      ( list ("reinforce-production-time") (true) (1) (max-time) )
+      ( list ("rho") (false) (0.0) (1.0) )
+      ( list ("saccade-time") (true) (1) (max-time) )
+      ( list ("sight-radius") (true) (1) (min (list (max-pxcor) (max-pycor))) )
+      ( list ("time-taken-to-decide-upon-ahead-of-agent-fixations") (true) (1) (max-time) )
+      ( list ("time-taken-to-decide-upon-movement-fixations") (true) (1) (max-time) )
+      ( list ("time-taken-to-decide-upon-peripheral-item-fixations") (true) (1) (max-time) )
+      ( list ("time-taken-to-decide-upon-peripheral-square-fixations") (true) (1) (max-time) )
+      ( list ("time-taken-to-decide-upon-salient-object-fixations") (true) (1) (max-time) )
+      ( list ("time-taken-to-move") (true) (1) (max-time) )
+      ( list ("time-taken-to-push-tile") (true) (1) (max-time) )
+      ( list ("time-to-access-visual-spatial-field") (true) (1) (max-time) )
+      ( list ("time-to-create-semantic-link") (true) (1) (max-time) )
+      ( list ("time-to-encode-recognised-scene-object-as-visual-spatial-field-object") (true) (1) (max-time) )
+      ( list ("time-to-encode-unrecognised-empty-square-scene-object-as-visual-spatial-field-object") (true) (1) (max-time) )
+      ( list ("time-to-encode-unrecognised-non-empty-square-scene-object-as-visual-spatial-field-object") (true) (1) (max-time) )
+      ( list ("time-to-generate-action-when-no-tile-seen") (true) (1) (max-time) )
+      ( list ("time-to-generate-action-when-tile-seen") (true) (1) (max-time) )
+      ( list ("time-to-move-visual-spatial-field-object") (true) (1) (max-time) )
+      ( list ("time-to-process-unrecognised-scene-object-during-visual-spatial-field-construction") (true) (1) (max-time) )
+      ( list ("time-to-retrieve-fixation-from-perceiver") (true) (1) (max-time) )
+      ( list ("time-to-retrieve-item-from-stm") (true) (1) (max-time) )
+      ( list ("time-to-update-stm") (true) (1) (max-time) )
+      ( list ("training-time") (true) (0) (false) )
+      ( list ("unrecognised-visual-spatial-field-object-lifespan") (true) (1) (false) )
+    )
+    
+    foreach(number-type-chrest-turtle-variables)[
+      check-number-variables (who) (item (0) (?)) (runresult (item (0) (?))) (item (1) (?)) (item (2) (?)) (item (3) (?))
+    ]
+    
+    ;Boolean type variables
+    let boolean-type-chrest-turtle-variables (list
+      ( list ("can-create-semantic-links?") )
+      ( list ("can-create-templates?") )
+      ( list ("can-plan?") )
+      ( list ("can-use-pattern-recognition?") )
+    )
+    
+    foreach(boolean-type-chrest-turtle-variables)[
+      check-boolean-variables (who) (item (0) (?)) (runresult (item (0) (?)))
+    ]
+  ]
 end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -680,108 +727,14 @@ to chrest-turtles-act
      ;== MAKE FIXATIONS ==;
      ;====================;
      
-     output-debug-message (word 
-       "Checking if I should make a fixation, i.e. should I fixate on reality (" fixate-on-reality? ") or "
-       "should I fixate on my visual-spatial field (" fixate-on-visual-spatial-field? ")"
-       ) (who)
-       
-     ;Check that the 'fixate-on-reality?' and 'fixate-on-visual-spatial-field?' turtle variables
-     ;are not both set to true since this will cause problems if left unchecked.
-     if(fixate-on-reality? and fixate-on-visual-spatial-field?)[
-       error (word "Both the 'fixate-on-reality?' and 'fixate-on-visual-spatial-field?' turtle variables are set to true for turtle " who "; this should not occur.")
-     ]
-       
-     ifelse(fixate-on-reality? or fixate-on-visual-spatial-field?)[
-       
-       let scene-to-fixate-on (ifelse-value (fixate-on-reality?) 
-         [chrest:Scene.new (get-observable-environment) (word "Turtle " who " Reality @ Time: " report-current-time)] 
-         [chrest:get-visual-spatial-field-as-scene (report-current-time) (unknown-visual-spatial-field-object-replacement-probabilities)]
-       )
-       
-       ;A visual-spatial field should only be constructed when the turtle is fixating on reality and can plan.
-       let construct-visual-spatial-field? (ifelse-value (fixate-on-reality? and can-plan?) [true] [false]) 
-       
-       output-debug-message (word 
-         "Attempting to make a Fixation on scene with name '" chrest:Scene.get-name (scene-to-fixate-on) "' and the "
-         "local 'construct-visual-spatial-field?' parameter is set to '" construct-visual-spatial-field? "'" 
-       ) (who)
-       
-       ;In some cases, if the turtle has been planning, it may have moved its avatar out of
-       ;its visual-spatial field.  If this is the case, the scene representation of the 
-       ;visual-spatial field will not be valid since an attempt will be made to fixate on 
-       ;a scene when the turtle's CHREST model is learning object locations relative to 
-       ;itself but the turtle's "self" will not be present in the scene fixated on.
-;       let attempt-fixation? (true)
-;       if( 
-;         fixate-on-visual-spatial-field? and
-;         empty? (chrest:Scene.get-scene-object-locations (scene-to-fixate-on) (false) (word who)) 
-;       )[
-;         output-debug-message (word "I can't currently see myself in my visual-spatial field so I won't attempt to make a fixation")  (who)
-;         set attempt-fixation? (false)
-;       ]
-       
-;       if(attempt-fixation?)[
-         let fixation-set-performance-result (chrest:schedule-or-make-next-fixation (scene-to-fixate-on) (construct-visual-spatial-field?) (report-current-time))
-         
-         ifelse(fixation-set-performance-result = chrest:ChrestStatus.value-of("FIXATION_SET_COMPLETE"))[
-           
-           ;===========================;
-           ;== FIXATION SET COMPLETE ==;
-           ;===========================;
-           
-           output-debug-message (word "Fixation attempted and fixation set now complete.") (who)
-           
-           if(fixate-on-reality?) [
-             set fixate-on-reality? (false)
-             output-debug-message (word 
-               "Since I was fixating on reality I should no longer do so.  Setting my 'fixate-on-reality?' turtle "
-               "variable to 'false' (actual value of variable after setting: " fixate-on-reality? ")."
-               ) (who)
-           ]
-           
-           if(fixate-on-visual-spatial-field?) [
-             set fixate-on-visual-spatial-field? (false)
-             set time-visual-spatial-field-can-be-used-for-planning (report-current-time)
-             output-debug-message (word 
-               "Since I was fixating on my visual-spatial field I should no longer do so.  Setting my "
-               "'fixate-on-visual-spatial-field?' turtle variable to 'false' (actual value of variable "
-               "after setting: " fixate-on-visual-spatial-field? ") and my "
-               "'time-visual-spatial-field-can-be-used-for-planning' variable to the current time."
-               ) (who)
-           ]
-           
-           if(construct-visual-spatial-field?) [
-             set time-visual-spatial-field-can-be-used-for-planning (chrest:get-attention-clock)
-             output-debug-message (word 
-               "A visual-spatial field was constructed so my 'time-visual-spatial-field-can-be-used-for-planning' turtle "
-               "variable has been set to the time attention is free (when visual-spatial field construction completes): " 
-               time-visual-spatial-field-can-be-used-for-planning "."
-               ) (who)
-           ]
-           
-           if(can-plan?)[
-             set generate-plan? (true)
-             output-debug-message (word
-               "I can also plan so I'll set my 'generate-plan?' turtle variable to true (actual value of variable "
-               "after setting: " generate-plan? ")."
-               ) (who)
-           ]
-         ]
-         [
-           output-debug-message (word "Fixation attempted but fixation set not yet complete.") (who)
-         ]
-;       ]
-     ]
-     [
-       output-debug-message ("I shouldn't make any fixations now") (who)
-     ]
+     make-fixation
      
      ;===================;
      ;== GENERATE PLAN ==;
      ;===================;
      
-     ifelse(can-plan?)[
-       output-debug-message (word "I can plan and my 'generate-plan?' turtle variable is set to 'true' so I should plan...") (who)
+     ifelse(can-plan? and chrest:is-attention-free? (report-current-time))[
+       output-debug-message (word "I can plan so I'll see if I should generate a new plan or add to the exisiting one...") (who)
        generate-plan
      ]
      [
@@ -801,172 +754,39 @@ to chrest-turtles-act
        schedule-or-execute-next-episode-actions
      ]
            
-     ;==================================================================================;
-     ;== ATTEMPT TO LEARN ACTIONS/PRODUCTIONS OR REINFORCE PRODUCTIONS USING EPISODES ==;
-     ;==================================================================================;
-     
-     let episodic-memory-at-time []
-     foreach(episodic-memory)[
-       if(report-current-time >= item (2) (?))[
-         set episodic-memory-at-time (lput (?) (episodic-memory-at-time))
-       ]
-     ]
+     ;=================================;
+     ;== LEARN FROM EXECUTED ACTIONS ==;
+     ;=================================;
      
      output-debug-message (word 
-       "If my 'episodic-memory' at the current time isn't empty (" not empty? episodic-memory-at-time 
-       "), I'll attempt to learn the action in the episode stipulated by my 'episode-to-learn-from' "
-       "variable (" episode-to-learn-from ").  If I have learned all the actions in my episodes, I'll "
-       "attempt to learn my episodes as productions. If all my episodes have been learned as "
-       "productions I'll attempt to reinforce the productions denoted by any episodes if I can."
-       ) (who)
-     
-     output-debug-message ("Checking if my 'episodic-memory-at-time' is empty.") (who)
-     ifelse(not empty? episodic-memory-at-time)[
-       output-debug-message (word 
-         "My 'episodic-memory-at-time' isn't empty, checking if the episode to learn from "
-         "is < the length of my 'episodic-memory-at-time'"
-       ) (who)
-       
-       if(episode-to-learn-from < length episodic-memory-at-time)[
-         output-debug-message (word "All good, getting episode details") (who)
-         
-         let episode (item (episode-to-learn-from) (episodic-memory))
-         let episode-vision (item (0) (episode))
-         let episode-action (item (1) (episode))
-         output-debug-message (word 
-           "Episode vision: " chrest:ListPattern.get-as-string (episode-vision) ", "
-           "episode action: " chrest:ListPattern.get-as-string (episode-action) ", "
-         ) (who)
-         
-         ;==========================;
-         ;== LEARN EPISODE ACTION ==;
-         ;==========================;
-         
-         if(learn-episode-action?)[
-           output-debug-message ("Attempting to learn episode action, if it isn't to move randomly") (who)
-           
-           ifelse( chrest:ItemSquarePattern.get-item (item (0) (chrest:ListPattern.get-as-netlogo-list (episode-action))) = move-randomly-token )[
-             output-debug-message ("Action is to move randomly, I'll move onto learning the episode's vision") (who)
-             set learn-episode-action? (false)
-             set learn-episode-vision? (true)
-           ]
-           [
-             output-debug-message ("Action isn't to move randomly, I'll attempt to learn the action") (who)
-             if(chrest:recognise-and-learn (episode-action) (report-current-time) = chrest:ChrestStatus.value-of ("INPUT_ALREADY_LEARNED"))[
-               output-debug-message ("Action fully learned, I'll move onto learning the episode's vision") (who)
-               set learn-episode-action? (false)
-               set learn-episode-vision? (true)
-             ]
-           ]
-         ]
-         
-         ;=============================;
-         ;== LEARN VISION IN EPISODE ==;
-         ;=============================;
-         
-         if(learn-episode-vision?)[
-           output-debug-message ("Attempting to learn episode vision") (who)
-           
-           if(chrest:recognise-and-learn (episode-vision) (report-current-time) = chrest:ChrestStatus.value-of("INPUT_ALREADY_LEARNED"))[
-             output-debug-message ("Vision fully learned, I'll move onto learning the episode as a production") (who)
-             set learn-episode-vision? (false)
-             set learn-episode-as-production? (true)
-           ]
-         ]
-         
-         ;======================;
-         ;== LEARN PRODUCTION ==;
-         ;======================;
-         
-         if(learn-episode-as-production?)[
-           output-debug-message ("Attempting to learn episode as a production, if the action isn't to move randomly") (who)
-           
-           let learn-next-episode (false)
-           
-           ifelse( chrest:ItemSquarePattern.get-item (item (0) (chrest:ListPattern.get-as-netlogo-list (episode-action))) != move-randomly-token )[
-             output-debug-message ("Attempting to learn episode as a production") (who)
-             
-             let learn-production-result (chrest:learn-production (episode-vision) (episode-action) (report-current-time))
-             output-debug-message (word "Result of attempting to learn production: " learn-production-result) (who)
-             
-             if(learn-production-result = chrest:ChrestStatus.value-of ("VISION_NOT_IN_STM"))[
-               output-debug-message ("Episode vision not in visual STM, queuing it for recognition when attention is free") (who)
-               let ignore (chrest:recognise-and-learn (episode-vision) (chrest:get-attention-clock))
-             ]
-             
-             if(learn-production-result = chrest:ChrestStatus.value-of ("ACTION_NOT_IN_STM"))[
-               output-debug-message ("Episode action not in action STM, queuing it for recognition when attention is free") (who)
-               let ignore (chrest:recognise-and-learn (episode-action) (chrest:get-attention-clock))
-             ]
-             
-             if(
-               learn-production-result = chrest:ChrestStatus.value-of ("LEARN_PRODUCTION_SUCCESSFUL") or
-               learn-production-result = chrest:ChrestStatus.value-of ("PRODUCTION_ALREADY_LEARNED")
-             )[
-               output-debug-message ("Production just learned or learned already, I'll start learning from the next episode") (who)
-               set learn-next-episode (true)
-             ]
-           ]
-           [
-             output-debug-message ("The action is to move randomly, moving onto learning the next episode") (who)
-             set learn-next-episode (true)
-           ]
-           
-           if(learn-next-episode)[
-             output-debug-message ("I should learn from the next episode") (who)
-             set episode-to-learn-from (episode-to-learn-from + 1)
-             set learn-episode-as-production? (false)
-             set learn-episode-action? (true)
-             output-debug-message (word "Episode to learn from now set to " episode-to-learn-from) (who)
-           ]
-         ]
-       ] ; Episode to learn from less than the size of episiodic memory check
-       
-       ;===========================;
-       ;== REINFORCE PRODUCTIONS ==;
-       ;===========================;
-       
-       ;Productions to reinforce are episodes and are learned from most recently
-       ;performed to least recently performed so, the episode-to-reinforce index
-       ;decrements as productions in episodes are reinforced hence the check for
-       ;the index being >= 0.  This is because the most recent episode in the 
-       ;turtle's episodic-memory is the size of the episodic-memory - 1.
-       ifelse(reinforce-productions? and episode-to-reinforce >= 0)[
-         output-debug-message ("I should reinforce my productions") (who)
-         let episode (item (episode-to-reinforce) (episodic-memory))
-         
-         let episode-vision (item (0) (episode))
-         let episode-action (item (1) (episode))
-         let reinforcement-variables (list (1.0) (discount-rate) (time-last-hole-filled) (item (2) (episode)))
-         output-debug-message (word 
-           "Episode vision: " chrest:ListPattern.get-as-string (episode-vision) ", "
-           "episode action: " chrest:ListPattern.get-as-string (episode-action) ", "
-           "reinforcement variables: " reinforcement-variables
-         ) (who)
-         
-         
-         let reinforcement-result (chrest:reinforce-production (episode-vision) (episode-action) (reinforcement-variables) (report-current-time))
-         output-debug-message (word "Result of reinforcement: " reinforcement-result) (who)
-         
-         ifelse(
-           chrest:ChrestStatus.value-of ("NO_PRODUCTION_IDENTIFIED") = reinforcement-result or
-           chrest:ChrestStatus.value-of ("PRODUCTION_REINFORCEMENT_FAILED") = reinforcement-result or
-           chrest:ChrestStatus.value-of ("PRODUCTION_REINFORCEMENT_SUCCESSFUL") = reinforcement-result
-         )[
-           output-debug-message (word "Reinforcing the next episode") (who)
-           set episode-to-reinforce (episode-to-reinforce - 1)
-         ]
-         [
-           output-debug-message (word "Continuing attempt to reinforce the same episode") (who)
-         ]
-       ]
-       [
-         output-debug-message ("I should not reinforce my productions") (who)
-       ]
-     ] ; Episodic memory empty check
-     [
-       output-debug-message ("Episodic memory is empty, can't learn actions or learn/reinforce productions") (who)
+       "Checking if my 'learn-from-episodic-memory?' variable is set to true (" learn-from-episodic-memory? "). "
+       "If so, I'll attempt to learn from the current state of my 'episodic-memory'"
+     ) (who)
+     if(learn-from-episodic-memory? and chrest:is-attention-free? (report-current-time))[
+         learn-from-episodic-memory
      ]
+     
+     ;===========================;
+     ;== REINFORCE PRODUCTIONS ==;
+     ;===========================;
+     
+     output-debug-message (word 
+       "If I should reinforce productions (" reinforce-productions? ") and my "
+       "'reinforcement-learning-theory' turtle variable is not an empty string "
+       "(current value: '" reinforcement-learning-theory "'), I'll attempt to " 
+       "reinforce my productions"
+     ) (who)
+     if(
+       reinforce-productions? and 
+       not empty? reinforcement-learning-theory and
+       chrest:is-attention-free? (report-current-time)
+     )[
+       reinforce-productions
+     ]
+     
+     ;==================;
+     ;== UPDATE PLOTS ==;
+     ;==================;
      
      output-debug-message ("Updating my plots...") (who)
      update-plot-no-x-axis-value ("Scores") (score)
@@ -981,7 +801,7 @@ to chrest-turtles-act
      update-plot-no-x-axis-value ("Action LTM Size") (chrest:get-ltm-modality-size (chrest:Modality.value-of("ACTION")) (report-current-time))
      update-plot-no-x-axis-value ("Action LTM Avg. Depth")(chrest:get-ltm-avg-depth (chrest:Modality.value-of("ACTION")) (report-current-time))
    ]
- ]
+  ]
 end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1273,7 +1093,7 @@ to-report deliberate
     ;========================;
     [
       output-debug-message ("I didn't see any tiles, I'll try to select a random heading to move 1 patch forward along...") (who)
-      set action ( list (move-randomly-token) (one-of (movement-headings)) (1) )
+      set action ( list (move-token) (one-of (movement-headings)) (1) )
       
       ifelse(breed = chrest-turtles)[
         output-debug-message (word 
@@ -1312,16 +1132,32 @@ to-report deliberate
   
   output-debug-message ("Setting 'episode-vision'") (who)
   
-  ;For CHREST turtles, the 'episode-vision' can just be assigned 
-  ;the current contents of 'vision' since it will already be a 
-  ;jchrest.lib.ListPattern and the 'episodic-vision' for a CHREST
-  ;turtle should be a jchrest.lib.ListPattern.
   if(breed = chrest-turtles)[
     output-debug-message (word 
-      "I'm a CHREST turtle so 'episode-vision' will be set to 'vision' (" vision ")" 
-    ) (who)
+      "I'm a CHREST turtle so I need to check if 'vision' is a Netlogo "
+      "list. Since my episodes should be composed of jchrest.lib.ListPatterns, "
+      "if 'vision' is a list, it will need to be converted (is 'action' a "
+      "Netlogo list: " is-list? vision ")" 
+      ) (who)
     
-    set episode-vision (vision)
+    ifelse(is-list? vision)[
+      output-debug-message ("The 'vision' is a Netlogo list, converting to a jchrest.lib.ListPattern") (who)
+      set episode-vision (chrest:ListPattern.new 
+        (vision)
+        (chrest:Modality.value-of ("VISUAL"))
+        )
+    ]
+    [
+      output-debug-message (word 
+        "The 'vision' is not a Netlogo list so it must be a jchrest.lib.ListPattern. Setting it to "
+        "'episode-vision' as it is"
+        ) (who)
+      
+      set episode-vision (vision)
+    ]
+    
+;    chrest:ListPattern.set-finished (episode-vision)
+    output-debug-message (word "The 'episode-vision' is now set to: " chrest:ListPattern.get-as-string (episode-vision)) (who)
   ]
   
   ;== CONVERT ACTION FOR EPISODIC-MEMORY ACCORDING TO BREED ==;
@@ -1360,6 +1196,7 @@ to-report deliberate
       set episode-action (action)
     ]
     
+;    chrest:ListPattern.set-finished (episode-action)
     output-debug-message (word "The 'episode-action' is now set to: " chrest:ListPattern.get-as-string (episode-action)) (who)
   ]
   
@@ -1493,7 +1330,7 @@ to schedule-or-execute-next-episode-actions
     
     ;Do this if the turtle's 'actions-to-perform' data structure
     ;is empty.
-    ifelse(empty? actions-to-perform)[
+    if(empty? actions-to-perform)[
       output-debug-message ("My 'actions-to-perform' turtle variable is empty so I'll schedule the actions in my next unperformed episode.") (who)
       
       ;Need to keep track of the episode index so its performance
@@ -1545,7 +1382,7 @@ to schedule-or-execute-next-episode-actions
             let action-performance-time (0)
             let action (item (0) (episodic-memory-action))
             
-            if(action = move-randomly-token or action = move-token)[
+            if(action = move-token)[
               set action-performance-time (time-taken-to-move)
             ]
             
@@ -1569,7 +1406,7 @@ to schedule-or-execute-next-episode-actions
               episodic-memory-action
               time-to-perform-action
               false
-              )
+            )
             
             set actions-to-perform  (lput (action-to-perform-entry) (actions-to-perform))
           ]
@@ -1582,239 +1419,348 @@ to schedule-or-execute-next-episode-actions
         ]
       ]
     ]
+    
     ;==============================================;
     ;== ATTEMPT TO PERFORM NEXT SCHEDULED ACTION ==;
     ;==============================================;
-    [
-      output-debug-message ("My 'actions-to-perform' turtle variable is not empty so I'll perform the next action in the data structure if it is to be performed now.") (who)
+
+    output-debug-message (word "Attempting to perform the next action in my 'actions-to-perform' turtle variable") (who)
       
-      let action-to-perform-index (0)
-      let action-to-perform [] 
-      while[action-to-perform-index < length actions-to-perform and empty? action-to-perform][
-        let action-to-maybe-perform (item (action-to-perform-index) (actions-to-perform))
-        output-debug-message (word 
-          "Checking if " action-to-maybe-perform " is to be performed now, i.e. has it not been "
-          "performed yet (" ((item (3) (action-to-maybe-perform)) = false) ") and is its "
-          "performance time (" (item (2) (action-to-maybe-perform)) ") equal to the current time (" 
-          report-current-time ")"
-          ) (who)
-        
-        ;If the episode hasn't been performed yet, and it should be performed now, 
-        ;set it for performance, this will cause the while loop to end and the 
-        ;action to perform index will be set so that it can be used later in the 
-        ;procedure.
-        ifelse( 
-          ((item (2) (action-to-maybe-perform)) = report-current-time) and 
-          ((item (3) (action-to-maybe-perform)) = false)
-          )[
+    let action-to-perform-index (0)
+    let action-to-perform [] 
+    while[action-to-perform-index < length actions-to-perform and empty? action-to-perform][
+      let action-to-maybe-perform (item (action-to-perform-index) (actions-to-perform))
+      
+      output-debug-message (word 
+        "Checking if " action-to-maybe-perform " is to be performed now, i.e. has it not been "
+        "performed yet (" ((item (3) (action-to-maybe-perform)) = false) ") and is its "
+        "performance time (" (item (2) (action-to-maybe-perform)) ") equal to the current time (" 
+        report-current-time ")"
+      ) (who)
+      
+      ;If the episode hasn't been performed yet, and it should be performed now, 
+      ;set it for performance, this will cause the while loop to end and the 
+      ;action to perform index will be set so that it can be used later in the 
+      ;procedure.
+      ifelse( 
+        ((item (2) (action-to-maybe-perform)) = report-current-time) and 
+        ((item (3) (action-to-maybe-perform)) = false)
+      )[
         output-debug-message ("Action should be performed so it will be") (who)
-          set action-to-perform (action-to-maybe-perform)
-          ]
-          [
-            set action-to-perform-index (action-to-perform-index + 1)
-          ]
-      ]
-      
-      ;===================================;
-      ;== PERFORM NEXT SCHEDULED ACTION ==;
-      ;===================================;
-      ifelse(not empty? action-to-perform)[
-        output-debug-message (word "Performing action: " action-to-perform) (who)
-        let action-performance-result ( perform-action (item (1) (action-to-perform)) )
-        output-debug-message (word "Action performance result: " action-performance-result) (who)
+        set action-to-perform (action-to-maybe-perform)
         
-        output-debug-message ( word "Checking if the action was performed successfully" ) (who)
-        let action-performed-successfully (ifelse-value (is-list? (action-performance-result)) 
-          [item (0) (action-performance-result)] 
-          [action-performance-result]
-        )
+        output-debug-message (word 
+          "Checking if this is the first action in the first planned episode ("
+          (action-to-perform-index = 0 and (item (0) (action-to-perform)) = 0) "). "
+          "If so, my 'heading-when-plan-execution-begins' turtle variable will "
+          "be set"
+        ) (who)
         
-        ;Set two variables that will be used to clear actions/episodes
-        ;should this action not be performed or unexpectedly cause a hole
-        ;to be filled.
-        let set-episode-performance-time? (false)
-        let clear-actions-to-perform? (false)
-        let clear-subsequent-episode-actions-and-episodes? (false)
-        let action-to-keep-up-to-in-episode (action-to-perform-index)
-        
-        ;===================================;
-        ;== ACTION PERFORMANCE SUCCESSFUL ==;
-        ;===================================;
-        ifelse(action-performed-successfully)[
-          
-          output-debug-message ( word "The action was performed successfully.") (who)
-            output-debug-message ("Setting this action's 'performed' status to true") (who)
-            set action-to-perform (replace-item (3) (action-to-perform) (true))
-            set actions-to-perform (replace-item (action-to-perform-index) (actions-to-perform) (action-to-perform))
-            
-            output-debug-message ("Setting the episode's performance time to the current time") (who)
-            let episode-index (item (0) (action-to-perform))
-            let episode (item (episode-index) (episodic-memory))
-            set episode (replace-item (3) (episode) (report-current-time))
-            set episodic-memory (replace-item (episode-index) (episodic-memory) (episode)) 
-            
-            ;=========================;
-            ;== CHECK FOR HOLE-FILL ==;
-            ;=========================;
-            
-            ;The action may have caused a tile to be pushed into a hole. If this is the case,
-            ;and the turtle is a CHREST turtle, the turtle should turn on production reinforcement,
-            ;set the episode to start reinforcement on to be this episode (the most recent), save
-            ;the time the hole was filled (the current time) and turn on its 'fixate-on-reality' 
-            ;switch so that it starts a new planning cycle.
-            ;
-            ;It may be that this was expected (the last action in the last episode of a plan) or
-            ;unexpected (due to the stochastity of Tileworld).  In either case, the current episode's
-            ;performance time will be set and all subsequent actions in this episode and all episodes
-            ;subsequent to this episode will be removed (if this is the last action of the last episode,
-            ;there will be no effect).
-            output-debug-message ("Checking to see if I just filled a hole.") (who)
-            ifelse( is-list? (action-performance-result) and (item (1) (action-performance-result)) )[
-              output-debug-message (word "I just filled a hole") (who)
-            
-            if(breed = chrest-turtles)[
-              set reinforce-productions? (true)
-              set episode-to-reinforce (item (0) (action-to-perform))
-              set time-last-hole-filled (report-current-time)
-              output-debug-message (word 
-                "Since I am a CHREST turtle, my 'reinforce-productions?' turtle variable "
-                "is now set to '" reinforce-productions? "', my 'time-last-hole-filled' "
-                "turtle variable is set to '" time-last-hole-filled "', and my "
-                "'episode-to-reinforce' variable is set to '" episode-to-reinforce "'"
-              ) (who)
-            ]
-            
-            set set-episode-performance-time? (true)
-            set clear-actions-to-perform? (true)
-            set clear-subsequent-episode-actions-and-episodes? (true)
-            ]
-            ;==================;
-            ;== NO HOLE FILL ==;
-            ;==================;
-            [
-              output-debug-message ("No hole was filled, checking to see if this was the last action to be performed in this episode") (who)
-            
-            ;===================================================;
-            ;== CHECK IF ALL ACTIONS IN EPISODE NOW PERFORMED ==;
-            ;===================================================;  
-            let all-actions-in-episode-performed (true)
-            foreach(actions-to-perform)[
-              if(item (3) (?) = false)[
-                set all-actions-in-episode-performed (false)
-              ]
-            ]
-            
-            ifelse(all-actions-in-episode-performed)[
-              output-debug-message ("All of the episode's actions have now been performed.") (who)
-              set set-episode-performance-time? (true)
-              set clear-actions-to-perform? (true)
-            ]
-            [
-              output-debug-message ("Not all of the episode's actions have been performed.") (who)
-            ]
-            ]
-        ]
-        ;=====================================;
-        ;== ACTION PERFORMANCE UNSUCCESSFUL ==;
-        ;=====================================;
-        [
-          output-debug-message ( word "The action was not performed successfully.") (who)
-            set clear-actions-to-perform? (true)
-            set clear-subsequent-episode-actions-and-episodes? (true)
-            set action-to-keep-up-to-in-episode (action-to-perform-index - 1)
-        ]
-        
-        ;==============;
-        ;== CLEAN-UP ==;
-        ;==============;
-        
-        if(clear-actions-to-perform?)[ 
-          output-debug-message ("Clearing my 'actions-to-perform' data structure") (who)
-            set actions-to-perform [] 
-        ]
-        
-        if(clear-subsequent-episode-actions-and-episodes?)[
-          output-debug-message ("Clearing subsequent actions in this episode and subsequent episodes in my 'episodic-memory'") (who)
-            
-            ;Remove all actions after this one from the episode.  If this is the first action
-            ;performed, just remove the episode from episodic-memory.
-            let episode-index (item (0) (action-to-perform))
-            let episode-to-remove (episode-index)
-            
-            ifelse(action-to-perform-index = 0)[
-              set episodic-memory (remove-item (episode-index) (episodic-memory))
-            ]
-            [
-              ;Get the episode's actions (if its a jchrest.lib.ListPattern it
-              ;needs to be turned into a list).
-              let episode (item (episode-index) (episodic-memory))
-              let episode-actions (item (1) (episode))
-              if(java:Class.get-canonical-name (episode-actions) = "jchrest.lib.ListPattern")[
-                set episode-actions (chrest:ListPattern.get-as-netlogo-list (episode-actions))
-              ]
-              
-              ;Keep all actions up until this one in the episode, discard the rest.
-              ;Convert the actions back into their original form.
-              let actions-to-keep []
-              let action-to-process-index (0)
-              while[action-to-process-index <= action-to-keep-up-to-in-episode][
-                set actions-to-keep (lput (item (action-to-process-index) (episode-actions)) (actions-to-keep))
-                set action-to-process-index (action-to-process-index + 1)
-              ]
-              
-              if(breed = chrest-turtles)[
-                set actions-to-keep (chrest:ListPattern.new (actions-to-keep) (chrest:Modality.value-of ("ACTION")))
-              ]
-              
-              ;Set the episode's actions to those performed and replace the episode in
-              ;episodic memory.
-              set episode (replace-item (1) (episode) (actions-to-keep))
-              set episodic-memory (replace-item (episode-index) (episodic-memory) (episode))
-              
-              ;Set the 'episode-to-remove' variable to its current value plus one
-              ;since every episode from the one after this one should be removed.
-              set episode-to-remove (episode-to-remove + 1)
-            ]
-            
-            ;Remove all subsequent episodes from episodic memory
-            while [episode-to-remove < length episodic-memory][
-              set episodic-memory (remove-item (episode-to-remove) (episodic-memory))
-              set episode-to-remove (episode-to-remove + 1)
-            ]
-        ]
-        
-        ;===========================================================================;
-        ;== CHECK IF ALL ACTIONS IN ALL EPISODES IN EPISODIC MEMORY NOW PERFORMED ==;
-        ;===========================================================================;
-        
-        output-debug-message ("Checking if all actions in all episodes in episodic memory have now been performed") (who)
-        let all-actions-in-all-episodes-in-episodic-memory-performed (true)
-        foreach(episodic-memory)[
-          if(item (3) (?) = -1)[
-            set all-actions-in-all-episodes-in-episodic-memory-performed (false)
-          ]
-        ]
-        
-        ifelse(all-actions-in-all-episodes-in-episodic-memory-performed)[
-          output-debug-message ( word
-            "All actions in all episodes have been performed so I should no longer attempt to "
-            "schedule/execute any actions"
-            ) (who)
-          
-          set execute-actions? (false)
-          
-          if(breed = chrest-turtles)[
-            output-debug-message ("Since I am a CHREST-turtle, I should also begin to fixate on reality again") (who)
-            set fixate-on-reality? (true)
-          ]
-        ]
-        [
-          output-debug-message ("Not all episodes have been performed yet.") (who)
+        if((action-to-perform-index = 0) and ((item (0) (action-to-perform)) = 0))[
+          output-debug-message (word 
+            "This is the first action of the first episode so my "
+            "'heading-when-plan-execution-begins' will be set to my "
+            "current heading (" heading ")"
+          ) (who)
+          set heading-when-plan-execution-begins (heading)
         ]
       ]
       [
-        output-debug-message ("No action is to be performed now, exiting") (who)
+        set action-to-perform-index (action-to-perform-index + 1)
       ]
+    ]
+      
+    ;===================================;
+    ;== PERFORM NEXT SCHEDULED ACTION ==;
+    ;===================================;
+    
+    ifelse(not empty? action-to-perform)[
+      output-debug-message (word "Performing action: " action-to-perform) (who)
+      let action-performance-result ( perform-action (item (1) (action-to-perform)) )
+      output-debug-message (word "Action performance result: " action-performance-result) (who)
+      
+      output-debug-message ( word "Checking if the action was performed successfully" ) (who)
+      let action-performed-successfully? (ifelse-value (is-list? (action-performance-result)) 
+        [item (0) (action-performance-result)] 
+        [action-performance-result]
+      )
+      
+      ;Set variables that will be used to alter the episode's actions and 
+      ;episodes generally depending on the outcome of the action.
+      let clear-actions-to-perform? (false)
+      let clear-subsequent-episode-actions-and-episodes? (false)
+      let action-to-keep-up-to-in-episode (action-to-perform-index)
+        
+      ;===================================;
+      ;== ACTION PERFORMANCE SUCCESSFUL ==;
+      ;===================================;
+      ifelse(action-performed-successfully?)[
+        
+        output-debug-message ( word "The action was performed successfully.") (who)
+        output-debug-message ("Setting this action's 'performed' status to true") (who)
+        set action-to-perform (replace-item (3) (action-to-perform) (true))
+        set actions-to-perform (replace-item (action-to-perform-index) (actions-to-perform) (action-to-perform))
+        
+        output-debug-message ("Setting the episode's performance time to the current time") (who)
+        let episode-index (item (0) (action-to-perform))
+        let episode (item (episode-index) (episodic-memory))
+        set episode (replace-item (3) (episode) (report-current-time))
+        set episodic-memory (replace-item (episode-index) (episodic-memory) (episode)) 
+        
+        ;=========================;
+        ;== CHECK FOR HOLE-FILL ==;
+        ;=========================;
+          
+        ;The action may have caused a tile to be pushed into a hole. If this is the case,
+        ;and the turtle is a CHREST turtle, the turtle should turn on production reinforcement,
+        ;set the episode to start reinforcement on to be this episode (the most recent), save
+        ;the time the hole was filled (the current time) and turn on its 'fixate-on-reality' 
+        ;switch so that it starts a new planning cycle.
+        ;
+        ;It may be that this was expected (the last action in the last episode of a plan) or
+        ;unexpected (due to the stochastity of Tileworld).  In either case, the current episode's
+        ;performance time will be set and all subsequent actions in this episode and all episodes
+        ;subsequent to this episode will be removed (if this is the last action of the last episode,
+        ;there will be no effect).
+        output-debug-message ("Checking to see if I just filled a hole.") (who)
+        ifelse( is-list? (action-performance-result) and (item (1) (action-performance-result)) )[
+          output-debug-message (word "I just filled a hole") (who)
+          
+          if(breed = chrest-turtles)[
+            set reinforce-productions? (true)
+            set episode-to-reinforce (item (0) (action-to-perform))
+            set time-last-hole-filled (report-current-time)
+            
+            output-debug-message (word 
+              "Since I am a CHREST turtle, my 'reinforce-productions?' turtle variable "
+              "is now set to '" reinforce-productions? "', my 'time-last-hole-filled' "
+              "turtle variable is set to '" time-last-hole-filled "', and my "
+              "'episode-to-reinforce' variable is set to '" episode-to-reinforce "'"
+              ) (who)
+          ]
+          
+          set clear-actions-to-perform? (true)
+          set clear-subsequent-episode-actions-and-episodes? (true)
+        ]
+        ;==================;
+        ;== NO HOLE FILL ==;
+        ;==================;
+        [
+          output-debug-message ("No hole was filled") (who)
+          
+          ;Check if all episode actions have now been performed.
+          let all-actions-in-episode-performed (true)
+          foreach(actions-to-perform)[
+            if(item (3) (?) = false)[
+              set all-actions-in-episode-performed (false)
+            ]
+          ]
+          
+          ifelse(all-actions-in-episode-performed)[
+            output-debug-message ("All of the episode's actions have now been performed.") (who)
+            set clear-actions-to-perform? (true)
+          ]
+          [
+            output-debug-message ("Not all of the episode's actions have been performed.") (who)
+          ]
+        ]
+      ]
+      ;=====================================;
+      ;== ACTION PERFORMANCE UNSUCCESSFUL ==;
+      ;=====================================;
+      [
+        output-debug-message ( word "The action was not performed successfully.") (who)
+        set clear-actions-to-perform? (true)
+        set clear-subsequent-episode-actions-and-episodes? (true)
+        set action-to-keep-up-to-in-episode (action-to-perform-index - 1)
+      ]
+        
+      ;==============;
+      ;== CLEAN-UP ==;
+      ;==============;
+      
+      if(clear-actions-to-perform?)[ 
+        output-debug-message ("Clearing my 'actions-to-perform' data structure") (who)
+        set actions-to-perform [] 
+      ]
+        
+      if(clear-subsequent-episode-actions-and-episodes?)[
+        output-debug-message ("Clearing subsequent actions in this episode and subsequent episodes in my 'episodic-memory'") (who)
+        output-debug-message (word "My episodic-memory is set to the following before starting: " (map 
+          ([( list
+            chrest:ListPattern.get-as-string (item (0) (?))
+            chrest:ListPattern.get-as-string (item (1) (?))
+            (item (2) (?))
+            (item (3) (?))
+          )]) 
+          (episodic-memory)
+        )) (who)
+          
+        let episode-index (item (0) (action-to-perform))
+        let episode-to-remove-until (episode-index)
+            
+        output-debug-message (word 
+          "Checking if this is the first action in the episode, i.e. is the local 'action-to-perform-index' "
+          "variable (" action-to-perform-index ") equal to 0. If so, the whole episode will be removed from "
+          "episodic-memory"
+        ) (who)
+            
+        ifelse(action-to-perform-index = 0 and not action-performed-successfully?)[
+          output-debug-message ("This is the first action in the episode and it was unsuccessful, removing the episode from episodic memory") (who)
+          set episodic-memory (remove-item (episode-to-remove-until) (episodic-memory))
+          ;Leave 'episode-to-remove-until' alone since this will now equal the episode that came after the
+          ;one just removed.  Thus, this episode will be removed by the while loop below.
+        ]
+        [
+          output-debug-message (word 
+            "Either, this isn't the first action in the episode or it is but it was performed successfully. "
+            "Removing all subsequent actions from the episode"
+          ) (who)
+            
+          ;Get the episode's actions (if its a jchrest.lib.ListPattern it
+          ;needs to be turned into a list).
+          let episode (item (episode-index) (episodic-memory))
+          let episode-actions (item (1) (episode))
+          if(java:Class.get-canonical-name (episode-actions) = "jchrest.lib.ListPattern")[
+            set episode-actions (chrest:ListPattern.get-as-netlogo-list (episode-actions))
+          ]
+            
+          ;Keep all actions up until this one in the episode, discard the rest.
+          ;Convert the actions back into their original form.
+          let actions-to-keep []
+          let action-to-process-index (0)
+          while[action-to-process-index <= action-to-keep-up-to-in-episode][
+            set actions-to-keep (lput (item (action-to-process-index) (episode-actions)) (actions-to-keep))
+            set action-to-process-index (action-to-process-index + 1)
+          ]
+            
+          if(breed = chrest-turtles)[
+            set actions-to-keep (chrest:ListPattern.new (actions-to-keep) (chrest:Modality.value-of ("ACTION")))
+          ]
+            
+          ;Set the episode's actions to those performed and replace the episode in
+          ;episodic memory.
+          set episode (replace-item (1) (episode) (actions-to-keep))
+          set episodic-memory (replace-item (episode-index) (episodic-memory) (episode))
+          
+          ;Want to keep this episode so remove episodes up until this one in episodic memory.
+          set episode-to-remove-until (episode-to-remove-until + 1)
+        ]
+            
+        output-debug-message (word "My episodic-memory is set to the following after removing actions from the episode but before removing episodes: " (map 
+          ([( list
+            chrest:ListPattern.get-as-string (item (0) (?))
+            chrest:ListPattern.get-as-string (item (1) (?))
+            (item (2) (?))
+            (item (3) (?))
+            )]) 
+          (episodic-memory)
+        )) (who)
+            
+        ;Remove episodes from episodic memory starting with the most recent, working
+        ;backwards. When the episode to remove until has been removed, the while loop
+        ;will stop.  So, if all episodes are to be removed (episode-to-remove-until = 0), 
+        ;they will be since the loop will stop when episode-to-remove-until = -1. If episode
+        ;0 is to be kept, episode-to-remove-until will be equal to 1 so every episode until
+        ;index 0 is removed.
+        let episode-to-remove (length episodic-memory - 1)
+        while [episode-to-remove != episode-to-remove-until - 1][
+          set episodic-memory (but-last episodic-memory)
+          set episode-to-remove (episode-to-remove - 1)
+        ]
+          
+        output-debug-message (word "My episodic-memory is set to the following after removing all episodes after the one whose action was unperformed successfully: " (map 
+          ([( list
+            chrest:ListPattern.get-as-string (item (0) (?))
+            chrest:ListPattern.get-as-string (item (1) (?))
+            (item (2) (?))
+            (item (3) (?))
+            )]) 
+          (episodic-memory)
+        )) (who)
+      ];Clear subsequent actions and episodes
+    ];Check on whether 'action-to-perform' is empty.
+    [
+      output-debug-message ("No action is to be performed now, exiting") (who)
+    ]
+    
+    ;==========================================================;
+    ;== CHECK IF THIS IS THE LAST ACTION IN THE LAST EPISODE ==;
+    ;==========================================================;
+    
+    ;Now that the 'actions-to-perform' and 'episodic-memory' variables have been
+    ;modified, check if this was the last action of the last episode, if so,
+    ;set the 'end-action-execution-and-restart-planning?' variable to true.
+    let end-action-execution-and-restart-planning? (false)
+    if(not empty? action-to-perform)[
+      
+      ;Get the index of the episode that the action just performed belongs to.
+      ;If this is less than the maximum index in 'episodic-memory', this is not
+      ;the last action in the last episode so don't continue.
+      let index-of-episode-that-action-belongs-to (item (0) (action-to-perform))
+      if(index-of-episode-that-action-belongs-to >= (length (episodic-memory) - 1))[
+      
+        ;First, check if the episode index for the action just performed is still
+        ;applicable.  If not, the episode must have just been removed so action
+        ;execution should end and planning should restart.
+        ifelse( index-of-episode-that-action-belongs-to > (length (episodic-memory) - 1) )[
+          set end-action-execution-and-restart-planning? (true)
+        ]
+        ;If program control gets to here, the episode must be the last episode in episodic
+        ;memory. To determine if all actions in the episode have now been performed, get 
+        ;the number of actions in the episode itself and subtract 1 from it, this is the 
+        ;maximum index in the episode's actions.  
+        ;
+        ;If the action just performed was successful and was the last action in the 
+        ;episode, the 'action-to-perform-index' should equal the maximum index in 
+        ;the episode's actions. Similarly, if the action just performed resulted in 
+        ;a tile being unexpectedly pushed into a hole, all subsequent actions will 
+        ;have been removed from the episode so the 'action-to-perform-index' would 
+        ;again be equal to the maximum index in the episode's actions.
+        ;
+        ;If the action just performed was not successful, the 'action-to-perform-index'
+        ;will be either equal to the number of actions in the episode (if this was the
+        ;last action in the episode) or greater than the number of actions in the episode
+        ;(if this was not the last action in the episode).
+        ;
+        ;Therefore, to cover all situations, check to see if the 'action-to-perform-index'
+        ;is either greater than, or equal to, the number of actions in the episode.
+        [
+          let episode-actions (item (1) (item (index-of-episode-that-action-belongs-to) (episodic-memory)))
+          let number-episode-actions (chrest:ListPattern.size (episode-actions))
+          let maximum-action-index-in-episode (number-episode-actions - 1)
+          
+          if(action-to-perform-index >= maximum-action-index-in-episode)[
+            set end-action-execution-and-restart-planning? (true)
+          ]
+        ]
+      ]
+    ]
+        
+    ;=============================================================;
+    ;== END ACTION EXECUTION AND RESTART PLANNING, IF NECESSARY ==;
+    ;=============================================================;
+        
+    output-debug-message (word 
+      "Checking if action execution should end and planning should restart, i.e "
+      "was an end plan generation and restart planning condition met when I "
+      "performed my last action (" end-action-execution-and-restart-planning? ") "
+      "or is my 'episodic-memory' empty since plan generation failed (" empty? 
+      episodic-memory ")"
+    ) (who)
+    
+    ifelse( (end-action-execution-and-restart-planning?) or (empty? episodic-memory) )[
+      output-debug-message ( "Ending action execution and restarting planning") (who)
+      
+      set execute-actions? (false)
+      
+      if(breed = chrest-turtles)[
+        output-debug-message ("Since I am a CHREST-turtle, I will fixate on reality again") (who)
+        set fixate-on-reality? (true)
+      ]
+    ]
+    [
+      output-debug-message ("I will not end action execution and restart planning yet.") (who)
     ]
   ]
   [
@@ -1982,6 +1928,13 @@ end
 ;If the statements above all evaluate to true, a new action will be planned
 ;if the turtle is not supposed to be fixating on its visual-spatial field.
 ;
+;NOTE: plan-generation is undertaken in a 3rd person perspective due to the 
+;      way jchrest.architecture.VisualSpatialFields are constructed and used
+;      rather than the more 1st person perspective nature of Tileworld 
+;      operations. Essentially, this means that all actions created during
+;      planning have headings relative to the heading of the CHREST turtle 
+;      when planning begins, this has implications for performing actions later.
+;
 ;@author  Martyn Lloyd-Kelly <martynlk@liverpool.ac.uk>  
 to generate-plan
   set debug-indent-level (debug-indent-level + 1)
@@ -1994,15 +1947,38 @@ to generate-plan
     ;== CHECK FOR VISUAL-SPATIAL FIELD CONSTRUCTION ==;
     ;=================================================;
       
-    output-debug-message (word 
-      "Checking if my 'generate-plan?' variable is set to true (value:" 
-      generate-plan? " and if the current model time (" report-current-time ") "
-      "is greater than or equal to my 'time-visual-spatial-field-can-be-used-for-planning' "
-      "variable (" time-visual-spatial-field-can-be-used-for-planning ").  If both "
-      "statements are true, I'll continue planning"
+    output-debug-message (word  
+      "If my 'generate-plan?' variable is set to true (value: " generate-plan? 
+      ") and the current model time (" report-current-time ") is greater than "
+      "or equal to my 'time-visual-spatial-field-can-be-used-for-planning' "
+      "variable (" time-visual-spatial-field-can-be-used-for-planning "), I'll "
+      "continue planning"
     ) (who)
-    if(generate-plan? and report-current-time >= time-visual-spatial-field-can-be-used-for-planning)[
+    
+    if(
+      generate-plan? and 
+      report-current-time >= time-visual-spatial-field-can-be-used-for-planning
+    )[
       output-debug-message (word "I should continue planning") (who)
+      
+      ;===================================================;
+      ;== RESET EPISODE VARIABLES IF THIS IS A NEW PLAN ==;
+      ;===================================================;
+      
+      if(current-search-iteration = 0)[
+        output-debug-message ("Since this is a new plan, I'll reset all variables concerned with episodes") (who)
+        set episode-to-learn-from (0)
+        set episode-to-reinforce (-1)
+        set learn-action-sequence? (false)
+        set learn-action-sequence-as-production? (false)
+        set learn-episode-action? (true)
+        set learn-episode-vision? (false)
+        set learn-episode-as-production? (false)
+        set learn-from-episodic-memory? (true)
+        set reinforce-productions? (false)
+        set episodic-memory ([])
+        chrest:Stm.clear (chrest:Modality.value-of ("ACTION")) (report-current-time)
+      ]
           
       ;================;
       ;== DELIBERATE ==;
@@ -2019,8 +1995,17 @@ to generate-plan
       let planned-action-index (0)
       let invalid-action-encountered (false)
       
-      output-debug-message ("Generating and performing visual-spatial field moves using the action(s) I decided upon until all are performed or one produces an invalid visual-spatial field state") (who)
-      while[ (planned-action-index < length planned-actions) and (not invalid-action-encountered)][
+      output-debug-message (word
+        "Generating and performing visual-spatial field moves using the action(s) I decided upon "
+        "until all moves are performed, one produces an invalid visual-spatial field state or my "
+        "visual-spatial field avatar is not present on the visual-spatial field"
+      ) (who)
+      
+      while[ 
+        (planned-action-index < length planned-actions) and 
+        (not invalid-action-encountered) and 
+        not empty? (chrest:get-visual-spatial-field-object-locations (chrest:get-attention-clock) (word who) (false))
+      ][
         let planned-action (item (planned-action-index) (planned-actions))
         output-debug-message (word "Planned action " planned-action-index " to perform: " chrest:ItemSquarePattern.get-as-string (planned-action)) (who)
         
@@ -2218,7 +2203,7 @@ to generate-plan
         output-debug-message ( word "The local 'end-plan-generation?' variable is set to true so I should not plan any more.  To do this I need to set my 'generate-plan?' turtle variable to false..."  ) (who)
         set generate-plan? (false)
         
-        output-debug-message ( word "I also need to set my 'time-to-begin-action-execution' turtle variable to the value of my attention clock" ) (who)
+        output-debug-message ( word "I also need to set my 'deliberation-finished-time' turtle variable to the value of my attention clock" ) (who)
         set deliberation-finished-time (chrest:get-attention-clock) 
         
         output-debug-message ( word "I'll also set my 'current-search-iteration' turtle variable to 0 now since it should be reset for the next planning cycle..." ) (who)
@@ -2287,10 +2272,11 @@ to-report generate-visual-spatial-field-moves [ action-pattern reverse? time-to-
     ;========================================;
     
     output-debug-message ( word "No matter what the action-pattern is, I will always need to move myself so I'll extract my location from the visual-spatial field now...") (who)
-    let location-of-self ( item (0) (chrest:VisualSpatialField.get-object-locations (time-to-get-visual-spatial-field-at) (word who) (false)) )
-    output-debug-message (word "My location in visual-spatial field: " location-of-self) (who)
+    let location-of-self (chrest:VisualSpatialField.get-object-locations (time-to-get-visual-spatial-field-at) (word who) (false))
+    output-debug-message (word "Result of getting my location in my visual-spatial field: " location-of-self) (who)
     
     ifelse(not empty? location-of-self)[
+      set location-of-self (item (0) (location-of-self))
       let self-who (word who)
       let self-xcor ( item (0) (location-of-self) )
       let self-ycor ( item (1) (location-of-self) )
@@ -2549,8 +2535,47 @@ to-report get-observable-environment
       ]
     ]
     
-    let square-content (list (xcor + xCorOffset) (ycor + yCorOffset) ("") (empty-patch-token))
-    let turtles-at-x-and-y-offset ( (turtles-at xCorOffset yCorOffset) with [hidden? = false] )
+    let square-content (list (xCorOffset) (yCorOffset) ("") (empty-patch-token))
+    let turtles-at-x-and-y-offset []
+    
+    ;=========================================================;
+    ;== CONVERT PATCH LOOKED AT DEPENDING ON TURTLE HEADING ==;
+    ;=========================================================;
+    
+    ;This is important since CHREST turtles need to make 
+    ;"jchrest.domainSpecifics.fixations.AheadOfAgentFixations"
+    ;and the "jchrest.lib.Square" fixated on needs to be the
+    ;patch immediately ahead of the turtle in the 
+    ;"jchrest.domainSpecifics.Scene" representation of the 
+    ;current observable environment.  Thus, depending on the
+    ;heading of the calling turtle, the x/yCorOffsets need to
+    ;be modified (but not set as the values of xCorOffset and
+    ;yCorOffset).
+    ifelse(heading = 0)[
+      set turtles-at-x-and-y-offset ( (turtles-at (xCorOffset) (yCorOffset)) with [hidden? = false] )
+    ]
+    [
+      ifelse(heading = 90)[
+        set turtles-at-x-and-y-offset ( (turtles-at (yCorOffset) (xCorOffset * (- abs(xCorOffset)))) with [hidden? = false] )
+      ]
+      [
+        ifelse(heading = 180)[
+          set turtles-at-x-and-y-offset ( (turtles-at (-1 * xCorOffset) (-1 * yCorOffset)) with [hidden? = false] )
+        ]
+        [
+          ifelse(heading = 270)[
+            set turtles-at-x-and-y-offset ( (turtles-at (yCorOffset * (- abs(yCorOffset))) (xCorOffset)) with [hidden? = false] )
+          ]
+          [
+            error (word "The heading of turtle " who " (" heading ") is unsupported by the 'get-observable-environment' procedure.")
+          ]
+        ]
+      ]
+    ]
+    
+    ;===========================================================================;
+    ;== ALTER OBJECT INFORMATION BASED ON WHAT'S PRESENT ON PATCH "LOOKED AT" ==;
+    ;===========================================================================;
     
     if(any? turtles-at-x-and-y-offset)[
       ask(turtles-at-x-and-y-offset)[
@@ -2718,6 +2743,334 @@ to-report are-visual-spatial-field-squares-valid-at-time? [state-at-time]
   output-debug-message (word "The visual-spatial field squares specified have valid configurations at time " state-at-time " so true will be reported." ) (who)
   set debug-indent-level (debug-indent-level - 2)
   report (true)
+end
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;; "LEARN-FROM-EPISODIC-MEMORY ;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+to learn-from-episodic-memory
+  set debug-indent-level (debug-indent-level + 1)
+  output-debug-message ("EXECUTING THE 'learn-from-episodic-memory' PROCEDURE...") ("")
+  set debug-indent-level (debug-indent-level + 1)
+  
+  ;Add all episodes that have been generated at the current time to a list.
+  let episodic-memory-at-time []
+  foreach(episodic-memory)[
+    if(report-current-time >= item (2) (?))[
+      set episodic-memory-at-time (lput (?) (episodic-memory-at-time))
+    ]
+  ]
+  
+  output-debug-message (word 
+    "If my 'episodic-memory' at the current time isn't empty (" not empty? episodic-memory-at-time 
+    "), I'll attempt to learn the action in the episode stipulated by my 'episode-to-learn-from' "
+    "variable (" episode-to-learn-from ").  If I have learned all the actions in my episodes, I'll "
+    "attempt to learn my episodes as productions. If all my episodes have been learned as "
+    "productions I'll attempt to reinforce the productions denoted by any episodes if I can."
+    ) (who)
+  
+  output-debug-message ("Checking if my 'episodic-memory-at-time' is empty") (who)
+  ifelse(not empty? episodic-memory-at-time)[
+    
+    output-debug-message (word 
+      "My 'episodic-memory-at-time' isn't empty, checking if I'm to learn the "
+      "sequence of actions in my episode as a production"
+      ) (who)
+    
+    ;===============================;
+    ;== CONSTRUCT ACTION-SEQUENCE ==;
+    ;===============================;
+    
+    ;Get the action-sequence that may be learned as-is or as a production here, 
+    ;instead of repeating it in both circumstances. First, get the indexes of
+    ;all episodes with non-empty visions in episodic-memory.
+    let indexes-of-episodes-with-non-empty-visions []
+    let episodic-memory-index (0)
+    while[episodic-memory-index < length episodic-memory][
+      let episode (item (episodic-memory-index) (episodic-memory))
+      
+      if(not chrest:ListPattern.empty? (item (0) (episode)))[
+        set indexes-of-episodes-with-non-empty-visions (lput (episodic-memory-index) (indexes-of-episodes-with-non-empty-visions))
+      ]
+      
+      set episodic-memory-index (episodic-memory-index + 1)
+    ]
+    
+    ;Now, collect the actions of all episodes from the first episode that
+    ;has a non-empty vision: empty visions aren't learned so can't have
+    ;productions created from them since there'd be no source Node for
+    ;the production.
+    let first-non-empty-vision-episode-index ("")
+    let action-sequence (chrest:ListPattern.new (list) (chrest:Modality.value-of ("ACTION")))
+    
+    if(not empty? indexes-of-episodes-with-non-empty-visions)[
+      set first-non-empty-vision-episode-index (item (0) (indexes-of-episodes-with-non-empty-visions))
+      set episodic-memory-index (first-non-empty-vision-episode-index)
+      
+      while[episodic-memory-index < length episodic-memory][
+        set action-sequence (chrest:ListPattern.append 
+          (action-sequence) 
+          (item (1) (item (episodic-memory-index) (episodic-memory)))
+          )
+        set episodic-memory-index (episodic-memory-index + 1)
+      ]
+    ]
+    
+    ;==================;
+    ;== WHAT TO DO?! ==;
+    ;==================;
+    
+    ifelse(not learn-action-sequence-as-production? and episode-to-learn-from < length episodic-memory)[
+      output-debug-message (word
+        "I'm not to learn the sequence of actions in my episode as a production, "
+        "checking if I'm to learn an action sequence from my episodes or not"
+        ) (who)
+      
+      ifelse(not learn-action-sequence?)[
+        
+        output-debug-message (word 
+          "I'm not to learn an action sequence from my episodes so I'll learn the action/vision "
+          "from episode " episode-to-learn-from "in my 'episodic-memory' or, if they've been "
+          "learned, I'll attempt to learn them as a production"
+          ) (who)
+        
+        let episode (item (episode-to-learn-from) (episodic-memory))
+        let episode-vision (item (0) (episode))
+        let episode-action (item (1) (episode))
+        output-debug-message (word 
+          "Episode vision: " chrest:ListPattern.get-as-string (episode-vision) ", "
+          "episode action: " chrest:ListPattern.get-as-string (episode-action) ", "
+          ) (who)
+        
+        ;== LEARN EPISODE ACTION ==;
+        
+        if(learn-episode-action?)[
+          output-debug-message ("Attempting to learn episode action") (who)
+          let learn-action-result (chrest:recognise-and-learn (episode-action) (report-current-time))
+          output-debug-message (word "Learn action result: " java:Object.to-string (learn-action-result)) (who)
+          
+          if(learn-action-result = chrest:ChrestStatus.value-of ("INPUT_ALREADY_LEARNED"))[
+            output-debug-message ("Action fully learned, I'll move onto trying to learn the episode's vision") (who)
+            set learn-episode-action? (false)
+            set learn-episode-vision? (true)
+          ]
+        ]
+        
+        ;== LEARN VISION IN EPISODE ==;
+        
+        output-debug-message (word "Checking if I should learn the episode's vision, i.e. have I learned the episode action (" learn-episode-vision? ")") (who)
+        
+        if(learn-episode-vision?)[
+          output-debug-message ("I've learned the episode's action, checking if the episode's vision isn't empty") (who)
+          
+          ifelse((not chrest:ListPattern.empty? (episode-vision)))[
+            output-debug-message ("The episode's vision isn't empty so I'll attempt to learn it") (who)
+            
+            if(chrest:recognise-and-learn (episode-vision) (report-current-time) = chrest:ChrestStatus.value-of("INPUT_ALREADY_LEARNED"))[
+              output-debug-message ("Vision fully learned, I'll move onto learning the episode as a production") (who)
+              set learn-episode-vision? (false)
+              set learn-episode-as-production? (true)
+            ]
+          ]
+          [
+            output-debug-message ("The episode's vision is empty so I can't learn this episode as a production. I'll start learning from the next episode") (who)
+            set learn-episode-action? (true)
+            set learn-episode-vision? (false)
+            set episode-to-learn-from (episode-to-learn-from + 1)
+          ]
+        ]
+        
+        ;== LEARN EPISODE AS PRODUCTION ==;
+        
+        output-debug-message (word "Checking if I should learn the episode as a production (" learn-episode-as-production? ")") (who)
+        if(learn-episode-as-production?)[
+          output-debug-message ("Attempting to learn episode as a production") (who)
+          
+          let learn-production-result (chrest:learn-production (episode-vision) (episode-action) (report-current-time))
+          output-debug-message (word "Result of attempting to learn production: " java:Object.to-string (learn-production-result)) (who)
+          
+          if(
+            learn-production-result = chrest:ChrestStatus.value-of ("EXACT_PRODUCTION_LEARNED") or
+            learn-production-result = chrest:ChrestStatus.value-of ("PRODUCTION_ALREADY_LEARNED")
+            )[
+          output-debug-message ("Exact production learned, I'll start learning the next episode") (who)
+            set episode-to-learn-from (episode-to-learn-from + 1)
+            set learn-episode-as-production? (false)
+            set learn-episode-action? (true)
+            output-debug-message (word "Episode to learn from now set to " episode-to-learn-from) (who)
+            ]
+        ]
+        
+        ;== TURN ON ACTION SEQUENCE LEARNING ==;
+        
+        if(episode-to-learn-from >= length episodic-memory)[
+          output-debug-message (word 
+            "All individual episode visions/actions learned, attempting to either learn an "
+            "action sequence from my episodes or learn said action sequence as a production"
+            ) (who)
+          set learn-action-sequence? (true)
+        ]
+      ]
+      
+      ;===========================;
+      ;== LEARN ACTION SEQUENCE ==;
+      ;===========================;
+      [
+        output-debug-message (word "I'm to learn the actions in my episode as a sequence.  Action sequence to learn: " (chrest:ListPattern.get-as-string (action-sequence))) (who)
+        ifelse(chrest:ListPattern.size (action-sequence) > 1)[
+          
+          output-debug-message ("There is more than 1 action in the sequence so it is a 'sequence' and will therefore be learned") (who)
+          let result-of-learning-action-sequence chrest:recognise-and-learn (action-sequence) (report-current-time)
+          output-debug-message (word "Result of learning action sequence: " java:Object.to-string (result-of-learning-action-sequence)) (who)
+          
+          if(result-of-learning-action-sequence = chrest:ChrestStatus.value-of ("INPUT_ALREADY_LEARNED"))[
+            
+            output-debug-message (word 
+              "Action sequence fully learned, I'll try to create a production between the "
+              "first non-empty vision in episodic memory and the action sequence now"
+              ) (who)
+            
+            set learn-action-sequence? (false)
+            set learn-action-sequence-as-production? (true)
+          ]
+        ]
+        [
+          output-debug-message ("There are either no episodes with a non-empty vision or just 1 so an action sequence can not be constructed and learned") (who)
+        ]
+      ]
+    ]
+    ;=========================================;
+    ;== LEARN ACTION SEQUENCE AS PRODUCTION ==;
+    ;=========================================;
+    [
+      output-debug-message (word "I'm to learn the action sequence from my episodes as a production.  The sequence to potentially learn is: " (chrest:ListPattern.get-as-string (action-sequence))) (who)
+      
+      ifelse(chrest:ListPattern.size (action-sequence) > 1)[
+        output-debug-message ("There is more than 1 action in the sequence so it is a 'sequence' and will therefore be learned as a production") (who)
+        
+        let first-non-empty-vision (item (0) (item (first-non-empty-vision-episode-index) (episodic-memory)))    
+        let learn-production-result (chrest:learn-production (first-non-empty-vision) (action-sequence) (report-current-time))
+        output-debug-message (word "Result of attempting to learn action sequence as production: " java:Object.to-string (learn-production-result)) (who)
+        
+        if(
+          learn-production-result = chrest:ChrestStatus.value-of ("EXACT_PRODUCTION_LEARNED") or
+          learn-production-result = chrest:ChrestStatus.value-of ("PRODUCTION_ALREADY_LEARNED")
+          )[
+        output-debug-message ("Exact production learned, I'll stop learning from my episodes now") (who)
+          set learn-action-sequence-as-production? (false)
+          set learn-from-episodic-memory? (false)
+          ]
+      ]
+      [
+        output-debug-message ("The action sequence is either empty or only contains 1 action so its not a 'sequence' and will not be learned as a production") (who)
+      ]
+    ]
+  ]
+  [
+    output-debug-message ("Episodic memory is empty, can't learn from it") (who)
+  ]
+  
+  set debug-indent-level (debug-indent-level - 2)
+end
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;; "MAKE-FIXATION" PROCEDURE ;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+to make-fixation
+  set debug-indent-level (debug-indent-level + 1)
+  output-debug-message ("EXECUTING THE 'make-fixation' PROCEDURE") (who)
+  
+  ifelse(breed = chrest-turtles)[
+    output-debug-message (word
+      "I am a CHREST turtle, checking if I should make a fixation, i.e. should I fixate "
+      "on reality (" fixate-on-reality? ") or should I fixate on my visual-spatial field "
+      "(" fixate-on-visual-spatial-field? ")"
+    ) (who)
+     
+    ;Check that the 'fixate-on-reality?' and 'fixate-on-visual-spatial-field?' turtle variables
+    ;are not both set to true since this will cause problems if left unchecked.
+    if(fixate-on-reality? and fixate-on-visual-spatial-field?)[
+      error (word 
+        "Both the 'fixate-on-reality?' and 'fixate-on-visual-spatial-field?' turtle variables "
+        "are set to true for turtle " who "; this should not occur."
+      )
+    ]
+     
+    ifelse(fixate-on-reality? or fixate-on-visual-spatial-field?)[
+      
+      let scene-to-fixate-on (ifelse-value (fixate-on-reality?) 
+        [chrest:Scene.new (get-observable-environment) (word "Turtle " who " Reality @ Time: " report-current-time)] 
+        [chrest:get-visual-spatial-field-as-scene (report-current-time) (unknown-visual-spatial-field-object-replacement-probabilities)]
+      )
+     
+      ;A visual-spatial field should only be constructed when the turtle is fixating on reality and can plan.
+      let construct-visual-spatial-field? (ifelse-value (fixate-on-reality? and can-plan?) [true] [false]) 
+     
+      output-debug-message (word 
+        "Attempting to make a Fixation on scene with name '" (chrest:Scene.get-name 
+        (scene-to-fixate-on) ) "' and the local 'construct-visual-spatial-field?' "
+        "parameter is set to '" construct-visual-spatial-field? "'" 
+      ) (who)
+      
+      let fixation-set-performance-result (chrest:schedule-or-make-next-fixation (scene-to-fixate-on) (true) (construct-visual-spatial-field?) (report-current-time))
+      
+      ;===========================;
+      ;== FIXATION SET COMPLETE ==;
+      ;===========================;
+      ifelse(fixation-set-performance-result = chrest:ChrestStatus.value-of("FIXATION_SET_COMPLETE"))[
+        output-debug-message (word "Fixation set now complete.") (who)
+        
+        if(fixate-on-reality?) [
+          set fixate-on-reality? (false)
+          output-debug-message (word
+            "Since I was fixating on reality I should no longer do so.  Setting my 'fixate-on-reality?' turtle "
+            "variable to 'false' (actual value of variable after setting: " fixate-on-reality? ")."
+          ) (who)
+        ]
+        
+        if(fixate-on-visual-spatial-field?) [
+          set fixate-on-visual-spatial-field? (false)
+          set time-visual-spatial-field-can-be-used-for-planning (report-current-time)
+          output-debug-message (word 
+            "Since I was fixating on my visual-spatial field I should no longer do so.  Setting my "
+            "'fixate-on-visual-spatial-field?' turtle variable to 'false' (actual value of variable "
+            "after setting: " fixate-on-visual-spatial-field? ") and my "
+            "'time-visual-spatial-field-can-be-used-for-planning' variable to the current time."
+          ) (who)
+        ]
+        
+        if(construct-visual-spatial-field?) [
+          set time-visual-spatial-field-can-be-used-for-planning (chrest:get-attention-clock)
+          output-debug-message (word 
+            "A visual-spatial field was constructed so my 'time-visual-spatial-field-can-be-used-for-planning' "
+            "turtle variable has been set to the time attention is free (when visual-spatial field construction "
+            "completes): " time-visual-spatial-field-can-be-used-for-planning "."
+          ) (who)
+        ]
+        
+        if(can-plan?)[
+          set generate-plan? (true)
+          output-debug-message (word
+            "I can also plan so I'll set my 'generate-plan?' turtle variable to true (actual value of variable "
+            "after setting: " generate-plan? ")."
+          ) (who)
+        ]
+      ]
+      [
+        output-debug-message (word "Fixation set not yet complete.") (who)
+      ]
+    ]
+    [
+      output-debug-message ("I shouldn't make any fixations now") (who)
+    ]
+  ]
+  [
+    output-debug-message ("I'm not a CHREST turtle so this procedure should not be run") (who)
+  ]
+  
+  set debug-indent-level (debug-indent-level - 2)
 end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2891,6 +3244,41 @@ to-report perform-action [ action ]
   ifelse(member? (action-identifier) (possible-actions))[
     
     output-debug-message (word "The action to perform (" action-identifier ") is a valid action.") (who)
+    
+    ;===================================================================================;
+    ;== MODIFY ACTION HEADING ACCORDING TO TURTLE'S HEADING WHEN PLAN EXECUTION BEGAN ==;
+    ;===================================================================================;
+    
+    ;Set the actual action heading since the action will have been decided 
+    ;upon relative to the turtle's heading when plan generation was performed
+    ;so all actions need to be performed in context of this. So, if the turtle's 
+    ;'heading-when-plan-execution-begins' is:
+    ;
+    ;  - North (0), the turtle should move/push the tile according to the 
+    ;    current 'action-heading' value.
+    ;
+    ;  - East (90), and 'action-heading' is set to:
+    ;    + North (0), the turtle should move/push tile east (90).
+    ;    + East (90), the turtle should move/push tile south (180).
+    ;    + South (180), the turtle should move/push tile west (270).
+    ;    + West (270), the turtle should move/push tile north (0).
+    ;
+    ;  - South (180), and 'action-heading' is set to:
+    ;    + North (0), the turtle should move/push tile south (180).
+    ;    + East (90), the turtle should move/push tile west (270).
+    ;    + South (180), the turtle should move/push tile north (0).
+    ;    + West (270), the turtle should move/push tile east (90).
+    ;
+    ;  - West (270) and 'action-heading' is set to:
+    ;    + North (0), the turtle should move/push tile west (270).
+    ;    + East (90), the turtle should move/push tile north (0).
+    ;    + South (180), the turtle should move/push tile east (90).
+    ;    + West (270), the turtle should move/push tile south (180).
+    set action-heading (heading-when-plan-execution-begins + action-heading)
+    
+    if(action-heading >= 360)[
+      set action-heading (action-heading - 360)
+    ]
       
     ;;;;;;;;;;;;;;;;;;;;;;
     ;;; PERFORM ACTION ;;;
@@ -3273,6 +3661,8 @@ to print-and-run [string-to-be-run]
  output-debug-message (word "NETLOGO COMMAND TO BE PASSED TO 'run' PRIMITIVE: '" string-to-be-run "'.") ("")
  set debug-indent-level (debug-indent-level - 2)
  run string-to-be-run
+ 
+ 
 end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3434,6 +3824,128 @@ to-report quote-string-or-read-from-string [value]
   ]
 end
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;; "REINFORCE-PRODUCTIONS" PROCEDURE ;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+to reinforce-productions
+  set debug-indent-level (debug-indent-level + 1)
+  output-debug-message ("EXECUTING THE 'reinforce-productions' PROCEDURE...") ("")
+  set debug-indent-level (debug-indent-level + 1)
+    
+  ;Productions to reinforce are episodes and are learned from most recently
+  ;performed to least recently performed so, the episode-to-reinforce index
+  ;decrements as productions in episodes are reinforced hence the check for
+  ;the index being >= 0.  This is because the most recent episode in the 
+  ;turtle's episodic-memory is the size of the episodic-memory - 1.
+  output-debug-message (word "Checking my 'episode-to-reinforce' variable (" episode-to-reinforce ")") (who)
+  ifelse(episode-to-reinforce >= 0)[
+    output-debug-message (word 
+      "Since my 'episode-to-reinforce' variable is >= 0, I'll continue attempting to reinforce "
+      "my productions. Getting the most recent episode from my 'episodic-memory' whose vision "
+      "isn't empty, has been performed and that hasn't been reinforced in this acting cycle yet"
+    ) (who)
+    
+    let lastest-episode-performance-time (max (map ([item (3) (?)]) (episodic-memory)))
+    ifelse(lastest-episode-performance-time <= report-current-time)[
+    
+      ;=================================================;
+      ;== GET FIRST EPISODE WHOSE VISION IS NON-EMPTY ==;
+      ;=================================================;
+    
+      let reinforce-production? (true)
+    
+      let episode (item (episode-to-reinforce) (episodic-memory))
+      let episode-vision (item (0) (episode))
+      let episode-performance-time (item (3) (episode))
+    
+      ;Check to see if a search for a new episode to reinforce needs to occur.
+      if(chrest:ListPattern.empty? (episode-vision))[
+        let search-for-non-empty-vision? (true)
+        set reinforce-production? (false)
+        
+        while[search-for-non-empty-vision?][
+          set episode-to-reinforce (episode-to-reinforce - 1)
+        
+          ifelse(episode-to-reinforce >= 0)[
+            set episode (item (episode-to-reinforce) (episodic-memory))
+            set episode-vision (item (0) (episode))
+          
+            if(not chrest:ListPattern.empty? (episode-vision))[
+              set search-for-non-empty-vision? (false)
+              set reinforce-production? (true)
+            ]
+          ]
+          [
+            set search-for-non-empty-vision? (false)
+          ]
+        ]
+      ]
+    
+      ;==========================;
+      ;== REINFORCE PRODUCTION ==;
+      ;==========================;
+      
+      ifelse(reinforce-production?)[
+        output-debug-message (word 
+          "Most recent episode whose vision is not empty that hasn't been reinforced in this "
+          "acting cycle yet: "
+          (list
+            (chrest:ListPattern.get-as-string (item (0) (episode)))
+            (chrest:ListPattern.get-as-string (item (1) (episode)))
+            (item (2) (episode))
+            (item (3) (episode))
+            )
+          ) (who)
+    
+        let episode-action (item (1) (episode))
+        let reinforcement-variables (list 
+          (1.0) 
+          (discount-rate) 
+          (time-last-hole-filled) 
+          (item (2) (episode))
+          )
+        
+        output-debug-message (word
+          "Variables required for reinforcement are as follows: " 
+          "reward = " (item (0) (reinforcement-variables)) ", "
+          "discount-rate = " (item (1) (reinforcement-variables)) ", "
+          "time last hole filled = " (item (2) (reinforcement-variables)) ", "
+          "time episode performed = " (item (3) (reinforcement-variables))
+          ) (who)
+        
+        let reinforcement-result (chrest:reinforce-production (episode-vision) (episode-action) (reinforcement-variables) (report-current-time))
+        output-print (word "Result of reinforcement: " java:Object.to-string (reinforcement-result)) ;(who)
+        
+        ifelse(
+          chrest:ChrestStatus.value-of ("NO_PRODUCTION_IDENTIFIED") = reinforcement-result or
+          chrest:ChrestStatus.value-of ("EXACT_PRODUCTION_MATCH_REINFORCED") = reinforcement-result or
+          chrest:ChrestStatus.value-of ("HIGH_PRODUCTION_MATCH_REINFORCED") = reinforcement-result or
+          chrest:ChrestStatus.value-of ("MODERATE_PRODUCTION_MATCH_REINFORCED") = reinforcement-result or
+          chrest:ChrestStatus.value-of ("LOW_PRODUCTION_MATCH_REINFORCED") = reinforcement-result
+        )[
+          output-debug-message (word "Reinforcing the next episode") (who)
+          set episode-to-reinforce (episode-to-reinforce - 1)
+        ]
+        [
+          output-debug-message (word "Continuing to attempt to reinforce the same episode") (who)
+        ]
+      ]
+      [
+        output-debug-message ("There are episodes with non-empty visions that have been performed at the current time in episodic-memory, exiting") (who)
+      ]
+    ]
+    [
+      output-debug-message ("Latest episode hasn't been performed yet, exiting procedure.") (who)
+    ]
+  ]
+  [
+    output-debug-message ("My 'episode-to-reinforce' variable is < 0 so I'll attempt to reinforce my productions ") (who)
+  ]
+  
+  set debug-indent-level (debug-indent-level - 2)
+end
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; "REMOVE-PLAYERS" PROCEDURE ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3548,10 +4060,7 @@ to setup [testing]
   set-default-shape holes "circle"
   
   ;Set action strings.
-  set problem-solving-token "PS"
   set move-token "MV"
-  set move-randomly-token "MR"
-  set procedure-not-applicable-token "PNA"
   set push-tile-token "PT"
   
   ;Set object identifier strings.
@@ -3574,7 +4083,6 @@ to setup [testing]
   ]
   set possible-actions ( list 
     (move-token)
-    (move-randomly-token)
     (push-tile-token)
   )
   set colors-used []
@@ -3627,7 +4135,6 @@ to setup-chrest-turtles [setup-chrest?]
     
     set actions-to-perform []
     set current-search-iteration (0)
-;    set current-visual-pattern ("")
     set deliberation-finished-time (ifelse-value (can-plan?) [0] [-1])
     set episode-to-learn-from (0)
     set episode-to-reinforce (-1)
@@ -3635,12 +4142,14 @@ to setup-chrest-turtles [setup-chrest?]
     set execute-actions? (false)
     set fixate-on-reality? (true)
     set fixate-on-visual-spatial-field? (false)
-    set generate-plan? (true)
+    set generate-plan? (false)
     set heading (0)
+    set learn-action-sequence? (false)
+    set learn-action-sequence-as-production? (false)
     set learn-episode-action? (true)
     set learn-episode-vision? (false)
     set learn-episode-as-production? (false)
-    set moved-objects-on-visual-spatial-field (false)
+    set learn-from-episodic-memory? (true)
     set reinforce-productions? (false)
     set score (0)
     set sight-radius-colour (color + 2)
@@ -3663,15 +4172,28 @@ to setup-chrest-turtles [setup-chrest?]
     ]
       
     chrest:set-add-production-time (add-production-time)
+    chrest:set-create-semantic-links (can-create-semantic-links?)
+    chrest:set-create-templates (can-create-templates?)
     chrest:set-discrimination-time (discrimination-time)
     chrest:set-familiarisation-time (familiarisation-time)
-    chrest:set-reinforcement-learning-theory (reinforcement-learning-theory)
+    chrest:Perceiver.set-fixation-field-of-view (fixation-field-of-view)
+    chrest:set-ltm-link-traversal-time (ltm-link-traversal-time)
+    chrest:set-maximum-semantic-link-search-distance (maximum-semantic-link-search-distance)
+    chrest:set-node-comparison-time (node-comparison-time)
+    chrest:set-node-image-similarity-threshold (node-image-similarity-threshold)
+    chrest:set-reinforce-production-time (reinforce-production-time)
+    if(not empty? reinforcement-learning-theory)[ 
+      chrest:set-reinforcement-learning-theory (chrest:ReinforcementLearning.value-of (reinforcement-learning-theory)) 
+    ]
     chrest:set-recognised-visual-spatial-field-object-lifespan (recognised-visual-spatial-field-object-lifespan)
+    chrest:set-rho (rho)
     chrest:set-saccade-time (saccade-time)
+    chrest:set-template-construction-parameters (minimum-depth-of-node-in-network-to-be-a-template) (minimum-item-or-position-occurrences-in-node-images-to-be-a-slot-value)
     chrest:set-time-taken-to-decide-upon-ahead-of-agent-fixations (time-taken-to-decide-upon-ahead-of-agent-fixations)
     chrest:set-time-taken-to-decide-upon-peripheral-item-fixations (time-taken-to-decide-upon-peripheral-item-fixations)
     chrest:set-time-taken-to-decide-upon-peripheral-square-fixations (time-taken-to-decide-upon-peripheral-square-fixations)
     chrest:set-time-to-access-visual-spatial-field (time-to-access-visual-spatial-field)
+    chrest:set-time-to-create-semantic-link (time-to-create-semantic-link)
     chrest:set-time-to-encode-recognised-scene-object-as-visual-spatial-field-object (time-to-encode-recognised-scene-object-as-visual-spatial-field-object)
     chrest:set-time-to-encode-unrecognised-empty-square-scene-object-as-visual-spatial-field-object (time-to-encode-unrecognised-empty-square-scene-object-as-visual-spatial-field-object)
     chrest:set-time-to-encode-unrecognised-non-empty-square-scene-object-as-visual-spatial-field-object (time-to-encode-unrecognised-non-empty-square-scene-object-as-visual-spatial-field-object)
@@ -3679,12 +4201,13 @@ to setup-chrest-turtles [setup-chrest?]
     chrest:set-time-to-process-unrecognised-scene-object-during-visual-spatial-field-construction (time-to-process-unrecognised-scene-object-during-visual-spatial-field-construction)
     chrest:set-time-to-retrieve-fixation-from-perceiver (time-to-retrieve-fixation-from-perceiver)
     chrest:set-time-to-retrieve-item-from-stm (time-to-retrieve-item-from-stm)
+    chrest:set-time-to-update-stm (time-to-update-stm)
     chrest:set-unrecognised-visual-spatial-field-object-lifespan (unrecognised-visual-spatial-field-object-lifespan)
     
     place-randomly
     
     setup-plot-pen ("Scores") (0)
-    setup-plot-pen ("Total Deliberation Time") (0)
+    setup-plot-pen ("Time Spent Deliberating") (0)
     setup-plot-pen ("Production Count") (0)
     setup-plot-pen ("Random Behaviour Frequency") (1)
     setup-plot-pen ("Problem-Solving Frequency") (1)
@@ -4122,7 +4645,7 @@ to run-test [file]
     
   ]
   
-  ;Remove any unneccessary white space so the test code is quicker to run.
+  ;Remove any unneccessary white space so the test code i. quicker to run.
   set test-code ( string:rex-replace-all ("\\s{2,}") (test-code) (" ") )
   
   if(empty? test-code)[
@@ -4478,7 +5001,7 @@ INPUTBOX
 147
 70
 total-number-of-scenarios
-54
+1
 1
 0
 Number
@@ -4489,7 +5012,7 @@ INPUTBOX
 147
 130
 total-number-of-repeats
-10
+1
 1
 0
 Number
@@ -4523,7 +5046,7 @@ PLOT
 189
 957
 368
-Total Deliberation Time
+Time Spent Deliberating
 Time
 Seconds
 0.0

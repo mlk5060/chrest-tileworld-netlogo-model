@@ -1,0 +1,207 @@
+<test>
+	repeat 50[
+		;=========================;
+		;== SETUP CHREST TURTLE ==;
+		;=========================;
+
+		create-chrest-turtles 1[
+
+			; Set CHREST turtle variables that have a bearing on this test.
+
+			set discount-rate (0.5)
+			set node-comparison-time (1)
+			set reinforce-production-time (1)
+			set reinforcement-learning-theory ("PROFIT_SHARING_WITH_DISCOUNT_RATE")
+			set time-to-retrieve-item-from-stm (1)
+
+			; No other CHREST turtle variables have any bearing on this test but need 
+			; to be set to appease the variable checker in the model code.
+
+			set add-production-time (1)
+			set can-create-semantic-links? (true)
+			set can-create-templates? (true)
+			set can-plan? (true)
+			set can-use-pattern-recognition? (true)
+			set discrimination-time (1)
+			set familiarisation-time (1)
+			set initial-fixation-threshold (1)
+			set ltm-link-traversal-time (1)
+			set max-fixations-in-set (5)
+			set max-search-iteration (3)
+			set maximum-semantic-link-search-distance (3)
+			set minimum-depth-of-node-in-network-to-be-a-template (3)
+			set minimum-item-or-position-occurrences-in-node-images-to-be-a-slot-value (3)
+			set node-image-similarity-threshold (2)
+			set peripheral-item-fixation-max-attempts (3)
+			set play-time (1400000)
+			set probability-of-using-problem-solving (0.0)
+			set recognised-visual-spatial-field-object-lifespan (1)
+			set rho (1.0)
+			set saccade-time (1)
+			set sight-radius (2)
+			set time-taken-to-decide-upon-ahead-of-agent-fixations (1)
+			set time-taken-to-decide-upon-movement-fixations (1)
+			set time-taken-to-decide-upon-peripheral-item-fixations (1)
+			set time-taken-to-decide-upon-peripheral-square-fixations (1)
+			set time-taken-to-decide-upon-salient-object-fixations (1)
+			set time-taken-to-move (1)
+			set time-taken-to-push-tile (1)
+			set time-to-access-visual-spatial-field (1)
+			set time-to-create-semantic-link (1)
+			set time-to-encode-recognised-scene-object-as-visual-spatial-field-object (1)
+			set time-to-encode-unrecognised-empty-square-scene-object-as-visual-spatial-field-object (1)
+			set time-to-encode-unrecognised-non-empty-square-scene-object-as-visual-spatial-field-object (1)
+			set time-to-generate-action-when-no-tile-seen (1)
+			set time-to-generate-action-when-tile-seen (1)
+			set time-to-move-visual-spatial-field-object (1)
+			set time-to-process-unrecognised-scene-object-during-visual-spatial-field-construction (1)
+			set time-to-retrieve-fixation-from-perceiver (1)
+			set time-to-update-stm (1)
+			set training-time (0)
+			set unknown-visual-spatial-field-object-replacement-probabilities (list (list 1.0 blind-patch-token))
+			set unrecognised-visual-spatial-field-object-lifespan (1)
+		]
+		setup(true)
+
+		ask turtle 0[
+
+			;=====================;
+			;== CREATE EPISODES ==;
+			;=====================;
+
+			let episode-1-vision (chrest:ListPattern.new 
+				(list
+					chrest:ItemSquarePattern.new (tile-token) (1) (-1)
+					chrest:ItemSquarePattern.new (hole-token) (2) (-2)
+				) 
+				(chrest:Modality.value-of ("VISUAL"))
+			)
+			let episode-1-action (chrest:ListPattern.new 
+				(list
+					chrest:ItemSquarePattern.new (move-token) (180) (1)
+					chrest:ItemSquarePattern.new (push-tile-token) (90) (1)
+				)
+				(chrest:Modality.value-of ("ACTION"))
+			)
+			let episode-1-generation-time (1000)
+
+			let episode-2-vision (chrest:ListPattern.new 
+				(list
+					chrest:ItemSquarePattern.new (tile-token) (-2) (0)
+				)  
+				(chrest:Modality.value-of ("VISUAL"))
+			)
+			let episode-2-action (chrest:ListPattern.new 
+				(list
+					chrest:ItemSquarePattern.new (move-token) (270) (1)
+					chrest:ItemSquarePattern.new (push-tile-token) (270) (1)
+				)
+				(chrest:Modality.value-of ("ACTION"))
+			)
+			let episode-2-generation-time (2000)
+
+			let episode-3-vision (chrest:ListPattern.new 
+				(list
+					chrest:ItemSquarePattern.new (tile-token) (-1) (1)
+				)  
+				(chrest:Modality.value-of ("VISUAL"))
+			)
+			let episode-3-action (chrest:ListPattern.new 
+				(list
+					chrest:ItemSquarePattern.new (move-token) (0) (1)
+					chrest:ItemSquarePattern.new (push-tile-token) (270) (1)
+				)
+				(chrest:Modality.value-of ("ACTION"))
+			)
+			let episode-3-generation-time (3000)
+
+			;=======================================;
+			;== ADD EPISODES TO 'episodic-memory' ==;
+			;=======================================;
+
+			add-episode-to-episodic-memory (episode-1-vision) (episode-1-action) (episode-1-generation-time)
+			add-episode-to-episodic-memory (episode-2-vision) (episode-2-action) (episode-2-generation-time)
+			add-episode-to-episodic-memory (episode-3-vision) (episode-3-action) (episode-3-generation-time)
+
+			;===================================;
+			;== SET EPISODE PERFORMANCE TIMES ==;
+			;===================================;
+
+			let episode-1 (item (0) (episodic-memory))
+			set episode-1 (replace-item (3) (episode-1) (4000))
+			set episodic-memory (replace-item (0) (episodic-memory) (episode-1)) 
+
+			let episode-2 (item (1) (episodic-memory))
+			set episode-2 (replace-item (3) (episode-2) (5000))
+			set episodic-memory (replace-item (1) (episodic-memory) (episode-2)) 
+
+			let episode-3 (item (2) (episodic-memory))
+			set episode-3 (replace-item (3) (episode-3) (6000))
+			set episodic-memory (replace-item (2) (episodic-memory) (episode-3)) 
+
+			;=================================;
+			;== SET 'time-last-hole-filled' ==;
+			;=================================;
+
+			set time-last-hole-filled (6000)
+
+			;=====================;
+			;== SET MODEL CLOCK ==;
+			;=====================;
+
+			; Should be greater than the last episode's performance time.
+
+			set current-training-time (7000)
+
+			;================================;
+			;== SET 'episode-to-reinforce' ==;
+			;================================;
+
+			; Set to the 3rd episode index so that the test can check if productions are skipped
+			; correctly.
+
+			set episode-to-reinforce ((length (episodic-memory)) - 1)
+
+			;===================;
+			;== SET-UP CHREST ==;
+			;===================;
+
+			let visual-node (chrest:TileworldModelTests#reinforce-productions.reinforce-moderate-production-match-test (episode-1-vision) (episode-1-action))
+
+			;=======================================;
+			;== SET EXPECTED TEST VARIABLE VALUES ==;
+			;=======================================;
+
+			let expected-attention-clock (current-training-time + (3 * (time-to-retrieve-item-from-stm + node-comparison-time)))
+			let expected-cognition-clock (expected-attention-clock + reinforce-production-time)
+
+			;======================;
+			;== INVOKE PROCEDURE ==;
+			;======================;
+			
+			while[episode-to-reinforce >= 0][
+				reinforce-productions
+				set current-training-time (current-training-time + 1)
+			]
+
+			;===========;
+			;== TESTS ==;
+			;===========;
+
+			check-equal (episode-to-reinforce) (-1) ("occurred when checking the 'episode-to-reinforce' variable")
+			check-equal (chrest:get-attention-clock) (expected-attention-clock) ("occurred when checking the CHREST turtle's attention clock")
+			check-equal (chrest:get-cognition-clock) (expected-cognition-clock) ("occurred when checking the CHREST turtle's cognition clock")
+
+			let visual-node-productions (chrest:Node.get-productions (visual-node) (chrest:get-cognition-clock))
+			check-equal (length visual-node-productions) (1) ("occurred when checking the number of productions for the visual node")
+
+			let production (item (0) (visual-node-productions))
+			check-equal 
+				(item (1) (production)) 
+				(1 + (1 * (discount-rate ^ (time-last-hole-filled - (item (3) (episode-1))))))
+				("occurred when checking the value of the visual Node's production")
+		]
+
+		reset(true)
+	]
+</test>
