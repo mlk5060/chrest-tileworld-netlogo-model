@@ -218,13 +218,13 @@ chrest-turtles-own [
                                                                                             ; visual-spatial field.                                                           ;
   time-to-create-semantic-link                                                              ; Stores the time (milleseconds) that it takes the turtle to create a semantic    ; Yes
                                                                                             ; link in long-term memory.
-  time-to-encode-recognised-scene-object-as-visual-spatial-field-object                     ; Stores the length of time (in milliseconds) that it takes to encode a           ; Yes
+  time-to-encode-recognised-visual-spatial-field-object                                     ; Stores the length of time (in milliseconds) that it takes to encode a           ; Yes
                                                                                             ; recognised scene object as a visual-spatial field object during visual-spatial  ;
                                                                                             ; field construction.                                                             ;
-  time-to-encode-unrecognised-empty-square-scene-object-as-visual-spatial-field-object      ; Stores the length of time (in milliseconds) that it takes to encode an          ; Yes
+  time-to-encode-unrecognised-empty-square-as-visual-spatial-field-object                   ; Stores the length of time (in milliseconds) that it takes to encode an          ; Yes
                                                                                             ; unrecognised scene object representing an empty square as a visual-spatial      ;
                                                                                             ; field object during visual-spatial field construction.                          ;                                   ;
-  time-to-encode-unrecognised-non-empty-square-scene-object-as-visual-spatial-field-object  ; Stores the length of time (in milliseconds) that it takes to encode an          ; Yes
+  time-to-encode-unrecognised-visual-spatial-field-object                                   ; Stores the length of time (in milliseconds) that it takes to encode an          ; Yes
                                                                                             ; unrecognised scene object representing a non-empty square (a turtle) as a       ;
                                                                                             ; visual-spatial field object during visual-spatial field construction.           ;              ;
   time-to-generate-action-when-no-tile-seen                                                 ; Stores the time taken to generate an action when no tile can be seen            ; Yes
@@ -4172,8 +4172,8 @@ to setup-chrest-turtles [setup-chrest?]
     ]
       
     chrest:set-add-production-time (add-production-time)
-    chrest:set-create-semantic-links (can-create-semantic-links?)
-    chrest:set-create-templates (can-create-templates?)
+    chrest:set-can-create-semantic-links (can-create-semantic-links?)
+    chrest:set-can-create-templates (can-create-templates?)
     chrest:set-discrimination-time (discrimination-time)
     chrest:set-familiarisation-time (familiarisation-time)
     chrest:Perceiver.set-fixation-field-of-view (fixation-field-of-view)
@@ -4194,9 +4194,9 @@ to setup-chrest-turtles [setup-chrest?]
     chrest:set-time-taken-to-decide-upon-peripheral-square-fixations (time-taken-to-decide-upon-peripheral-square-fixations)
     chrest:set-time-to-access-visual-spatial-field (time-to-access-visual-spatial-field)
     chrest:set-time-to-create-semantic-link (time-to-create-semantic-link)
-    chrest:set-time-to-encode-recognised-scene-object-as-visual-spatial-field-object (time-to-encode-recognised-scene-object-as-visual-spatial-field-object)
-    chrest:set-time-to-encode-unrecognised-empty-square-scene-object-as-visual-spatial-field-object (time-to-encode-unrecognised-empty-square-scene-object-as-visual-spatial-field-object)
-    chrest:set-time-to-encode-unrecognised-non-empty-square-scene-object-as-visual-spatial-field-object (time-to-encode-unrecognised-non-empty-square-scene-object-as-visual-spatial-field-object)
+    chrest:set-time-to-encode-recognised-visual-spatial-field-object (time-to-encode-recognised-visual-spatial-field-object)
+    chrest:set-time-to-encode-unrecognised-empty-square-as-visual-spatial-field-object (time-to-encode-unrecognised-empty-square-as-visual-spatial-field-object)
+    chrest:set-time-to-encode-unrecognised-visual-spatial-field-object (time-to-encode-unrecognised-visual-spatial-field-object)
     chrest:set-time-to-move-visual-spatial-field-object (time-to-move-visual-spatial-field-object)
     chrest:set-time-to-process-unrecognised-scene-object-during-visual-spatial-field-construction (time-to-process-unrecognised-scene-object-during-visual-spatial-field-construction)
     chrest:set-time-to-retrieve-fixation-from-perceiver (time-to-retrieve-fixation-from-perceiver)
