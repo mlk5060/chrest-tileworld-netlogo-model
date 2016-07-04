@@ -129,13 +129,13 @@ time-to-access-visual-spatial-field
 time-to-create-semantic-link
 0:1
 
-time-to-encode-recognised-scene-object-as-visual-spatial-field-object
+time-to-encode-recognised-visual-spatial-field-object
 0:1
 
-time-to-encode-unrecognised-empty-square-scene-object-as-visual-spatial-field-object
+time-to-encode-unrecognised-empty-square-as-visual-spatial-field-object
 0:1
 
-time-to-encode-unrecognised-non-empty-square-scene-object-as-visual-spatial-field-object
+time-to-encode-unrecognised-visual-spatial-field-object
 0:1
 
 time-to-generate-action-when-no-tile-seen

@@ -252,6 +252,22 @@ chrest-turtles-own [
                                                                                             ; seen, planning will end when this tile is pushed out of the visual-spatial      ;
                                                                                             ; field or pushed into a hole.  Also, allows for precise reversals of             ;
                                                                                             ; visual-spatial field moves that result in invalid visual-spatial field states.  ;
+  ;;;;;;;;;;;;;;;;;;;;;;;;;
+  ;;; RESULTS VARIABLES ;;;
+  ;;;;;;;;;;;;;;;;;;;;;;;;;
+  
+  turtles-result-directory
+  previous-score
+  previous-time-spent-deliberating
+  previous-production-count
+  previous-frequency-of-problem-solving
+  previous-frequency-of-pattern-recognition
+  previous-visual-stm-count
+  previous-visual-ltm-size
+  previous-avg-visual-ltm-depth
+  previous-action-stm-count
+  previous-action-ltm-size
+  previous-avg-action-ltm-depth
 ]
    
 tiles-own [ 
@@ -296,9 +312,6 @@ holes-own [
 ;
 ;@author  Martyn Lloyd-Kelly <martynlk@liverpool.ac.uk>  
 to add-episode-to-episodic-memory [vision action time-generated]
-  set debug-indent-level (debug-indent-level + 1)
-  output-debug-message ("EXECUTING THE 'add-episode-to-episodic-memory' PROCEDURE...") ("")
-  set debug-indent-level (debug-indent-level + 1)
 ;  
 ;  if(breed = chrest-turtles)[
 ;  
@@ -307,24 +320,21 @@ to add-episode-to-episodic-memory [vision action time-generated]
 ;      set rlt (chrest:get-reinforcement-learning-theory)
 ;    ]
 ;    
-;    output-debug-message (word "Checking to see if my reinforcement learning theory is set to 'null' (" rlt ").  If so, I won't continue with this procedure...") (who)
+;    
 ;    if(rlt != "null")[
 ;      
-;      output-debug-message (word "Before modification my 'episodic-memory' is set to: '" episodic-memory "'." ) (who)
-;      output-debug-message (word "Checking to see if the length of my 'episodic-memory' (" length episodic-memory ") is greater than or equal to the value specified for the 'max-length-of-episodic-memory' variable (" max-length-of-episodic-memory ")...") (who)
+;      
+;      
 ;      if( (length (episodic-memory)) >= max-length-of-episodic-memory )[
-;        output-debug-message ("The length of the 'episodic-memory' list is greater than or equal to the value specified for the 'max-length-of-episodic-memory' variable...") (who)
+;        
 ;        set episodic-memory (but-first episodic-memory)
-;        output-debug-message (word "After removing the first (oldest) item, my 'episodic-memory' is set to: '" episodic-memory "'." ) (who)
+;        
 ;      ]
 ;      
       let episode (list (vision) (action) (time-generated) (-1))
       set episodic-memory (lput (episode) (episodic-memory))
-      output-debug-message (word "State of 'episodic-memory' after addition: '" episodic-memory "'.") (who)
 ;    ]
 ;  ]
-  
-  set debug-indent-level (debug-indent-level - 2)
 end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -366,19 +376,12 @@ end
 ;
 ;@author  Martyn Lloyd-Kelly <martynlk@liverpool.ac.uk>  
 to check-boolean-variables [turtle-id variable-name variable-value]
-  set debug-indent-level (debug-indent-level + 1)
-  output-debug-message ("EXECUTING THE 'check-boolean-variables' PROCEDURE...") ("")
-  set debug-indent-level (debug-indent-level + 1)
-  
-  output-debug-message (word "THE 'turtle-id' VARIABLE IS SET TO: '" "'.") ("")
-  output-debug-message (word "THE 'variable-name' VARIABLE IS SET TO: '" variable-name "'.") ("")
-  output-debug-message (word "THE 'variable-value' VARIABLE IS SET TO: '" variable-value "'.") ("")
   
   ;================================;
   ;== SET ERROR MESSAGE PREAMBLE ==;
   ;================================;
   
-  output-debug-message ("SETTING THE 'error-message-preamble' VARIABLE...") ("")
+  
   let error-message-preamble ""
   ifelse(turtle-id = "")[
     set error-message-preamble (word "The global '" variable-name "' variable value ")
@@ -386,19 +389,19 @@ to check-boolean-variables [turtle-id variable-name variable-value]
   [
     set error-message-preamble (word "Turtle " turtle-id "'s '" variable-name "' variable value ")
   ]
-  output-debug-message (word "THE 'error-message-preamble' VARIABLE IS SET TO: '" error-message-preamble "'.") ("")
+  
   
   ;=============================================;
   ;== CHECK THAT VARIABLE HAS A BOOLEAN VALUE ==;
   ;=============================================;
   
-  output-debug-message (word "CHECKING TO SEE IF '" variable-name "' HAS A BOOLEAN VALUE...") ("")
+  
   if(not runresult (word "is-boolean? " variable-name ))[
     error (word error-message-preamble "does not have a boolean value (" variable-value ").  Please rectify.")
   ]
-  output-debug-message (word "'" variable-name "' HAS A BOOLEAN VALUE...") ("")
   
-  set debug-indent-level (debug-indent-level - 2)
+  
+  
 end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -418,18 +421,18 @@ end
 ;
 ;@author  Martyn Lloyd-Kelly <martynlk@liverpool.ac.uk>  
 to check-for-scenario-repeat-directory
-  set debug-indent-level (debug-indent-level + 1)
-  output-debug-message ("EXECUTING THE 'check-for-scenario-repeat-directory' PROCEDURE") ("")
-  set debug-indent-level (debug-indent-level + 1)
+  
+  
+  
   
   let directory-to-check (word setup-and-results-directory "Scenario" current-scenario-number directory-separator "Repeat" current-repeat-number)
-  output-debug-message (word "CHECKING TO SEE IF THE FOLLOWING DIRECTORY STRUCTURE EXISTS: " directory-to-check) ("")
+  
   if(not file-exists? (directory-to-check) )[
-    set debug-indent-level (debug-indent-level - 2)
+    
     error (word "File " setup-and-results-directory "Scenario" current-scenario-number directory-separator "Repeat" current-repeat-number " does not exist.")
   ]
   
-  set debug-indent-level (debug-indent-level - 2)
+  
 end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -452,10 +455,10 @@ end
 ;
 ;@author  Martyn Lloyd-Kelly <martynlloydkelly@gmail.com>  
 to-report check-for-substring-in-string-and-report-occurrences [needle haystack]
-  set debug-indent-level (debug-indent-level + 1)
-  output-debug-message ("EXECUTING THE 'check-for-substring-in-string-and-report-occurrences' PROCEDURE...") ("")
-  set debug-indent-level (debug-indent-level + 1)
-  output-debug-message (word "CHECKING '" haystack "' FOR '" needle "'...") ("")
+  
+  
+  
+  
   
   let copy-of-haystack (haystack)
   let number-of-occurrences 0
@@ -466,13 +469,13 @@ to-report check-for-substring-in-string-and-report-occurrences [needle haystack]
     let position-to-cut-from (position needle copy-of-haystack) + length-of-needle  
     set copy-of-haystack (substring (copy-of-haystack) (position-to-cut-from) (length copy-of-haystack))
     
-    output-debug-message (word "FOUND '" needle "'.  THE LOCAL 'number-of-occurrences' VARIABLE NOW EQUALS: " number-of-occurrences ".") ("")
-    output-debug-message (word "After removing '" needle "' from the haystack, the haystack is now equal to: '" copy-of-haystack "'.") ("")
-    output-debug-message (word "CHECKING '" copy-of-haystack "' FOR '" needle "'...") ("")  
+    
+    
+      
   ]
-  output-debug-message(word "'" needle "' OCCURS IN '" haystack "' " number-of-occurrences " TIMES.") ("")
   
-  set debug-indent-level (debug-indent-level - 2)
+  
+  
   report number-of-occurrences
 end
 
@@ -517,22 +520,22 @@ end
 ;
 ;@author  Martyn Lloyd-Kelly <martynlk@liverpool.ac.uk>  
 to check-number-variables [turtle-id variable-name variable-value integer? min-value max-value]
-  set debug-indent-level (debug-indent-level + 1)
-  output-debug-message ("EXECUTING THE 'check-number-variables' PROCEDURE...") ("")
-  set debug-indent-level (debug-indent-level + 1)
   
-  output-debug-message (word "THE 'turtle-id' VARIABLE IS SET TO: '" "'.") ("")
-  output-debug-message (word "THE 'variable-name' VARIABLE IS SET TO: '" variable-name "'.") ("")
-  output-debug-message (word "THE 'variable-value' VARIABLE IS SET TO: '" variable-value "'.") ("")
-  output-debug-message (word "THE 'integer?' VARIABLE IS SET TO: '" integer? "'.") ("")
-  output-debug-message (word "THE 'min-value' VARIABLE IS SET TO: '" min-value "'.") ("")
-  output-debug-message (word "THE 'max-value' VARIABLE IS SET TO: '" max-value "'.") ("")
+  
+  
+  
+  
+  
+  
+  
+  
+  
   
   ;================================;
   ;== SET ERROR MESSAGE PREAMBLE ==;
   ;================================;
   
-  output-debug-message ("SETTING THE 'error-message-preamble' VARIABLE...") ("")
+  
   let error-message-preamble ""
   ifelse(turtle-id = "")[
     set error-message-preamble (word "The global '" variable-name "' variable value ")
@@ -540,33 +543,33 @@ to check-number-variables [turtle-id variable-name variable-value integer? min-v
   [
     set error-message-preamble (word "Turtle " turtle-id "'s '" variable-name "' variable value ")
   ]
-  output-debug-message (word "THE 'error-message-preamble' VARIABLE IS SET TO: '" error-message-preamble "'.") ("")
+  
   
   ;=====================================;
   ;== CHECK THAT VARIABLE IS A NUMBER ==;
   ;=====================================;
   
-  output-debug-message (word "CHECKING TO SEE IF '" variable-name "' IS A NUMBER...") ("")
+  
   if(not runresult (word "is-number? " variable-name ))[
     error (word error-message-preamble "is not a number (" variable-value ").  Please rectify so that it is.")
   ]
-  output-debug-message (word "'" variable-name "' IS A NUMBER...") ("")
+  
   
   ;====================================================;
   ;== CHECK VARIABLE'S FORMATTING (INTEGER OR FLOAT) ==;
   ;====================================================;
   
-  output-debug-message (word "CHECKING THAT '" variable-name "' IS FORMATTED AS AN INTEGER IF IT IS INTENDED TO BE...") ("")
+  
   if( (integer?) and (not string:rex-match ("-?[0-9]+") (word variable-value) ) )[
     error (word error-message-preamble "is not formatted as an integer (" variable-value ") i.e. optional negation sign followed by numbers.  Please rectify.")
   ]
-  output-debug-message (word "'" variable-name "' IS CORRECTLY FORMATTED AS AN INTEGER.") ("")
+  
   
   ;===============================================================;
   ;== CHECK IF VARIABLE IS GREATER THAN THE MIN VALUE SPECIFIED ==;
   ;===============================================================;
   
-  output-debug-message (word "CHECKING TO SEE IF '" variable-name "' IS >= " min-value "...") ("")
+  
   if( (min-value != false) )[
     if(not runresult (word variable-value " >= " min-value))[
       error (word error-message-preamble "is not > " min-value " (" variable-value ").  Please rectify.")
@@ -577,14 +580,14 @@ to check-number-variables [turtle-id variable-name variable-value integer? min-v
   ;== CHECK THAT VARIABLE VALUE IS LESS THAN OR EQUAL TO ITS MAX VALUE ==;
   ;======================================================================;
   
-  output-debug-message (word "CHECKING TO SEE IF '" variable-name "' IS <= " max-value "...") ("")
+  
   if( (max-value != false) )[
     if(not runresult (word variable-value " <= " max-value ))[
       error (word error-message-preamble "is not <= " max-value " (" variable-value ").  Please rectify." )
     ]
   ]
   
-  set debug-indent-level (debug-indent-level - 2)
+  
 end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -664,9 +667,9 @@ to check-variable-values
       ( list ("time-taken-to-push-tile") (true) (1) (max-time) )
       ( list ("time-to-access-visual-spatial-field") (true) (1) (max-time) )
       ( list ("time-to-create-semantic-link") (true) (1) (max-time) )
-      ( list ("time-to-encode-recognised-scene-object-as-visual-spatial-field-object") (true) (1) (max-time) )
-      ( list ("time-to-encode-unrecognised-empty-square-scene-object-as-visual-spatial-field-object") (true) (1) (max-time) )
-      ( list ("time-to-encode-unrecognised-non-empty-square-scene-object-as-visual-spatial-field-object") (true) (1) (max-time) )
+      ( list ("time-to-encode-recognised-visual-spatial-field-object") (true) (1) (max-time) )
+      ( list ("time-to-encode-unrecognised-empty-square-as-visual-spatial-field-object") (true) (1) (max-time) )
+      ( list ("time-to-encode-unrecognised-visual-spatial-field-object") (true) (1) (max-time) )
       ( list ("time-to-generate-action-when-no-tile-seen") (true) (1) (max-time) )
       ( list ("time-to-generate-action-when-tile-seen") (true) (1) (max-time) )
       ( list ("time-to-move-visual-spatial-field-object") (true) (1) (max-time) )
@@ -715,13 +718,13 @@ end
 ;
 ;@author  Martyn Lloyd-Kelly <martynlk@liverpool.ac.uk>  
 to chrest-turtles-act
-  output-debug-message ("EXECUTING THE 'chrest-turtles-act' PROCEDURE...") ("")
-  set debug-indent-level (debug-indent-level + 1)
+  
+  
   
   ask chrest-turtles [
-   output-debug-message (word "Checking to see if I'm hidden (" hidden? ").  If 'false' I should do something in this round, if 'true' I should do nothing...") (who)
+   
    if( not hidden? )[
-     output-debug-message (word "Since 'hidden?' is 'false' I should do something...") (who)
+     
      
      ;====================;
      ;== MAKE FIXATIONS ==;
@@ -734,11 +737,11 @@ to chrest-turtles-act
      ;===================;
      
      ifelse(can-plan? and chrest:is-attention-free? (report-current-time))[
-       output-debug-message (word "I can plan so I'll see if I should generate a new plan or add to the exisiting one...") (who)
+       
        generate-plan
      ]
      [
-       output-debug-message ("I am not capable of planning") (who)
+       
      ]
 
      ;=========================;
@@ -750,7 +753,7 @@ to chrest-turtles-act
        "'deliberation-finished-time' variable (" (report-current-time >= deliberation-finished-time) ")") 
      (who)
      if(report-current-time >= deliberation-finished-time)[
-       output-debug-message (word "I should attempt to schedule/execute my next action...") (who)
+       
        schedule-or-execute-next-episode-actions
      ]
            
@@ -784,22 +787,93 @@ to chrest-turtles-act
        reinforce-productions
      ]
      
-     ;==================;
-     ;== UPDATE PLOTS ==;
-     ;==================;
+     ;===============================;
+     ;== UPDATE RECORDED VARIABLES ==;
+     ;===============================;
      
-     output-debug-message ("Updating my plots...") (who)
-     update-plot-no-x-axis-value ("Scores") (score)
-     update-plot-no-x-axis-value ("Time spent deliberating") (time-spent-deliberating)
-     update-plot-no-x-axis-value ("Production Count") (chrest:get-production-count (report-current-time))
-     update-plot-with-x-axis-value ("Problem-Solving Frequency") (who) (frequency-of-problem-solving)
-     update-plot-with-x-axis-value ("Pattern-Recognition Frequency") (who) (frequency-of-pattern-recognitions)
-     update-plot-no-x-axis-value ("Visual STM Node Count") (chrest:Stm.get-count (chrest:Modality.value-of("VISUAL")) (report-current-time))
-     update-plot-no-x-axis-value ("Visual LTM Size") (chrest:get-ltm-modality-size (chrest:Modality.value-of("VISUAL")) (report-current-time))
-     update-plot-no-x-axis-value ("Visual LTM Avg. Depth")(chrest:get-ltm-avg-depth (chrest:Modality.value-of("VISUAL")) (report-current-time))
-     update-plot-no-x-axis-value ("Action STM Node Count") (chrest:Stm.get-count (chrest:Modality.value-of("ACTION")) (report-current-time))
-     update-plot-no-x-axis-value ("Action LTM Size") (chrest:get-ltm-modality-size (chrest:Modality.value-of("ACTION")) (report-current-time))
-     update-plot-no-x-axis-value ("Action LTM Avg. Depth")(chrest:get-ltm-avg-depth (chrest:Modality.value-of("ACTION")) (report-current-time))
+     if(score != previous-score)[ 
+       file-open (word (turtles-result-directory) "score.csv" )
+       file-print (word (report-current-time) "," (score))
+       file-close
+       set previous-score (score)
+     ]
+     
+     if(time-spent-deliberating != previous-time-spent-deliberating)[ 
+       file-open (word (turtles-result-directory) "time-spent-deliberating.csv" )
+       file-print (word (report-current-time) "," (time-spent-deliberating))
+       file-close
+       set previous-time-spent-deliberating (time-spent-deliberating)
+     ]
+     
+     let production-count (chrest:get-production-count (report-current-time))
+     if(production-count != previous-production-count)[
+       file-open (word (turtles-result-directory) "production-count.csv" )
+       file-print (word (report-current-time) "," (production-count))
+       file-close
+       set previous-production-count (production-count)
+     ]
+     
+     if(frequency-of-problem-solving != previous-frequency-of-problem-solving)[
+       file-open (word (turtles-result-directory) "problem-solving-frequency.csv" )
+       file-print (word (report-current-time) "," (frequency-of-problem-solving))
+       file-close
+       set previous-frequency-of-problem-solving (frequency-of-problem-solving)
+     ]
+     
+     if(frequency-of-pattern-recognitions != previous-frequency-of-pattern-recognition)[
+       file-open (word (turtles-result-directory) "pattern-recognition-frequency.csv" )
+       file-print (word (report-current-time) "," (frequency-of-pattern-recognitions))
+       file-close
+       set previous-frequency-of-pattern-recognition (frequency-of-pattern-recognitions)
+     ]
+     
+     let visual-stm-count (chrest:Stm.get-count (chrest:Modality.value-of("VISUAL")) (report-current-time))
+     if(visual-stm-count != previous-visual-stm-count)[
+       file-open (word (turtles-result-directory) "visual-stm-count.csv" )
+       file-print (word (report-current-time) "," (visual-stm-count))
+       file-close
+       set previous-visual-stm-count (visual-stm-count)
+     ]
+     
+     let visual-ltm-size (chrest:get-ltm-modality-size (chrest:Modality.value-of("VISUAL")) (report-current-time))
+     if(visual-ltm-size != previous-visual-ltm-size)[
+       file-open (word (turtles-result-directory) "visual-ltm-size.csv" )
+       file-print (word (report-current-time) "," (visual-ltm-size))
+       file-close
+       set previous-visual-ltm-size (visual-ltm-size)
+     ]
+     
+     let avg-visual-ltm-depth (chrest:get-ltm-avg-depth (chrest:Modality.value-of("VISUAL")) (report-current-time))
+     if(avg-visual-ltm-depth != previous-avg-visual-ltm-depth)[
+       file-open (word (turtles-result-directory) "avg-visual-ltm-depth.csv" )
+       file-print (word (report-current-time) "," (avg-visual-ltm-depth))
+       file-close
+       set previous-avg-visual-ltm-depth (avg-visual-ltm-depth)
+     ]
+     
+     let action-stm-count (chrest:Stm.get-count (chrest:Modality.value-of("ACTION")) (report-current-time))
+     if(action-stm-count != previous-action-stm-count)[
+       file-open (word (turtles-result-directory) "action-stm-count.csv" )
+       file-print (word (report-current-time) "," (action-stm-count))
+       file-close
+       set previous-action-stm-count (action-stm-count)
+     ]
+     
+     let action-ltm-size (chrest:get-ltm-modality-size (chrest:Modality.value-of("ACTION")) (report-current-time))
+     if(action-ltm-size != previous-action-ltm-size)[
+       file-open (word (turtles-result-directory) "action-ltm-size.csv" )
+       file-print (word (report-current-time) "," (action-ltm-size))
+       file-close
+       set previous-action-ltm-size (action-ltm-size)
+     ]
+     
+     let avg-action-ltm-depth (chrest:get-ltm-avg-depth (chrest:Modality.value-of("ACTION")) (report-current-time))
+     if(avg-action-ltm-depth != previous-avg-action-ltm-depth)[
+       file-open (word (turtles-result-directory) "avg-action-ltm-depth.csv" )
+       file-print (word (report-current-time) "," (avg-action-ltm-depth))
+       file-close
+       set previous-avg-action-ltm-depth (avg-action-ltm-depth)
+     ]
    ]
   ]
 end
@@ -813,18 +887,18 @@ end
 ;
 ;@author  Martyn Lloyd-Kelly <martynlk@liverpool.ac.uk>  
 to create-new-tiles-and-holes
-  set debug-indent-level (debug-indent-level + 1)
-  output-debug-message ("EXECUTING THE 'create-new-tiles-and-holes' PROCEDURE...") ("")
-  set debug-indent-level (debug-indent-level + 1)
-  output-debug-message ("CHECKING GAME CONTEXT (TRAINING OR NON-TRAINING)...") ("")
+  
+  
+  
+  
   
   no-display
   
   if(remainder (report-current-time) (tile-born-every) = 0)[
-    output-debug-message ("A NEW TILE SHOULD BE GIVEN THE CHANCE TO BE CREATED NOW.") ("")
+    
     
     if(random-float 1.0 < tile-birth-prob) [
-      output-debug-message ("A NEW TILE WILL BE CREATED AND PLACED RANDOMLY IN THE ENVIRONMENT...") ("")
+      
       create-tiles 1 [
         set heading (0)
         set time-created (report-current-time)
@@ -835,13 +909,13 @@ to create-new-tiles-and-holes
     ]
   ]
   
-  output-debug-message (word "REMAINDER OF DIVIDING '" current-game-time "' BY '" hole-born-every "' IS: '" remainder current-game-time hole-born-every "'.") ("")
+  
   
   if(remainder (report-current-time) (hole-born-every) = 0)[
-    output-debug-message ("A NEW HOLE SHOULD BE GIVEN THE CHANCE TO BE CREATED NOW.") ("")
+    
     
     if(random-float 1.0 < hole-birth-prob) [
-      output-debug-message ("A NEW HOLE WILL BE CREATED AND PLACED RANDOMLY IN THE ENVIRONMENT...") ("")
+      
       create-holes 1 [
         set heading (0)
         set time-created (report-current-time)
@@ -853,7 +927,7 @@ to create-new-tiles-and-holes
   ]
 
   display
-  set debug-indent-level (debug-indent-level - 2)
+  
 end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -892,15 +966,15 @@ end
 ;
 ;@author  Martyn Lloyd-Kelly <martynlk@liverpool.ac.uk> 
 to-report deliberate
-  set debug-indent-level (debug-indent-level + 1)
-  output-debug-message ("EXECUTING THE 'deliberate' PROCEDURE...") ("")
-  set debug-indent-level (debug-indent-level + 1)
   
-  output-debug-message ("Creating four local variables: 'action', 'time-taken-to-deliberate', 'used-pattern-recognition' and 'patches-looked-at'...") (who)
-  output-debug-message ("The 'action' variable will be populated with a 3 element list representing the action decided upon, the heading I should adopt when performing the action and how many patches the object to be actioned should be shifted along the heading specified...") (who) 
-  output-debug-message ("The 'time-taken-to-deliberate' variable will store the length of time taken to deliberate...") (who)
-  output-debug-message ("The 'used-pattern-recognition' variable controls whether problem-solving will be used (if set to false then problem-solving will be used).  Should only be set to true if I'm a CHREST turtle and I select an action using pattern-recogniition. Setting value to 'false' since this is a fresh deliberation...") (who)
-  output-debug-message ("The 'patches-looked-at' variable will store what patches are looked at for problem-solving.  Should contain values representing the number of patches along the x and y axis that the patch looked at is from the deliberating turtle...") (who)
+  
+  
+  
+  
+   
+  
+  
+  
   
   let time-taken-to-deliberate (0)
   let used-pattern-recognition? (false)
@@ -913,18 +987,18 @@ to-report deliberate
   ;== CHECK BREED OF CALLING TURTLE ==;
   ;===================================;
   
-  output-debug-message ("Checking my breed to deliberate accordingly") (who)
+  
   
   if(breed = chrest-turtles)[
-    output-debug-message ("I am a chrest-turtle so I will deliberate accordingly") (who)
+    
     
     ;=========================;
     ;== PATTERN RECOGNITION ==;
     ;=========================;
     
-    output-debug-message (word "Checking if I can use pattern-recognition to select an action to perform (" can-use-pattern-recognition? ")") (who)
+    
     if(can-use-pattern-recognition? and (random-float 1.0 > probability-of-using-problem-solving) )[
-      output-debug-message (word "My 'can-use-pattern-recognition?' variable is set to 'true' and I shouldn't use problem-solving so I'll use visual pattern-recognition to select an action to perform") (who)
+      
       
       let production-selected (chrest:generate-action-using-visual-pattern-recognition (report-current-time))
       ifelse( not empty? production-selected )[
@@ -938,12 +1012,12 @@ to-report deliberate
           ", action: " (chrest:ListPattern.get-as-string (action))
         ) (who)
         
-        output-debug-message (word "Since I generated an action using pattern recognition, I will increment my 'frequency-of-pattern-recognitions' variable (" frequency-of-pattern-recognitions ") by 1...") (who)
+        
         set frequency-of-pattern-recognitions (frequency-of-pattern-recognitions + 1)
-        output-debug-message (word "My 'frequency-of-pattern-recognitions' variable is now equal to: " frequency-of-pattern-recognitions "...") (who)
+        
       ]
       [
-        output-debug-message (word "Pattern-recognition didn't yield an action") (who)
+        
       ]
     ]
     
@@ -967,25 +1041,25 @@ to-report deliberate
     ; 2. If there is no visual STM hypothesis, try to use the information in 
     ;    the last Fixation performed
     if(not used-pattern-recognition?)[
-      output-debug-message (word "I didn't generate an action using pattern-recognition so I'll use problem-solving instead...") (who)
+      
       
       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
       ;;; 1. Use information in visual STM hypothesis ;;;
       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
       
-      output-debug-message ("Getting my visual STM hypothesis to decide on what to do.") (who)
+      
 
       let visual-stm-hypothesis (chrest:get-stm-item (chrest:Modality.value-of("VISUAL")) (1) (report-current-time))
       ifelse(not is-string? visual-stm-hypothesis)[
-        output-debug-message (word "Reference of Node in visual STM hypothesis position: " chrest:Node.get-reference (visual-stm-hypothesis)) (who)
+        
 
         set vision (chrest:Node.get-all-information (visual-stm-hypothesis) (report-current-time))
-        output-debug-message("Getting tile locations from its contents/image/filled-slots") (who)
+        
         let visual-stm-hypothesis-items (chrest:ListPattern.get-as-netlogo-list (vision))
         
         ;Extract tile locations relative to agent.
         foreach(visual-stm-hypothesis-items)[
-          output-debug-message (word "Checking if visual STM hypothesis ItemSquarePattern " chrest:ItemSquarePattern.get-as-string (?) " indicates a tile") (who)
+          
           if(chrest:ItemSquarePattern.get-item (?) = tile-token)[
             
             let location-of-tile (list (chrest:ItemSquarePattern.get-column (?)) (chrest:ItemSquarePattern.get-row (?))) 
@@ -995,7 +1069,7 @@ to-report deliberate
             ) (who)
             
             if(not member? (location-of-tile) (patches-seen-with-tiles-on))[
-              output-debug-message("ItemSquarePattern column and row not present in 'patches-seen-with-tiles-on' currently, adding them") (who)
+              
               set patches-seen-with-tiles-on (lput (location-of-tile) (patches-seen-with-tiles-on))
             ]
           ]
@@ -1006,19 +1080,19 @@ to-report deliberate
       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
       [
       
-        output-debug-message ("Can't get visual STM hypothesis so I'll decide what to do based on my Fixations") (who)
+        
         
         let fixations-performed (chrest:Perceiver.get-fixations-performed (report-current-time))
         ifelse(not empty? fixations-performed)[
-          output-debug-message ("I have performed some Fixations so I'll see if I saw a tile when the last one was performed") (who)
+          
 
           let last-fixation-performed (chrest:get-fixation-performed (1) (report-current-time))
           ifelse(not is-string? last-fixation-performed)[
-            output-debug-message (word "Last Fixation performed: " chrest:Fixation.to-string (last-fixation-performed)) (who)
+            
             
             set vision (chrest:Perceiver.get-objects-seen-in-fixation-field-of-view (last-fixation-performed) (true))
             let non-empty-squares-fixated-on (chrest:ListPattern.get-as-netlogo-list (vision))
-            output-debug-message (word "Non-empty squares fixated on: " map ([chrest:ItemSquarePattern.get-as-string (?)]) (non-empty-squares-fixated-on)) (who)
+            
             
             foreach(non-empty-squares-fixated-on)[ 
               if( (chrest:ItemSquarePattern.get-item (?)) = tile-token )[
@@ -1032,13 +1106,13 @@ to-report deliberate
                   (chrest:ItemSquarePattern.get-column (?))
                   (chrest:ItemSquarePattern.get-row (?))
                   )
-                output-debug-message (word "A tile was seen " location-of-tile " from me, adding this to my 'patches-seen-with-tiles-on' variable") (who)
+                
                 set patches-seen-with-tiles-on (lput (location-of-tile) (patches-seen-with-tiles-on))
               ]
             ]
           ]
           [
-            output-debug-message ("Can't get the last Fixation performed") (who)
+            
           ]
         ]
         [
@@ -1053,8 +1127,8 @@ to-report deliberate
   ;=====================;
   
   if(not used-pattern-recognition?)[
-    output-debug-message ("Using problem-solving to deliberate...") (who)
-    output-debug-message (word "Checking to see if I've seen any tiles (" not empty? patches-seen-with-tiles-on ")") (who)
+    
+    
     
     ;====================;
     ;== WHEN TILE SEEN ==;
@@ -1066,7 +1140,7 @@ to-report deliberate
         "contains a tile to generate an action in context of"
       ) (who)
       let patch-with-tile-on (one-of (patches-seen-with-tiles-on))
-      output-debug-message (word "I selected the following patch: " patch-with-tile-on) (who)
+      
       
       set action ( generate-action-when-tile-can-be-seen (item (0) (patch-with-tile-on)) (item (1) (patch-with-tile-on)) )
       
@@ -1076,7 +1150,7 @@ to-report deliberate
           "'time-to-generate-action-when-tile-seen' variable"
         ) (who)
         chrest:advance-attention-clock (time-to-generate-action-when-tile-seen)
-        output-debug-message (word "My attention clock is now equal to " chrest:get-attention-clock) (who)
+        
       ]
       [
         output-debug-message (word 
@@ -1085,14 +1159,14 @@ to-report deliberate
           "variable"
           ) (who)
         set time-taken-to-deliberate (time-taken-to-deliberate + time-to-generate-action-when-tile-seen)
-        output-debug-message (word "My 'time-taken-to-deliberate' variable is now equal to: " time-taken-to-deliberate "...") (who)
+        
       ]
     ]
     ;========================;
     ;== WHEN TILE NOT SEEN ==;
     ;========================;
     [
-      output-debug-message ("I didn't see any tiles, I'll try to select a random heading to move 1 patch forward along...") (who)
+      
       set action ( list (move-token) (one-of (movement-headings)) (1) )
       
       ifelse(breed = chrest-turtles)[
@@ -1101,7 +1175,7 @@ to-report deliberate
           "'time-to-generate-action-when-no-tile-seen' variable"
         ) (who)
         chrest:advance-attention-clock (time-to-generate-action-when-no-tile-seen)
-        output-debug-message (word "My attention clock is now equal to " chrest:get-attention-clock) (who)
+        
       ]
       [
         output-debug-message (word 
@@ -1110,27 +1184,27 @@ to-report deliberate
           "variable"
           ) (who)
         set time-taken-to-deliberate (time-taken-to-deliberate + time-to-generate-action-when-no-tile-seen)
-        output-debug-message (word "My 'time-taken-to-deliberate' variable is now equal to: " time-taken-to-deliberate "...") (who)
+        
       ]
     ]
     
-    output-debug-message (word "Since I am generating an action using problem-solving, I will increment my 'frequency-of-problem-solving' variable (" frequency-of-problem-solving ") by 1...") (who)
+    
     set frequency-of-problem-solving (frequency-of-problem-solving + 1)
-    output-debug-message (word "My 'frequency-of-problem-solving' variable is now equal to: " frequency-of-problem-solving "...") (who)
+    
   ]
   
   ;====================================;
   ;== ADD EPISODE TO EPISODIC-MEMORY ==;
   ;====================================;
   
-  output-debug-message ("Adding episode to episodic-memory. Need to set episode action/vision and time created first.") (who)
+  
   let episode-vision []
   let episode-action []
   let time-episode-created ""
   
   ;== CONVERT VISION EPISODIC-MEMORY ACCORDING TO BREED ==;
   
-  output-debug-message ("Setting 'episode-vision'") (who)
+  
   
   if(breed = chrest-turtles)[
     output-debug-message (word 
@@ -1141,7 +1215,7 @@ to-report deliberate
       ) (who)
     
     ifelse(is-list? vision)[
-      output-debug-message ("The 'vision' is a Netlogo list, converting to a jchrest.lib.ListPattern") (who)
+      
       set episode-vision (chrest:ListPattern.new 
         (vision)
         (chrest:Modality.value-of ("VISUAL"))
@@ -1157,12 +1231,12 @@ to-report deliberate
     ]
     
 ;    chrest:ListPattern.set-finished (episode-vision)
-    output-debug-message (word "The 'episode-vision' is now set to: " chrest:ListPattern.get-as-string (episode-vision)) (who)
+    
   ]
   
   ;== CONVERT ACTION FOR EPISODIC-MEMORY ACCORDING TO BREED ==;
   
-  output-debug-message("Setting 'episode-action'") (who)
+  
   
   ;For CHREST turtles, the 'episode-action' may need to be converted
   ;if it is a list (indicative of problem-solving).  The conversion
@@ -1176,7 +1250,7 @@ to-report deliberate
     ) (who)
     
     ifelse(is-list? action)[
-      output-debug-message ("The 'action' is a Netlogo list, converting to a jchrest.lib.ListPattern") (who)
+      
       set episode-action (chrest:ListPattern.new 
         (list 
           chrest:ItemSquarePattern.new 
@@ -1197,14 +1271,14 @@ to-report deliberate
     ]
     
 ;    chrest:ListPattern.set-finished (episode-action)
-    output-debug-message (word "The 'episode-action' is now set to: " chrest:ListPattern.get-as-string (episode-action)) (who)
+    
   ]
   
   ;== SET TIME EPISODE CREATED ==;
   
-  output-debug-message ("Setting the time the episode was created") (who)
+  
   ifelse(breed = chrest-turtles)[
-    output-debug-message (word "Since I'm a CHREST turtle, this will be set to the time my attention is free") (who)
+    
     set time-episode-created (chrest:get-attention-clock)
   ]
   [
@@ -1226,8 +1300,8 @@ to-report deliberate
   ;== REPORT ==;
   ;============;
   
-  output-debug-message (word "Reporting the time-taken to decide upon this action (" time-taken-to-deliberate ")") (who)
-  set debug-indent-level (debug-indent-level - 2)
+  
+  
   report time-taken-to-deliberate
 end
 
@@ -1312,9 +1386,9 @@ end
 ;
 ;@author  Martyn Lloyd-Kelly <martynlk@liverpool.ac.uk>
 to schedule-or-execute-next-episode-actions
-  set debug-indent-level (debug-indent-level + 1)
-  output-debug-message ("EXECUTING THE 'schedule-or-execute-next-episode-actions' PROCEDURE...") ("")
-  set debug-indent-level (debug-indent-level + 1)
+  
+  
+  
   
   output-debug-message (word 
     "Checking if my 'execute-actions?' variable is set to 'true'.  If so, I'll attempt to "
@@ -1322,7 +1396,7 @@ to schedule-or-execute-next-episode-actions
   ) (who)
   ifelse(execute-actions?)[
   
-    output-debug-message (word "Checking the contents of my 'actions-to-perform' turtle variable (current contents: " actions-to-perform ")") (who)
+    
     
     ;==========================================;
     ;== SCHEDULE NEXT EPISODIC MEMORY ACTION ==;
@@ -1331,7 +1405,7 @@ to schedule-or-execute-next-episode-actions
     ;Do this if the turtle's 'actions-to-perform' data structure
     ;is empty.
     if(empty? actions-to-perform)[
-      output-debug-message ("My 'actions-to-perform' turtle variable is empty so I'll schedule the actions in my next unperformed episode.") (who)
+      
       
       ;Need to keep track of the episode index so its performance
       ;time can be set later.
@@ -1424,7 +1498,7 @@ to schedule-or-execute-next-episode-actions
     ;== ATTEMPT TO PERFORM NEXT SCHEDULED ACTION ==;
     ;==============================================;
 
-    output-debug-message (word "Attempting to perform the next action in my 'actions-to-perform' turtle variable") (who)
+    
       
     let action-to-perform-index (0)
     let action-to-perform [] 
@@ -1446,7 +1520,7 @@ to schedule-or-execute-next-episode-actions
         ((item (2) (action-to-maybe-perform)) = report-current-time) and 
         ((item (3) (action-to-maybe-perform)) = false)
       )[
-        output-debug-message ("Action should be performed so it will be") (who)
+        
         set action-to-perform (action-to-maybe-perform)
         
         output-debug-message (word 
@@ -1475,11 +1549,11 @@ to schedule-or-execute-next-episode-actions
     ;===================================;
     
     ifelse(not empty? action-to-perform)[
-      output-debug-message (word "Performing action: " action-to-perform) (who)
-      let action-performance-result ( perform-action (item (1) (action-to-perform)) )
-      output-debug-message (word "Action performance result: " action-performance-result) (who)
       
-      output-debug-message ( word "Checking if the action was performed successfully" ) (who)
+      let action-performance-result ( perform-action (item (1) (action-to-perform)) )
+      
+      
+      
       let action-performed-successfully? (ifelse-value (is-list? (action-performance-result)) 
         [item (0) (action-performance-result)] 
         [action-performance-result]
@@ -1496,12 +1570,12 @@ to schedule-or-execute-next-episode-actions
       ;===================================;
       ifelse(action-performed-successfully?)[
         
-        output-debug-message ( word "The action was performed successfully.") (who)
-        output-debug-message ("Setting this action's 'performed' status to true") (who)
+        
+        
         set action-to-perform (replace-item (3) (action-to-perform) (true))
         set actions-to-perform (replace-item (action-to-perform-index) (actions-to-perform) (action-to-perform))
         
-        output-debug-message ("Setting the episode's performance time to the current time") (who)
+        
         let episode-index (item (0) (action-to-perform))
         let episode (item (episode-index) (episodic-memory))
         set episode (replace-item (3) (episode) (report-current-time))
@@ -1522,9 +1596,9 @@ to schedule-or-execute-next-episode-actions
         ;performance time will be set and all subsequent actions in this episode and all episodes
         ;subsequent to this episode will be removed (if this is the last action of the last episode,
         ;there will be no effect).
-        output-debug-message ("Checking to see if I just filled a hole.") (who)
+        
         ifelse( is-list? (action-performance-result) and (item (1) (action-performance-result)) )[
-          output-debug-message (word "I just filled a hole") (who)
+          
           
           if(breed = chrest-turtles)[
             set reinforce-productions? (true)
@@ -1546,7 +1620,7 @@ to schedule-or-execute-next-episode-actions
         ;== NO HOLE FILL ==;
         ;==================;
         [
-          output-debug-message ("No hole was filled") (who)
+          
           
           ;Check if all episode actions have now been performed.
           let all-actions-in-episode-performed (true)
@@ -1557,11 +1631,11 @@ to schedule-or-execute-next-episode-actions
           ]
           
           ifelse(all-actions-in-episode-performed)[
-            output-debug-message ("All of the episode's actions have now been performed.") (who)
+            
             set clear-actions-to-perform? (true)
           ]
           [
-            output-debug-message ("Not all of the episode's actions have been performed.") (who)
+            
           ]
         ]
       ]
@@ -1569,7 +1643,7 @@ to schedule-or-execute-next-episode-actions
       ;== ACTION PERFORMANCE UNSUCCESSFUL ==;
       ;=====================================;
       [
-        output-debug-message ( word "The action was not performed successfully.") (who)
+        
         set clear-actions-to-perform? (true)
         set clear-subsequent-episode-actions-and-episodes? (true)
         set action-to-keep-up-to-in-episode (action-to-perform-index - 1)
@@ -1580,12 +1654,12 @@ to schedule-or-execute-next-episode-actions
       ;==============;
       
       if(clear-actions-to-perform?)[ 
-        output-debug-message ("Clearing my 'actions-to-perform' data structure") (who)
+        
         set actions-to-perform [] 
       ]
         
       if(clear-subsequent-episode-actions-and-episodes?)[
-        output-debug-message ("Clearing subsequent actions in this episode and subsequent episodes in my 'episodic-memory'") (who)
+        
         output-debug-message (word "My episodic-memory is set to the following before starting: " (map 
           ([( list
             chrest:ListPattern.get-as-string (item (0) (?))
@@ -1606,7 +1680,7 @@ to schedule-or-execute-next-episode-actions
         ) (who)
             
         ifelse(action-to-perform-index = 0 and not action-performed-successfully?)[
-          output-debug-message ("This is the first action in the episode and it was unsuccessful, removing the episode from episodic memory") (who)
+          
           set episodic-memory (remove-item (episode-to-remove-until) (episodic-memory))
           ;Leave 'episode-to-remove-until' alone since this will now equal the episode that came after the
           ;one just removed.  Thus, this episode will be removed by the while loop below.
@@ -1681,7 +1755,7 @@ to schedule-or-execute-next-episode-actions
       ];Clear subsequent actions and episodes
     ];Check on whether 'action-to-perform' is empty.
     [
-      output-debug-message ("No action is to be performed now, exiting") (who)
+      
     ]
     
     ;==========================================================;
@@ -1750,24 +1824,24 @@ to schedule-or-execute-next-episode-actions
     ) (who)
     
     ifelse( (end-action-execution-and-restart-planning?) or (empty? episodic-memory) )[
-      output-debug-message ( "Ending action execution and restarting planning") (who)
+      
       
       set execute-actions? (false)
       
       if(breed = chrest-turtles)[
-        output-debug-message ("Since I am a CHREST-turtle, I will fixate on reality again") (who)
+        
         set fixate-on-reality? (true)
       ]
     ]
     [
-      output-debug-message ("I will not end action execution and restart planning yet.") (who)
+      
     ]
   ]
   [
-    output-debug-message ("My 'execute-actions?' variable is set to false, exiting procedure") (who)
+    
   ]
   
-  set debug-indent-level (debug-indent-level - 2)
+  
 end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1820,12 +1894,12 @@ end
 ;
 ;@author  Martyn Lloyd-Kelly <martynlk@liverpool.ac.uk> 
 to-report generate-action-when-tile-can-be-seen [tile-xcor tile-ycor]
-  set debug-indent-level (debug-indent-level + 1)
-  output-debug-message ("EXECUTING THE 'generate-action-when-tile-can-be-seen' PROCEDURE...") ("")
-  set debug-indent-level (debug-indent-level + 1) 
+  
+  
+  
   
   let action ""
-  output-debug-message (word "Determining if tile seen is adjacent to me (xcor = " tile-xcor ", ycor = " tile-ycor ")...") (who)
+  
   
   ifelse(
     (tile-xcor = 0 and tile-ycor = 1) or ;North 
@@ -1833,32 +1907,32 @@ to-report generate-action-when-tile-can-be-seen [tile-xcor tile-ycor]
     (tile-xcor = 0 and tile-ycor = -1) or ;South
     (tile-xcor = -1 and tile-ycor = 0) ;West
   )[
-    output-debug-message ("Tile seen is adjacent to me, determining what actions I could perform...") (who)
+    
     
     let potential-actions []
     if(tile-xcor = 0 and tile-ycor = 1)[
-      output-debug-message ("Tile is north of me so I could move east or west around it or push it north...") (who)
+      
       set potential-actions (lput (list (move-token) (90) (1)) (potential-actions))
       set potential-actions (lput (list (move-token) (270) (1)) (potential-actions))
       set potential-actions (lput (list (push-tile-token) (0) (1)) (potential-actions))
     ]
     
     if(tile-xcor = 1 and tile-ycor = 0)[
-      output-debug-message ("Tile is east of me so I could move north or south around it or push it east...") (who)
+      
       set potential-actions (lput (list (move-token) (0) (1)) (potential-actions))
       set potential-actions (lput (list (move-token) (180) (1)) (potential-actions))
       set potential-actions (lput (list (push-tile-token) (90) (1)) (potential-actions))
     ]
     
     if(tile-xcor = 0 and tile-ycor = -1)[
-      output-debug-message ("Tile is south of me so I could move east or west around it or push it south...") (who)
+      
       set potential-actions (lput (list (move-token) (90) (1)) (potential-actions))
       set potential-actions (lput (list (move-token) (270) (1)) (potential-actions))
       set potential-actions (lput (list (push-tile-token) (180) (1)) (potential-actions))
     ]
     
     if(tile-xcor = -1 and tile-ycor = 0)[
-      output-debug-message ("Tile is west of me so I could move north or south around it or push it west...") (who)
+      
       set potential-actions (lput (list (move-token) (0) (1)) (potential-actions))
       set potential-actions (lput (list (move-token) (180) (1)) (potential-actions))
       set potential-actions (lput (list (push-tile-token) (270) (1)) (potential-actions))
@@ -1867,34 +1941,34 @@ to-report generate-action-when-tile-can-be-seen [tile-xcor tile-ycor]
     set action (one-of potential-actions)
   ]
   [
-    output-debug-message ("Tile seen is not adjacent to me, determining what headings I could move in...") (who)
+    
     let potential-headings []
     
     if(tile-ycor > 0)[
-      output-debug-message ("Tile is north of me so I could move north...") (who)
+      
       set potential-headings (lput (0) (potential-headings))
     ]
     
     if(tile-xcor > 0)[
-      output-debug-message ("Tile is east of me so I could move east...") (who)
+      
       set potential-headings (lput (90) (potential-headings))
     ]
     
     if(tile-ycor < 0)[
-      output-debug-message ("Tile is south of me so I could move south...") (who)
+      
       set potential-headings (lput (180) (potential-headings))
     ]
     
     if(tile-xcor < 0)[
-      output-debug-message ("Tile is west of me so I could move west...") (who)
+      
       set potential-headings (lput (270) (potential-headings))
     ]
     
     set action (list (move-token) (one-of (potential-headings)) (1))
   ]
   
-  output-debug-message (word "The action I'm going to perform is: " action) (who)
-  set debug-indent-level (debug-indent-level - 2)
+  
+  
   report action
 end
 
@@ -1937,9 +2011,9 @@ end
 ;
 ;@author  Martyn Lloyd-Kelly <martynlk@liverpool.ac.uk>  
 to generate-plan
-  set debug-indent-level (debug-indent-level + 1)
-  output-debug-message ("EXECUTING THE 'generate-plan' PROCEDURE...") ("")
-  set debug-indent-level (debug-indent-level + 1)
+  
+  
+  
   
   if(breed = chrest-turtles)[
       
@@ -1959,14 +2033,14 @@ to generate-plan
       generate-plan? and 
       report-current-time >= time-visual-spatial-field-can-be-used-for-planning
     )[
-      output-debug-message (word "I should continue planning") (who)
+      
       
       ;===================================================;
       ;== RESET EPISODE VARIABLES IF THIS IS A NEW PLAN ==;
       ;===================================================;
       
       if(current-search-iteration = 0)[
-        output-debug-message ("Since this is a new plan, I'll reset all variables concerned with episodes") (who)
+        
         set episode-to-learn-from (0)
         set episode-to-reinforce (-1)
         set learn-action-sequence? (false)
@@ -2007,7 +2081,7 @@ to generate-plan
         not empty? (chrest:get-visual-spatial-field-object-locations (chrest:get-attention-clock) (word who) (false))
       ][
         let planned-action (item (planned-action-index) (planned-actions))
-        output-debug-message (word "Planned action " planned-action-index " to perform: " chrest:ItemSquarePattern.get-as-string (planned-action)) (who)
+        
         
         output-debug-message ( word 
           "Moving objects in the visual-spatial field.  The time at which this is done is equal to the current "
@@ -2021,7 +2095,7 @@ to generate-plan
           (generate-visual-spatial-field-moves (planned-action) (false) (chrest:get-attention-clock)) 
           (chrest:get-attention-clock) 
           (ifelse-value (planned-action-index = 0) [true] [false])
-        output-debug-message ( word "Completed moving objects in the visual-spatial-field") (who)
+        
       
         ;=================================================================================================================;
         ;== CHECK THAT LAST ACTION PERFORMED IN VISUAL-SPATIAL FIELD CREATES A VALID VISUAL-SPATIAL FIELD CONFIGURATION ==;
@@ -2051,12 +2125,12 @@ to generate-plan
           ;is actually reversed (using the current model time would result in the reversal not being 
           ;performed because attention would be consumed at this time as far as the turtle's CHREST 
           ;model is concerned).
-          output-debug-message ("The last action planned produces an invalid visual-spatial field state so I should reverse the action..." ) (who)
+          
           chrest:move-visual-spatial-field-objects 
             (generate-visual-spatial-field-moves (planned-action) (true) (chrest:get-attention-clock)) 
             (chrest:get-attention-clock)
             (false)
-          output-debug-message ( word "Completed reversing the move in the visual-spatial-field...") (who)
+          
           
           if(chrest:ItemSquarePattern.get-item (planned-action) = push-tile-token)[
             output-debug-message ( word 
@@ -2091,11 +2165,11 @@ to generate-plan
             set episodic-memory (replace-item ((length episodic-memory) - 1) (episodic-memory) (most-recent-episode))
           ]
           
-          output-debug-message ("Since an invalid planned action was encountered, I'll stop processing planned actions in the most recent episode") (who)
+          
           set invalid-action-encountered (true)
         ]
         [
-          output-debug-message (word "Planned action " planned-action-index " valid, performing next planned action (" (planned-action-index + 1) ") in my visual-spatial field") (who)
+          
           set planned-action-index (planned-action-index + 1)
         ]
       ]
@@ -2111,7 +2185,7 @@ to generate-plan
       set fixate-on-visual-spatial-field? (true)
       set generate-plan? (false)
       
-      output-debug-message ("Incrementing my 'current-search-iteration' turtle variable by 1") (who)
+      
       set current-search-iteration (current-search-iteration + 1)
       
       output-debug-message (word
@@ -2121,7 +2195,7 @@ to generate-plan
         "model time (" report-current-time ")"
       ) (who)
       set time-spent-deliberating (time-spent-deliberating + (chrest:get-attention-clock - report-current-time))
-      output-debug-message (word "My 'time-spent-deliberating' variable is now set to: " time-spent-deliberating) (who)
+      
       
       ;========================================================;
       ;== CHECK FOR END PLAN GENERATION CONDITIONS BEING MET ==;
@@ -2138,7 +2212,7 @@ to generate-plan
       ;should always succeed since attention is always free when the initial Fixation is generated.  
       ;This may have to be an explicit check in future though if such Fixations are not always 
       ;performed.
-      output-debug-message ("Checking to see if any end plan generation conditions have been met...") (who)
+      
       let end-plan-generation? (false)
     
       ;++++++++++++++++++++++++++++;
@@ -2146,7 +2220,7 @@ to generate-plan
       ;++++++++++++++++++++++++++++;
       
       if(current-search-iteration = max-search-iteration)[
-        output-debug-message (word "I've reached my maximum search bound: my 'current-search-iteration' variable (" current-search-iteration ") is > my 'max-search-iteration' variable (" max-search-iteration ").  Ending plan generation...") (who)
+        
         set end-plan-generation? (true)
       ]
       
@@ -2156,7 +2230,7 @@ to generate-plan
       
       if(not end-plan-generation?)[
         if( empty? (chrest:get-visual-spatial-field-object-locations (chrest:get-attention-clock) (word who) (false)) )[
-          output-debug-message (word "I can't currently see myself in my visual-spatial field. Ending plan generation...")  (who)
+          
           set end-plan-generation? true
         ]
       ]
@@ -2166,26 +2240,26 @@ to generate-plan
       ;+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++;
     
       if(not end-plan-generation?)[  
-        output-debug-message (word "Checking to see if I was pushing a tile that has been pushed into a hole or no longer exists in my visual-spatial field.") (who)
-        output-debug-message ("The latter may be true if the tile has been pushed out of the visual-spatial field or its visual-spatial field object representation has decayed.") (who)
-        output-debug-message ("If this isn't checked, further planning may occur which should not be done since, when planning, I should be fixated on a tile and if it disappears or fills a hole I should execute the plan as-is...") (who)
+        
+        
+        
         
         if(not empty? who-of-tile-last-pushed-in-plan)[
-          output-debug-message (word "I've been pushing a tile so I'll check to see if it still exists or has been pushed onto a hole") (who)
+          
           let locations-of-tile-last-pushed (chrest:get-visual-spatial-field-object-locations (chrest:get-attention-clock) (who-of-tile-last-pushed-in-plan) (false))
           ifelse(empty? locations-of-tile-last-pushed)[
-            output-debug-message (word "There is no tile with a 'who' value of " who-of-tile-last-pushed-in-plan " in my visual-spatial field so the 'end-plan-generation?' turtle variable should be set to true") (who)
+            
             set end-plan-generation? (true)
           ]
           [
             let location-of-tile-last-pushed ( item (0) (locations-of-tile-last-pushed) )
-            output-debug-message (word "There is a tile with a 'who' value of " who-of-tile-last-pushed-in-plan " on coordinates " location-of-tile-last-pushed " in my visual-spatial field so I'll check to see if there is also a hole on this location...")  (who)
+            
             
             let hole-locations (chrest:get-visual-spatial-field-object-locations (chrest:get-attention-clock) (hole-token) (true))
             
             foreach(hole-locations)[
               if( ? = location-of-tile-last-pushed)[
-                output-debug-message (word "There is a hole on the same coordinates as the tile so the local 'end-plan-generation?' variable will be set to true...")  (who)
+                
                 set end-plan-generation? (true)
               ]
             ]  
@@ -2193,35 +2267,35 @@ to generate-plan
         ]
       ]
       
-      output-debug-message ("Resetting 'who-of-tile-last-pushed-in-plan'") (who)
+      
       set who-of-tile-last-pushed-in-plan ("")
       
       ;=========================;
       ;== END PLAN GENERATION ==;
       ;=========================;
       if(end-plan-generation?)[ 
-        output-debug-message ( word "The local 'end-plan-generation?' variable is set to true so I should not plan any more.  To do this I need to set my 'generate-plan?' turtle variable to false..."  ) (who)
+        
         set generate-plan? (false)
         
-        output-debug-message ( word "I also need to set my 'deliberation-finished-time' turtle variable to the value of my attention clock" ) (who)
+        
         set deliberation-finished-time (chrest:get-attention-clock) 
         
-        output-debug-message ( word "I'll also set my 'current-search-iteration' turtle variable to 0 now since it should be reset for the next planning cycle..." ) (who)
+        
         set current-search-iteration 0
         
-        output-debug-message ( word "I'll also set my 'who-of-tile-last-pushed-in-plan' turtle variable to '' now since it should be reset for the next planning cycle..." ) (who)
+        
         set who-of-tile-last-pushed-in-plan ""
         
-        output-debug-message (word "Setting my 'fixate-on-visual-spatial-field?' to false" ) (who)
+        
         set fixate-on-visual-spatial-field? (false)
         
-        output-debug-message ("Setting my 'execute-actions?' variable to true") (who)
+        
         set execute-actions? (true)
       ]
     ];Visual-spatial field constructed? check        
   ];CHREST turtle breed check
   
-  set debug-indent-level (debug-indent-level - 2)
+  
 end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2250,20 +2324,20 @@ end
 ;
 ;@author  Martyn Lloyd-Kelly <martynlk@liverpool.ac.uk> 
 to-report generate-visual-spatial-field-moves [ action-pattern reverse? time-to-get-visual-spatial-field-at ]
-  set debug-indent-level (debug-indent-level + 1)
-  output-debug-message ("EXECUTING THE 'generate-visual-spatial-field-moves' PROCEDURE...") ("")
-  set debug-indent-level (debug-indent-level + 1)
+  
+  
+  
   
   let visual-spatial-field (chrest:get-visual-spatial-field (time-to-get-visual-spatial-field-at))
   
-  output-debug-message (word "Instantiating a local 2D list variable called 'object-moves' that will contain the moves for each object specified using the object's 'who' value and coordinates that are not relative to myself (as required by CHREST)...") (who)
+  
   let object-moves []
   
-  output-debug-message ( word "First, I need to parse the action to be performed...") (who)
+  
   let action-identifier ( chrest:ItemSquarePattern.get-item (action-pattern) )
   let action-heading ( chrest:ItemSquarePattern.get-column (action-pattern) )
   let action-patches ( chrest:ItemSquarePattern.get-row (action-pattern) )
-  output-debug-message ( word "Three local variables have been set: 'action-identifier', 'action-heading' and 'action-patches'.  Their values are: '" action-identifier "', '" action-heading "' and '" action-patches "', respectively...") (who) 
+   
   
   ifelse(member? (action-identifier) (possible-actions) )[
     
@@ -2271,24 +2345,24 @@ to-report generate-visual-spatial-field-moves [ action-pattern reverse? time-to-
     ;== CONSTRUCT MOVES FOR CALLING TURTLE ==;
     ;========================================;
     
-    output-debug-message ( word "No matter what the action-pattern is, I will always need to move myself so I'll extract my location from the visual-spatial field now...") (who)
+    
     let location-of-self (chrest:VisualSpatialField.get-object-locations (time-to-get-visual-spatial-field-at) (word who) (false))
-    output-debug-message (word "Result of getting my location in my visual-spatial field: " location-of-self) (who)
+    
     
     ifelse(not empty? location-of-self)[
       set location-of-self (item (0) (location-of-self))
       let self-who (word who)
       let self-xcor ( item (0) (location-of-self) )
       let self-ycor ( item (1) (location-of-self) )
-      output-debug-message ( word "My xcor '" self-xcor "' and ycor '" self-ycor "' in visual-spatial field.  Adding this to the data structure containing my moves...") (who)
+      
       
       let self-moves ( list (chrest:ItemSquarePattern.new (self-who) (self-xcor) (self-ycor)) )
-      output-debug-message ( word "My moves is now equal to: " (map ([ chrest:ItemSquarePattern.get-as-string (?) ]) (self-moves)) ) (who)
       
-      output-debug-message (word "Now I'll calculate my new location in the visual-spatial field after applying action " chrest:ItemSquarePattern.get-as-string (action-pattern) "...") (who)
+      
+      
       let new-location-of-self ""
       
-      output-debug-message (word "I'll also calculate where a tile should be so that I can see if it is there should I need to move it") (who)
+      
       let tile-location []
       
       ifelse( action-heading = 0 )[
@@ -2339,15 +2413,15 @@ to-report generate-visual-spatial-field-moves [ action-pattern reverse? time-to-
               set tile-location (list (self-xcor - 1) (self-ycor))
             ]
             [
-              set debug-indent-level (debug-indent-level - 2)
+              
               error ( word "Occurred when running the 'generate-visual-spatial-field-moves' procedure and attempting to determine the calling turtle's new x/ycor: the heading specified (" action-heading ") in the action pattern passed (" action-pattern ") is not supported by this procedure." )
             ]
           ]
         ]
       ]
-      output-debug-message ( word "My new location in the visual-spatial field will be: '" (chrest:ItemSquarePattern.get-as-string (new-location-of-self)) "', appending this to the moves for myself..." ) (who)
+      
       set self-moves ( lput (new-location-of-self) (self-moves) )
-      output-debug-message ( word "My moves is now equal to: " (map ([ chrest:ItemSquarePattern.get-as-string (?) ]) (self-moves)) ) (who)
+      
       
       set object-moves (lput (self-moves) (object-moves))
       
@@ -2355,12 +2429,12 @@ to-report generate-visual-spatial-field-moves [ action-pattern reverse? time-to-
       ;== CONSTRUCT MOVES FOR TILE ==;
       ;==============================;  
       
-      output-debug-message (word "Checking to see if I need to add tile moves to this list, i.e. does the action pattern passed instruct me to push/pull a tile?..." ) (who)
-      output-debug-message (word "The location of the tile to move (if necessary) is set to: " tile-location) (who)
+      
+      
       ifelse(action-identifier = push-tile-token)[
-        output-debug-message (word "The action identifier indicates that I should push/pull a tile so a tile's location in scene should also be modified.") (who)
         
-        output-debug-message (word "If this is a reversal of a 'push-tile' move, I need to see if the specific tile to be pulled still exists (its object representation may have decayed in my visual-spatial field") (who)
+        
+        
         let search-using-id? (false)
         let search-term (tile-token)
         if(not empty? who-of-tile-last-pushed-in-plan)[
@@ -2368,7 +2442,7 @@ to-report generate-visual-spatial-field-moves [ action-pattern reverse? time-to-
           set search-term (who-of-tile-last-pushed-in-plan)
         ]      
         
-        output-debug-message (word "Checking to see if '" search-term "' is on coordinates " tile-location " in my visual-spatial field...") (who)
+        
         let tile-on-location (false)
         let coordinate-contents (chrest:VisualSpatialField.get-coordinate-contents 
           (item (0) (tile-location)) 
@@ -2385,15 +2459,15 @@ to-report generate-visual-spatial-field-moves [ action-pattern reverse? time-to-
         
         if(tile-on-location)[
           
-          output-debug-message ( word "Object " search-term " is on coordinates " tile-location " in my visual-spatial field so I'll continue to generate a push/pull move...") (who)
+          
           let current-xcor-of-tile ( item (0) (tile-location) )
           let current-ycor-of-tile ( item (1) (tile-location) )
           
-          output-debug-message ( word "Since I need to specify an object's ID when performing visual-spatial moves, I need to set the tile to move's 'who' number so it can be pushed/pulled" ) (who)
-          output-debug-message ( word "To do this, I'll first check to see if my 'who-of-tile-last-pushed-in-plan' turtle variable is empty (this will not be the case if this move is a reversal of a previously planned 'push-tile' action") (who)
+          
+          
           if(empty? who-of-tile-last-pushed-in-plan)[
             
-            output-debug-message (word "My 'who-of-tile-last-pushed-in-plan' turtle variable is empty so I'll set the tile to move to the who of the tile on coordinates " tile-location) (who)
+            
             ;This move isn't a reversal so there should only be one tile on the coordinates indicated.
             
             ;Get the identifier for the first tile on the coordinates.
@@ -2403,11 +2477,11 @@ to-report generate-visual-spatial-field-moves [ action-pattern reverse? time-to-
               ] 
             ]
             
-            output-debug-message (word "My 'who-of-tile-last-pushed-in-plan' variable is now equal to: " who-of-tile-last-pushed-in-plan) (who)
+            
           ]
           
           let tile-moves ( list (chrest:ItemSquarePattern.new (who-of-tile-last-pushed-in-plan) (current-xcor-of-tile) (current-ycor-of-tile)) )
-          output-debug-message ( word "The tile moves data structure is now equal to: " (map ([ chrest:ItemSquarePattern.get-as-string (?) ]) (tile-moves)) ) (who)
+          
           
           let new-location-of-tile ""
           ifelse( action-heading = 0 )[
@@ -2446,43 +2520,43 @@ to-report generate-visual-spatial-field-moves [ action-pattern reverse? time-to-
                   ]
                 ]
                 [
-                  set debug-indent-level (debug-indent-level - 2)
+                  
                   error ( word "Occurred when running the 'generate-visual-spatial-field-moves' procedure and attempting to determine a tile's new x/ycor: the heading specified (" action-heading ") in the action pattern passed (" action-pattern ") is not supported by this procedure." )
                 ]
               ]
             ]
           ]
-          output-debug-message ( word "The tile's new location in my visual-spatial field will be: '" (chrest:ItemSquarePattern.get-as-string (new-location-of-tile)) "'.  Appending this to the data structure containing tile moves..." ) (who)
-          set tile-moves ( lput (new-location-of-tile) (tile-moves))
-          output-debug-message ( word "The tile moves data structure is now equal to: '" ( map ([chrest:ItemSquarePattern.get-as-string (?)]) (tile-moves) ) "'..." ) (who)
           
-          output-debug-message (word "Adding the tile moves data structure to the local 'object-moves' list.  Its insertion point will be determined by whether the action is to be reversed or not...") (who)
+          set tile-moves ( lput (new-location-of-tile) (tile-moves))
+          
+          
+          
           ifelse(reverse?)[
-            output-debug-message (word "The action is to be reversed so I should pull the tile and therefore move myself in the visual-spatial field before the tile to ensure that there's no chance of myself and the tile co-habiting a square in my visual-spatial field (an illegal state)...") (who)
+            
             set object-moves (lput (tile-moves) (object-moves))
           ]
           [
-            output-debug-message (word "The action is not to be reversed so I should push the tile and therefore move the tile in the visual-spatial field before myself to ensure that there's no chance of myself and the tile co-habiting a square in my visual-spatial field (an illegal state)...") (who)
+            
             set object-moves (fput (tile-moves) (object-moves))
           ]
         ]
       ]
       [
-        output-debug-message ("I'm not to push a tile") (who)
+        
       ]
     ]
     [
-      set debug-indent-level (debug-indent-level - 2)
+      
       error (word "The turtle's visual-spatial field avatar is not present in its visual-spatial field at time " time-to-get-visual-spatial-field-at)
     ]
   ]
   [
-    set debug-indent-level (debug-indent-level - 2)
+    
     error ( word "Occurred when running the 'generate-visual-spatial-field-moves' procedure: the action-identifier (" action-identifier ") in the action pattern passed (" action-pattern ") is not listed in the global 'possible-actions' list.  Please rectify." )
   ]
   
-  output-debug-message (word "Reporting '" (map ([map ([chrest:ItemSquarePattern.get-as-string (?)]) (?)]) (object-moves)) "'...") (who)
-  set debug-indent-level (debug-indent-level - 2)
+  
+  
   report object-moves
 end
 
@@ -2507,22 +2581,22 @@ end
 ;
 ;@author  Martyn Lloyd-Kelly <martynlk@liverpool.ac.uk>
 to-report get-observable-environment
-  set debug-indent-level (debug-indent-level + 1)
-  output-debug-message ("EXECUTING THE 'get-observable-environment' PROCEDURE...") ("")
-  set debug-indent-level (debug-indent-level + 1)
+  
+  
+  
   
   let observable-environment []
   
   ;Set 'xCorOffset' and 'yCorOffset' to the south-western point of the calling
   ;turtle's sight radius by converting the 'sight-radius' variable into its
   ;negative value i.e. 3 becomes -3.
-  output-debug-message (word "My max xCorOffset and yCorOffset is: '" sight-radius "'.  This is how many patches north, east, south and west of my current location that I can 'see'.") (who)
-  output-debug-message ("Setting the value of the local 'xCorOffset' and 'yCorOffset' variables (should be the negative value of my 'sight-radius' variable value)...") (who)
+  
+  
   let xCorOffset (sight-radius * -1)
   let yCorOffset (sight-radius * -1)
   
   while[ycorOffset <= sight-radius][
-    output-debug-message (word "Checking for turtles at patch with xCorOffset '" xCorOffset "' and yCorOffset '" yCorOffset "' from the patch I'm on...") (who)
+    
     
     
     ;If the "debug?" global variable is set to true then ask the current patch
@@ -2618,7 +2692,7 @@ to-report get-observable-environment
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     
     if(xCorOffset > sight-radius)[
-      output-debug-message (word "The local 'xCorOffset' variable value: '" xCorOffset "' is greater than my 'sight-radius' variable value '" sight-radius "' so I'll reset the local 'xCorOffset' variable value to: '" (sight-radius * -1) "'.") (who)
+      
       set xCorOffset (sight-radius * -1)
       set yCorOffset (yCorOffset + 1)
     ]
@@ -2645,9 +2719,9 @@ to-report get-observable-environment
     ]
   ]
   
-  output-debug-message (word "This is what I can see: " observable-environment "." ) (who)
   
-  set debug-indent-level (debug-indent-level - 2)
+  
+  
   report (observable-environment)
 end
 
@@ -2683,9 +2757,9 @@ end
 ;
 ;@author  Martyn Lloyd-Kelly <martynlk@liverpool.ac.uk>
 to-report are-visual-spatial-field-squares-valid-at-time? [state-at-time]
-  set debug-indent-level (debug-indent-level + 1)
-  output-debug-message ("EXECUTING THE 'are-visual-spatial-field-squares-valid-at-time?' PROCEDURE...") ("")
-  set debug-indent-level (debug-indent-level + 1) 
+  
+  
+  
   
   let visual-spatial-field (chrest:get-visual-spatial-field (state-at-time))
   let col (0)
@@ -2723,14 +2797,14 @@ to-report are-visual-spatial-field-squares-valid-at-time? [state-at-time]
         ]
       ]
       
-      output-debug-message (word "There's " hole-counter " hole(s), " opponent-counter " opponent(s), " self-counter " of me and " tile-counter " tile(s) here" ) (who)
+      
       if(
         (tile-counter > 1) or 
         ((tile-counter = 1 or self-counter = 1) and opponent-counter > 0) or
         (self-counter = 1 and (hole-counter > 0 or tile-counter > 0))
       )[
-        output-debug-message (word "This indicates an invalid visual-spatial field square state so false will be reported." ) (who)
-        set debug-indent-level (debug-indent-level - 2)
+        
+        
         report (false)
       ]
         
@@ -2740,8 +2814,8 @@ to-report are-visual-spatial-field-squares-valid-at-time? [state-at-time]
     set col (col + 1)
   ]
   
-  output-debug-message (word "The visual-spatial field squares specified have valid configurations at time " state-at-time " so true will be reported." ) (who)
-  set debug-indent-level (debug-indent-level - 2)
+  
+  
   report (true)
 end
 
@@ -2750,9 +2824,9 @@ end
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 to learn-from-episodic-memory
-  set debug-indent-level (debug-indent-level + 1)
-  output-debug-message ("EXECUTING THE 'learn-from-episodic-memory' PROCEDURE...") ("")
-  set debug-indent-level (debug-indent-level + 1)
+  
+  
+  
   
   ;Add all episodes that have been generated at the current time to a list.
   let episodic-memory-at-time []
@@ -2770,7 +2844,7 @@ to learn-from-episodic-memory
     "productions I'll attempt to reinforce the productions denoted by any episodes if I can."
     ) (who)
   
-  output-debug-message ("Checking if my 'episodic-memory-at-time' is empty") (who)
+  
   ifelse(not empty? episodic-memory-at-time)[
     
     output-debug-message (word 
@@ -2846,12 +2920,12 @@ to learn-from-episodic-memory
         ;== LEARN EPISODE ACTION ==;
         
         if(learn-episode-action?)[
-          output-debug-message ("Attempting to learn episode action") (who)
+          
           let learn-action-result (chrest:recognise-and-learn (episode-action) (report-current-time))
-          output-debug-message (word "Learn action result: " java:Object.to-string (learn-action-result)) (who)
+          
           
           if(learn-action-result = chrest:ChrestStatus.value-of ("INPUT_ALREADY_LEARNED"))[
-            output-debug-message ("Action fully learned, I'll move onto trying to learn the episode's vision") (who)
+            
             set learn-episode-action? (false)
             set learn-episode-vision? (true)
           ]
@@ -2859,22 +2933,22 @@ to learn-from-episodic-memory
         
         ;== LEARN VISION IN EPISODE ==;
         
-        output-debug-message (word "Checking if I should learn the episode's vision, i.e. have I learned the episode action (" learn-episode-vision? ")") (who)
+        
         
         if(learn-episode-vision?)[
-          output-debug-message ("I've learned the episode's action, checking if the episode's vision isn't empty") (who)
+          
           
           ifelse((not chrest:ListPattern.empty? (episode-vision)))[
-            output-debug-message ("The episode's vision isn't empty so I'll attempt to learn it") (who)
+            
             
             if(chrest:recognise-and-learn (episode-vision) (report-current-time) = chrest:ChrestStatus.value-of("INPUT_ALREADY_LEARNED"))[
-              output-debug-message ("Vision fully learned, I'll move onto learning the episode as a production") (who)
+              
               set learn-episode-vision? (false)
               set learn-episode-as-production? (true)
             ]
           ]
           [
-            output-debug-message ("The episode's vision is empty so I can't learn this episode as a production. I'll start learning from the next episode") (who)
+            
             set learn-episode-action? (true)
             set learn-episode-vision? (false)
             set episode-to-learn-from (episode-to-learn-from + 1)
@@ -2883,22 +2957,22 @@ to learn-from-episodic-memory
         
         ;== LEARN EPISODE AS PRODUCTION ==;
         
-        output-debug-message (word "Checking if I should learn the episode as a production (" learn-episode-as-production? ")") (who)
+        
         if(learn-episode-as-production?)[
-          output-debug-message ("Attempting to learn episode as a production") (who)
+          
           
           let learn-production-result (chrest:learn-production (episode-vision) (episode-action) (report-current-time))
-          output-debug-message (word "Result of attempting to learn production: " java:Object.to-string (learn-production-result)) (who)
+          
           
           if(
             learn-production-result = chrest:ChrestStatus.value-of ("EXACT_PRODUCTION_LEARNED") or
             learn-production-result = chrest:ChrestStatus.value-of ("PRODUCTION_ALREADY_LEARNED")
             )[
-          output-debug-message ("Exact production learned, I'll start learning the next episode") (who)
+          
             set episode-to-learn-from (episode-to-learn-from + 1)
             set learn-episode-as-production? (false)
             set learn-episode-action? (true)
-            output-debug-message (word "Episode to learn from now set to " episode-to-learn-from) (who)
+            
             ]
         ]
         
@@ -2917,12 +2991,12 @@ to learn-from-episodic-memory
       ;== LEARN ACTION SEQUENCE ==;
       ;===========================;
       [
-        output-debug-message (word "I'm to learn the actions in my episode as a sequence.  Action sequence to learn: " (chrest:ListPattern.get-as-string (action-sequence))) (who)
+        
         ifelse(chrest:ListPattern.size (action-sequence) > 1)[
           
-          output-debug-message ("There is more than 1 action in the sequence so it is a 'sequence' and will therefore be learned") (who)
+          
           let result-of-learning-action-sequence chrest:recognise-and-learn (action-sequence) (report-current-time)
-          output-debug-message (word "Result of learning action sequence: " java:Object.to-string (result-of-learning-action-sequence)) (who)
+          
           
           if(result-of-learning-action-sequence = chrest:ChrestStatus.value-of ("INPUT_ALREADY_LEARNED"))[
             
@@ -2936,7 +3010,7 @@ to learn-from-episodic-memory
           ]
         ]
         [
-          output-debug-message ("There are either no episodes with a non-empty vision or just 1 so an action sequence can not be constructed and learned") (who)
+          
         ]
       ]
     ]
@@ -2944,34 +3018,34 @@ to learn-from-episodic-memory
     ;== LEARN ACTION SEQUENCE AS PRODUCTION ==;
     ;=========================================;
     [
-      output-debug-message (word "I'm to learn the action sequence from my episodes as a production.  The sequence to potentially learn is: " (chrest:ListPattern.get-as-string (action-sequence))) (who)
+      
       
       ifelse(chrest:ListPattern.size (action-sequence) > 1)[
-        output-debug-message ("There is more than 1 action in the sequence so it is a 'sequence' and will therefore be learned as a production") (who)
+        
         
         let first-non-empty-vision (item (0) (item (first-non-empty-vision-episode-index) (episodic-memory)))    
         let learn-production-result (chrest:learn-production (first-non-empty-vision) (action-sequence) (report-current-time))
-        output-debug-message (word "Result of attempting to learn action sequence as production: " java:Object.to-string (learn-production-result)) (who)
+        
         
         if(
           learn-production-result = chrest:ChrestStatus.value-of ("EXACT_PRODUCTION_LEARNED") or
           learn-production-result = chrest:ChrestStatus.value-of ("PRODUCTION_ALREADY_LEARNED")
           )[
-        output-debug-message ("Exact production learned, I'll stop learning from my episodes now") (who)
+        
           set learn-action-sequence-as-production? (false)
           set learn-from-episodic-memory? (false)
           ]
       ]
       [
-        output-debug-message ("The action sequence is either empty or only contains 1 action so its not a 'sequence' and will not be learned as a production") (who)
+        
       ]
     ]
   ]
   [
-    output-debug-message ("Episodic memory is empty, can't learn from it") (who)
+    
   ]
   
-  set debug-indent-level (debug-indent-level - 2)
+  
 end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2979,8 +3053,8 @@ end
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 to make-fixation
-  set debug-indent-level (debug-indent-level + 1)
-  output-debug-message ("EXECUTING THE 'make-fixation' PROCEDURE") (who)
+  
+  
   
   ifelse(breed = chrest-turtles)[
     output-debug-message (word
@@ -3020,7 +3094,7 @@ to make-fixation
       ;== FIXATION SET COMPLETE ==;
       ;===========================;
       ifelse(fixation-set-performance-result = chrest:ChrestStatus.value-of("FIXATION_SET_COMPLETE"))[
-        output-debug-message (word "Fixation set now complete.") (who)
+        
         
         if(fixate-on-reality?) [
           set fixate-on-reality? (false)
@@ -3059,18 +3133,18 @@ to make-fixation
         ]
       ]
       [
-        output-debug-message (word "Fixation set not yet complete.") (who)
+        
       ]
     ]
     [
-      output-debug-message ("I shouldn't make any fixations now") (who)
+      
     ]
   ]
   [
-    output-debug-message ("I'm not a CHREST turtle so this procedure should not be run") (who)
+    
   ]
   
-  set debug-indent-level (debug-indent-level - 2)
+  
 end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3098,13 +3172,13 @@ end
 ;
 ;@author  Martyn Lloyd-Kelly <martynlk@liverpool.ac.uk>  
 to-report move [heading-to-move-along patches-to-move]
-  set debug-indent-level (debug-indent-level + 1)
-  output-debug-message ("EXECUTING THE 'move' PROCEDURE...") ("")
-  set debug-indent-level (debug-indent-level + 1)
   
-  output-debug-message (word "Setting my heading to the heading specified: " heading-to-move-along "...") (who)
+  
+  
+  
+  
   set heading (heading-to-move-along)
-  output-debug-message ( word "My 'heading' turtle variable is now equal to: " heading "." ) (who)
+  
   
   let original-location (list (xcor) (ycor))
   
@@ -3112,21 +3186,21 @@ to-report move [heading-to-move-along patches-to-move]
   while [patches-moved < patches-to-move][
     
     ifelse( not (any? (turtles-on (patch-ahead (1))) with [hidden? = false]) )[
-      output-debug-message (word "The patch immediately ahead of me along heading " heading " is clear (no visible turtles on it) so I'll move onto it...") (who)
+      
       forward 1
     ]
     [
-      output-debug-message (word "Move was unsuccessful since there is something blocking me along the heading specified, resetting my location and reporting that this is the case...") (who)
+      
       setxy (item (0) (original-location)) (item (1) (original-location))
-      set debug-indent-level (debug-indent-level - 2)
+      
       report false
     ]
     
     set patches-moved (patches-moved + 1)
   ]
   
-  output-debug-message (word "Move was successful, reporting that this is the case...") (who)
-  set debug-indent-level (debug-indent-level - 2)
+  
+  
   report true
 end
 
@@ -3220,10 +3294,10 @@ end
 ;
 ;@author  Martyn Lloyd-Kelly <martynlk@liverpool.ac.uk>  
 to-report perform-action [ action ]
-  set debug-indent-level (debug-indent-level + 1)
-  output-debug-message ("EXECUTING THE 'perform-action' PROCEDURE...") ("")
-  set debug-indent-level (debug-indent-level + 1)
-  output-debug-message (word "The action to perform is: " action) (who)
+  
+  
+  
+  
   
   let action-identifier ( item (0) (action) )
   let action-heading ( item (1) (action) )
@@ -3243,7 +3317,7 @@ to-report perform-action [ action ]
   
   ifelse(member? (action-identifier) (possible-actions))[
     
-    output-debug-message (word "The action to perform (" action-identifier ") is a valid action.") (who)
+    
     
     ;===================================================================================;
     ;== MODIFY ACTION HEADING ACCORDING TO TURTLE'S HEADING WHEN PLAN EXECUTION BEGAN ==;
@@ -3285,11 +3359,11 @@ to-report perform-action [ action ]
     ;;;;;;;;;;;;;;;;;;;;;;
     
     ifelse(action-identifier = push-tile-token)[
-      output-debug-message (word "The local 'action-identifier' variable is equal to: '" action-identifier "' so I should execute the 'push-tile' procedure...") (who)
+      
         set action-performance-result ( push-tile (action-heading) )
     ]
     [
-      output-debug-message (word "The local 'action-identifier' variable is equal to: '" action-identifier "' so I should execute the 'move' procedure...") (who)
+      
         set action-performance-result ( move (action-heading) (action-patches) )
     ]
     
@@ -3305,14 +3379,14 @@ to-report perform-action [ action ]
       set action-performed-successfully (action-performance-result)
     ]
     
-    output-debug-message (word "Was the action performed successfully: " action-performed-successfully) (who)
+    
   ]
   [
     error (word "The action to perform is not a valid action (not a member of the global 'possible-actions' list: " possible-actions ").")
   ]
   
-  output-debug-message ( word "Reporting the result of performing the action (" action-performance-result ")..." ) (who)
-  set debug-indent-level (debug-indent-level - 2)
+  
+  
   report action-performance-result
 end
 
@@ -3326,26 +3400,26 @@ end
 ;
 ;@author  Martyn Lloyd-Kelly <martynlk@liverpool.ac.uk>  
 to place-randomly
-  set debug-indent-level (debug-indent-level + 1)
-  output-debug-message ("EXECUTING THE 'place-randomly' PROCEDURE...") ("")
-  set debug-indent-level (debug-indent-level + 1)
+  
+  
+  
   
   let number-free-patches (count (patches with [not any? turtles-here with [hidden? = false]]))
-  output-debug-message (word "CHECKING TO SEE HOW MANY PATCHES ARE FREE (THOSE OCCUPIED BY INVISIBLE TURTLES ARE CONSIDERED FREE). IF 0, THIS PROCEDURE WILL ABORT: " number-free-patches "...") ("")
+  
   ifelse( number-free-patches > 0 )[
-    output-debug-message ("MORE THAN ONE PATCH IS FREE, PLACING THE CALLING TURTLE RANDOMLY ON ONE OF THESE PATCHES...") ("")
+    
     let patch-to-be-placed-on (one-of patches with [not any? turtles-here with [hidden? = false]])
     move-to patch-to-be-placed-on
-    output-debug-message (word "I've been placed on the patch whose xcor is: '" xcor "' and ycor is: '" ycor "'." ) (who)
+    
   ]
   [
-    output-debug-message ("THERE ARE NO PATCHES FREE, ASKING THE CALLING TURTLE TO DIE...") ("")
+    
     ask self [
       die
     ]
   ]
   
-  set debug-indent-level (debug-indent-level - 2)
+  
 end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3386,8 +3460,6 @@ end
 ;@author  Martyn Lloyd-Kelly <martynlk@liverpool.ac.uk>  
 to play
   
-  set debug-indent-level 0
-  
   ;=======================;
   ;== FIRST CYCLE SETUP ==;
   ;=======================;
@@ -3415,11 +3487,6 @@ to play
     ifelse(user-yes-or-no? "Would you like to save model output data at the end of each repeat?")[ set save-output-data? true ][ set save-output-data? false ]
     ifelse(user-yes-or-no? "Would you like to save the data specified during training?")[ set save-training-data? true ][ set save-training-data? false ]
     
-    output-debug-message (word "USER'S RESPONSE TO WHETHER THE INTERFACE SHOULD BE SAVED AFTER EACH REPEAT IS: " save-interface? ) ("")
-    output-debug-message (word "USER'S RESPONSE TO WHETHER MODEL DATA SHOULD BE SAVED AFTER EACH REPEAT IS: " save-world-data? ) ("")
-    output-debug-message (word "USER'S RESPONSE TO WHETHER THE MODEL'S OUTPUT DATA SHOULD BE SAVED AFTER EACH REPEAT IS: " save-output-data? ) ("")
-    output-debug-message (word "USER'S RESPONSE TO WHETHER INTERFACE/MODEL DATA/MODEL OUTPUT DATA SHOULD BE SAVED AFTER TRAINING IS COMPLETE IS: " save-training-data? ) ("")
-    
     setup (false)
     
     if(debug-message-output-file != 0)[ 
@@ -3431,9 +3498,9 @@ to play
     ]
     
 ;    if(save-output-data?)[
-;      output-debug-message ("SINCE THE MODEL'S OUTPUT DATA SHOULD BE SAVED THE USER NEEDS TO SPECIFY WHEN THE OUTPUT SHOULD BE UPDATED...") ("")
+;      
 ;      set output-interval (read-from-string (user-input ("Model output should be generated every ____ seconds?")))
-;      output-debug-message ("CHECKING TO SEE IF THE MAXIMUM TRAINING/PLAY TIME OF ANY CHREST TURTLE IS GREATER THAN 0 AND IF SO WHETHER THE INTERVAL SPECIFIED FOR OUTPUTTING MODEL DATA IS GREATER THAN EITHER OF THESE TIMES...") ("")
+;      
 ;      while[
 ;        ( ( (max [training-time] of chrest-turtles) > 0) or ( (max [play-time] of chrest-turtles) > 0 ) ) and
 ;        (output-interval > max [training-time] of chrest-turtles) or (output-interval > max [play-time] of chrest-turtles)
@@ -3444,23 +3511,23 @@ to play
 ;    ]
   ]
   
-  output-debug-message ("") ("") ;Blank to seperate time increments for readability.
-  output-debug-message (word "========== TIME: " report-current-time " ==========") ("") 
+   ;Blank to seperate time increments for readability.
+   
   
   ;==================;
   ;== HOUSEKEEPING ==;
   ;==================;
   
-  output-debug-message ("HOUSEKEEPING...") ("")
+  
   ;Check that the scenario-repeat directory exists at the start of every cycle to ensure that the 
   ;user is alerted as soon as possible to the non-existance of a directory to write results to.
   check-for-scenario-repeat-directory
   
   ;Check if the user has switched on debugging in between cycles.  If they have, ask them to 
   ;specify where debug messages should be output to.
-  output-debug-message ("CHECKING TO SEE IF DEBUGGING HAS BEEN SWITCHED ON IN BETWEEN CYCLES...") ("")
+  
   if(debug? and debug-message-output-file = 0)[
-    output-debug-message ("DEBUGGING HAS BEEN SWITCHED ON AND THE 'debug-message-output-file' VARIABLE VALUE IS SET TO 0.  ASKING THE USER WHERE DEBUG FILES SHOULD BE OUTPUT TO...") ("")
+    
     specify-debug-message-output-file
     if(debug-message-output-file != 0)[ 
       ask chrest-turtles [chrest:turn-on-debugging]
@@ -3470,9 +3537,9 @@ to play
   ;Check if the user has switched off debugging in between cycles.  If they have, set the 
   ;'debug-message-output-file' variable value to 0 so that if it is switched on again, the
   ;user is prompted to specify where debug files should be saved to.
-  output-debug-message ("CHECKING TO SEE IF DEBUGGING HAS BEEN SWITCHED OFF IN BETWEEN CYCLES...") ("")
+  
   if(not debug? and debug-message-output-file != 0)[
-    output-debug-message ("DEBUGGING HAS BEEN SWITCHED OFF AND THE 'debug-message-output-file' VARIABLE VALUE HAS BEEN SET PREVIOUSLY.  CLOSING THE 'debug-message-output-file' AND SETTING THIS VARIABLES VALUE BACK TO 0...") ("")
+    
     file-close
     set debug-message-output-file 0
     ask chrest-turtles [chrest:turn-off-debugging]
@@ -3486,41 +3553,41 @@ to play
   ;=== END OF PLAY ===;
   ;===================;
   
-  output-debug-message (word "CHECKING TO SEE IF THERE ARE ANY PLAYER TURTLES STILL PLAYING (VISIBLE)...") ("")
+  
   ifelse(player-turtles-finished?)[
     
     ;=====================;
     ;== END OF TRAINING ==;
     ;=====================;
     
-    output-debug-message (word "CHECKING TO SEE IF THE GLOBAL 'training?' VARIABLE (" training? ") IS SET TO TRUE...") ("")
+    
     ifelse(training?)[
-      output-debug-message ("THERE ARE NO PLAYERS STILL VISIBLE AND THE GLOBAL 'training?' VARIABLE IS SET TO TRUE.  TRAINING IS THEREFORE COMPLETE...") ("")
-      output-debug-message ("CHECKING TO SEE IF ANY TRAINING DATA SHOULD BE SAVED...") ("")
+      
+      
       if(save-training-data?)[
         if(save-interface?)[
-          output-debug-message (word "EXPORTING INTERFACE TO: " setup-and-results-directory directory-separator "Scenario" current-scenario-number directory-separator "Repeat" current-repeat-number directory-separator "Repeat" current-repeat-number "-TRAINING.png" "...")("")
+          
           export-interface (word setup-and-results-directory directory-separator "Scenario" current-scenario-number directory-separator "Repeat" current-repeat-number directory-separator "Repeat" current-repeat-number "-TRAINING.png" )
         ]
       
         if(save-output-data?)[
-          output-debug-message (word "EXPORTING MODEL OUTPUT TO: " setup-and-results-directory directory-separator "Scenario" current-scenario-number directory-separator "Repeat" current-repeat-number directory-separator "Repeat" current-repeat-number "-TRAINING.txt" "...")("")
+          
           export-output (word setup-and-results-directory directory-separator "Scenario" current-scenario-number directory-separator "Repeat" current-repeat-number directory-separator "Repeat" current-repeat-number "-TRAINING.txt" )
         ]
       
         if(save-world-data?)[
-          output-debug-message (word "EXPORTING WORLD DATA TO: " setup-and-results-directory directory-separator "Scenario" current-scenario-number directory-separator "Repeat" current-repeat-number directory-separator "Repeat" current-repeat-number "-TRAINING.csv" "...")("")
+          
           export-world (word setup-and-results-directory directory-separator "Scenario" current-scenario-number directory-separator "Repeat" current-repeat-number directory-separator "Repeat" current-repeat-number "-TRAINING.csv" )
         ]
       ]
     
-      output-debug-message ("SETTING THE GLOBAL 'training?' VARIABLE TO FALSE, ASKING ALL TURTLES TO BECOME VISIBLE AGAIN, CLEARING ALL PLOTS AND ALL MODEL OUTPUT...") ("")
+      
       set training? false
       ask turtles [
         set hidden? false
       ]
       clear-all-plots
-      output-debug-message ("RESETTING CHREST TURTLES BUT MAINTAINING THEIR CHREST INSTANCES...") ("")
+      
       setup-chrest-turtles (false)
       clear-output
     ]
@@ -3528,7 +3595,7 @@ to play
     ;=== END OF GAME ===;
     ;===================;
     [
-      output-debug-message ("THERE ARE NO PLAYERS STILL VISIBLE AND THE GLOBAL 'training?' VARIABLE IS SET TO FALSE.  THE GAME IS THEREFORE COMPLETE...")("")
+      
       
       output-print (word "Avg score: " (mean [score] of chrest-turtles) )
       output-print (word "Avg deliberation time: " (mean [time-spent-deliberating] of chrest-turtles) )
@@ -3540,26 +3607,26 @@ to play
       output-print (word "Avg depth visual LTM: " (mean [chrest:get-ltm-avg-depth (chrest:Modality.value-of ("VISUAL")) (report-current-time)] of chrest-turtles) )
       output-print (word "Avg # action LTM nodes: " (mean [chrest:get-ltm-modality-size (chrest:Modality.value-of ("ACTION")) (report-current-time)] of chrest-turtles) )
       
-      output-debug-message ("CHECKING TO SEE IF ANY DATA ACCUMULATED DURING THE GAME SHOULD BE SAVED...") ("")
+      
       if(save-interface?)[
-        output-debug-message (word "EXPORTING INTERFACE TO: " setup-and-results-directory directory-separator "Scenario" current-scenario-number directory-separator "Repeat" current-repeat-number directory-separator "Repeat" current-repeat-number ".png" "...")("")
+        
         export-interface (word setup-and-results-directory directory-separator "Scenario" current-scenario-number directory-separator "Repeat" current-repeat-number directory-separator "Repeat" current-repeat-number ".png" )
       ]
       
       if(save-output-data?)[
-        output-debug-message (word "EXPORTING MODEL OUTPUT TO: " setup-and-results-directory directory-separator "Scenario" current-scenario-number directory-separator "Repeat" current-repeat-number directory-separator "Repeat" current-repeat-number ".txt" "...")("")
+        
         export-output (word setup-and-results-directory directory-separator "Scenario" current-scenario-number directory-separator "Repeat" current-repeat-number directory-separator "Repeat" current-repeat-number ".txt" )
       ]
       
       if(save-world-data?)[
-        output-debug-message (word "EXPORTING WORLD DATA TO: " setup-and-results-directory directory-separator "Scenario" current-scenario-number directory-separator "Repeat" current-repeat-number directory-separator "Repeat" current-repeat-number ".csv" "...")("")
+        
         export-world (word setup-and-results-directory directory-separator "Scenario" current-scenario-number directory-separator "Repeat" current-repeat-number directory-separator "Repeat" current-repeat-number ".csv" )
       ]
 
-      output-debug-message (word "INCREMENTING THE GLOBAL 'current-repeat-number' (" current-repeat-number ") BY 1...") ("")
+      
       set current-repeat-number (current-repeat-number + 1)
       
-      output-debug-message ("SINCE THIS GAME HAS FINISHED ALL TURTLES SHOULD DIE, THE GLOBAL 'current-training-time' AND 'current-game-time' PLOTS SHOULD BE SET TO 0 AND ALL PLOTS SHOULD BE CLEARED...") ("")
+      
       clear-turtles
       clear-output
       set current-training-time 0
@@ -3571,7 +3638,7 @@ to play
       ;=== END OF SCENARIO ===;
       ;=======================;
       
-      output-debug-message (word "CHECKING TO SEE IF GLOBAL 'current-repeat-number' VARIABLE VALUE (" current-repeat-number ") IS GREATER THAN THE GLOBAL 'total-number-of-repeats' (" total-number-of-repeats ") VARIABLE VALUE...") ("")
+      
       if(current-repeat-number > total-number-of-repeats)[
         set current-scenario-number (current-scenario-number + 1)
         set current-repeat-number 1
@@ -3592,7 +3659,7 @@ to play
   ;== MAIN CYCLE ==;
   ;================;
   [
-    output-debug-message ("PLAYER TURTLES MUST STILL BE PLAYING...") ("")
+    
     
     create-new-tiles-and-holes
     chrest-turtles-act
@@ -3619,19 +3686,19 @@ end
 ;
 ;@author  Martyn Lloyd-Kelly <martynlk@liverpool.ac.uk>
 to-report player-turtles-finished?
-  set debug-indent-level (debug-indent-level + 1)
-  output-debug-message ("EXECUTING THE 'player-turtles-finished?' PROCEDURE...") ("")
-  set debug-indent-level (debug-indent-level + 1)
-  output-debug-message (word "THE NUMBER OF VISIBLE TURTLES THAT AREN'T OF BREED 'tiles' AND 'holes' IS: " count turtles with [ breed != tiles and breed != holes and hidden? = false ] ".") ("")
+  
+  
+  
+  
   
   ifelse( ( count (turtles with [ breed != tiles and breed != holes and hidden? = false ]) ) = 0 )[ 
-    output-debug-message ("THERE ARE NO VISIBLE TURTLES THAT AREN'T OF BREED 'tiles' AND 'holes' IN THE ENVIRONMENT.") ("")
-    set debug-indent-level (debug-indent-level - 2)
+    
+    
     report true
   ]
   [ 
-    output-debug-message ("THERE ARE VISIBLE TURTLES THAT AREN'T OF BREED 'tiles' AND 'holes' IN THE ENVIRONMENT.") ("")
-    set debug-indent-level (debug-indent-level - 2)
+    
+    
     report false
   ] 
 end
@@ -3654,12 +3721,12 @@ end
 ;
 ;@author  Martyn Lloyd-Kelly <martynlk@liverpool.ac.uk>
 to print-and-run [string-to-be-run]
- set debug-indent-level (debug-indent-level + 1)
- output-debug-message ("EXECUTING THE 'print-and-run' PROCEDURE...") ("")
- set debug-indent-level (debug-indent-level + 1)
+ 
+ 
+ 
 
- output-debug-message (word "NETLOGO COMMAND TO BE PASSED TO 'run' PRIMITIVE: '" string-to-be-run "'.") ("")
- set debug-indent-level (debug-indent-level - 2)
+ 
+ 
  run string-to-be-run
  
  
@@ -3711,60 +3778,60 @@ end
 ;
 ;@author  Martyn Lloyd-Kelly <martynlk@liverpool.ac.uk>  
 to-report push-tile [push-heading]
-  set debug-indent-level (debug-indent-level + 1)
-  output-debug-message ("EXECUTING THE 'push-tile' PROCEDURE...") ("")
-  set debug-indent-level (debug-indent-level + 1)
+  
+  
+  
   
   let push-tile-successful (false)
   let hole-filled (false)
-  output-debug-message ( word "Two local 'push-tile-successful' and 'hole-filled' variables are set to: '" push-tile-successful "' and '" hole-filled "'..." ) (who)
   
-  output-debug-message( word "Setting my heading to the value contained in the local 'push-heading' variable: " push-heading "...") (who)
+  
+  
   set heading (push-heading)
-  output-debug-message (word "My 'heading' variable is now set to: " heading ".  Checking to see if there is a tile immediately ahead...") (who)
+  
   
   if(any? tiles-on patch-at-heading-and-distance (heading) (1))[
-    output-debug-message (word "There is a tile immediately ahead along heading " heading ".  Pushing this tile...") (who)
+    
     
     ask tiles-on patch-at-heading-and-distance (heading) (1)[
-      output-debug-message ("I am the tile to be pushed.") (who)
-      output-debug-message (word "Setting my 'heading' variable value to that of the pusher (" [heading] of myself ")...") (who)
+      
+      
       set heading [heading] of myself
-      output-debug-message (word "My 'heading' variable value is now set to: " heading ".") (who)
-      output-debug-message (word "Checking to see if there are any visible holes immediately ahead of me with this heading...") (who)
+      
+      
     
       ifelse( any? (holes-on (patch-ahead (1))) with [hidden? = false] )[
-        output-debug-message (word "There is a visible hole 1 patch ahead with my current heading (" heading ") so I'll move onto that patch, the hole will die, the 'hole-filled' variable will be set to true and I will die.") (who)
+        
         forward 1
         ask holes-here with [hidden? = false][ die ]
         set hole-filled (true) 
         die
       ]
       [
-        output-debug-message ("There are no visible holes ahead so I'll check to see if there are any other visible turtles ahead, if there is, I won't move...") (who)
+        
         if(not any? (turtles-on (patch-ahead (1))) with [hidden? = false])[
-          output-debug-message (word "There are no turtles on the patch immediately ahead of me with heading " heading " so I'll move forward by 1 patch...") (who)
+          
           forward 1
         ]
       ]
     ]
     
-    output-debug-message ("Checking to see if the tile I was pushing has moved...") (who)
+    
     if(not any? tiles-on patch-at-heading-and-distance (heading) (1))[
-      output-debug-message (word "The tile I was pushing has moved so I should also move forward by 1 patch to simulate a push and set the local 'push-tile-successful' variable to boolean true...") (who)
+      
       forward 1
       set push-tile-successful (true)
     ]
   ]
   
   if(hole-filled)[
-    output-debug-message ("A hole has been filled so I'll increment by 'score' turtle variable by 1") (who)
+    
     set score (score + 1)
     set time-last-hole-filled (report-current-time)
   ]
   
-  output-debug-message (word "The local 'push-tile-successful' and 'hole-filled' variables are set to: '" push-tile-successful "' and '" hole-filled "'. Reporting these as a list...") (who)
-  set debug-indent-level (debug-indent-level - 2)
+  
+  
   report ( list (push-tile-successful) (hole-filled) )
 end
 
@@ -3784,40 +3851,40 @@ end
 ;
 ;@author  Martyn Lloyd-Kelly <martynlk@liverpool.ac.uk>  
 to-report quote-string-or-read-from-string [value]
-  set debug-indent-level (debug-indent-level + 1)
-  output-debug-message ("EXECUTING THE 'quote-string-or-read-from-string' PROCEDURE...") ("")
-  set debug-indent-level (debug-indent-level + 1)
   
-  output-debug-message ( word "CHECKING TO SEE IF " value " IS A LIST" ) ("")
+  
+  
+  
+  
   ifelse(string:rex-match ("\\(?list.*") (value))[
-    output-debug-message ( word value " IS A LIST, REPORTING IT AS-IS") ("")
+    
     report value
   ]
   [
-    output-debug-message ( word value "IS NOT A LIST, CHECKING TO SEE IF IT IS AN INTEGER OR FLOATING POINT NUMBER...") ("")
+    
     ifelse(string:rex-match ("-?[0-9]+\\.?[0-9]*|") (value) )[
-      output-debug-message (word value " IS AN INTEGER OR FLOATING POINT NUMBER.  REPORTING THE RESULT OF APPLYING THE 'read-from-string' PRIMITIVE TO IT...") ("")
-      set debug-indent-level (debug-indent-level - 2)
+      
+      
       report read-from-string (value)
     ]
     [
-      output-debug-message (word value " IS NOT AN INTEGER OR FLOATING POINT NUMBER.  CHECKING TO SEE IF IT IS A BOOLEAN VALUE...") ("")
+      
       ifelse(string:rex-match ("true|false") (value))[
-        output-debug-message (word value " IS A BOOLEAN VALUE, DETERMINING WHETHER TRUE OR FALSE SHOULD BE REPORTED...") ("")
+        
         ifelse(string:rex-match ("true") (value))[
-          output-debug-message (word value " MATCHES 'true' SO BOOLEAN 'true' WILL BE REPORTED.") ("")
-          set debug-indent-level (debug-indent-level - 2)
+          
+          
           report true
         ]
         [
-          output-debug-message (word value " MATCHES 'false' SO BOOLEAN 'false' WILL BE REPORTED.") ("")
-          set debug-indent-level (debug-indent-level - 2)
+          
+          
           report false
         ]
       ]
       [
-        output-debug-message (word value " IS NOT A BOOLEAN VALUE, REPORTING THE RESULT OF ENCLOSING IT WITH DOUBLE QUOTES") ("")
-        set debug-indent-level (debug-indent-level - 2)
+        
+        
         report (word "\"" value "\"")
       ]
     ]
@@ -3829,16 +3896,16 @@ end
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 to reinforce-productions
-  set debug-indent-level (debug-indent-level + 1)
-  output-debug-message ("EXECUTING THE 'reinforce-productions' PROCEDURE...") ("")
-  set debug-indent-level (debug-indent-level + 1)
+  
+  
+  
     
   ;Productions to reinforce are episodes and are learned from most recently
   ;performed to least recently performed so, the episode-to-reinforce index
   ;decrements as productions in episodes are reinforced hence the check for
   ;the index being >= 0.  This is because the most recent episode in the 
   ;turtle's episodic-memory is the size of the episodic-memory - 1.
-  output-debug-message (word "Checking my 'episode-to-reinforce' variable (" episode-to-reinforce ")") (who)
+  
   ifelse(episode-to-reinforce >= 0)[
     output-debug-message (word 
       "Since my 'episode-to-reinforce' variable is >= 0, I'll continue attempting to reinforce "
@@ -3924,26 +3991,26 @@ to reinforce-productions
           chrest:ChrestStatus.value-of ("MODERATE_PRODUCTION_MATCH_REINFORCED") = reinforcement-result or
           chrest:ChrestStatus.value-of ("LOW_PRODUCTION_MATCH_REINFORCED") = reinforcement-result
         )[
-          output-debug-message (word "Reinforcing the next episode") (who)
+          
           set episode-to-reinforce (episode-to-reinforce - 1)
         ]
         [
-          output-debug-message (word "Continuing to attempt to reinforce the same episode") (who)
+          
         ]
       ]
       [
-        output-debug-message ("There are episodes with non-empty visions that have been performed at the current time in episodic-memory, exiting") (who)
+        
       ]
     ]
     [
-      output-debug-message ("Latest episode hasn't been performed yet, exiting procedure.") (who)
+      
     ]
   ]
   [
-    output-debug-message ("My 'episode-to-reinforce' variable is < 0 so I'll attempt to reinforce my productions ") (who)
+    
   ]
   
-  set debug-indent-level (debug-indent-level - 2)
+  
 end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3956,30 +4023,30 @@ end
 ;
 ;@author  Martyn Lloyd-Kelly <martynlk@liverpool.ac.uk>  
 to remove-players
- set debug-indent-level (debug-indent-level + 1)
- output-debug-message ("EXECUTING 'remove-players' PROCEDURE...") ("")
- set debug-indent-level (debug-indent-level + 1)
  
- output-debug-message ("ASKING ALL chrest-turtles TO SET THEIR 'hidden?' VARIABLE TO TRUE IF THEIR 'training-time' OR 'play-time' VARIABLE IS LESS THAN/EQUAL TO 'current-training-time' OR 'current-game-time'...") ("")
+ 
+ 
+ 
+ 
  ask chrest-turtles[
-   output-debug-message (word "Checking to see if I am playing the game in a training context i.e is the global 'training?' variable (" training? ") set to true?") (who)
+   
    ifelse(training?)[
-     output-debug-message (word "I am playing the game in a training context so I need to check and see if my 'training-time' variable (" training-time ") is equal to the global 'current-training-time' variable (" current-training-time ").") (who)
+     
      if(current-training-time = training-time)[
-       output-debug-message ("My 'training-time' variable is equal to the global 'current-training-time' value so I'll set my 'hidden?' variable to true...") (who)
+       
        set hidden? true
      ]
    ]
    [
-     output-debug-message (word "I am playing the game in a non-training context so I need to check and see if my 'play-time' variable (" play-time ") is equal to the global 'current-game-time' variable (" current-game-time ").") (who)
+     
      if(current-game-time = play-time)[
-       output-debug-message ("My 'play-time' variable is equal to the global 'current-game-time' value so I'll set my 'hidden?' variable to true...") (who)
+       
        set hidden? true
      ]
    ]
  ]
  
- set debug-indent-level (debug-indent-level - 2)
+ 
 end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -4044,10 +4111,6 @@ end
 ;@author  Martyn Lloyd-Kelly <martynlk@liverpool.ac.uk>  
 to setup [testing]
   set testing? testing
-  
-  set debug-indent-level 0
-  output-debug-message ("EXECUTING THE 'setup' PROCEDURE...") ("")
-  set debug-indent-level (debug-indent-level + 1)
 
   ;The global "directory-separator" value is set here so that calls to 
   ;"setup" in the "test" procedure will reinstantiate it after the "reset"
@@ -4098,8 +4161,7 @@ to setup [testing]
       ask chrest-turtles [chrest:turn-on-debugging]
     ]
   ]
-  
-  set debug-indent-level (debug-indent-level - 1)
+
   stop
 end
 
@@ -4157,6 +4219,10 @@ to setup-chrest-turtles [setup-chrest?]
     set time-visual-spatial-field-can-be-used-for-planning (-1)
     set who-of-tile-last-pushed-in-plan ("")
     
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ;;; SETUP CHREST VARIABLES ;;;
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    
     if(setup-chrest?)[
       chrest:new (report-current-time) (true)
       chrest:set-domain 
@@ -4206,28 +4272,113 @@ to setup-chrest-turtles [setup-chrest?]
     
     place-randomly
     
-    setup-plot-pen ("Scores") (0)
-    setup-plot-pen ("Time Spent Deliberating") (0)
-    setup-plot-pen ("Production Count") (0)
-    setup-plot-pen ("Random Behaviour Frequency") (1)
-    setup-plot-pen ("Problem-Solving Frequency") (1)
-    setup-plot-pen ("Pattern-Recognition Frequency") (1)
-    setup-plot-pen ("Visual STM Node Count") (0)
-    setup-plot-pen ("Visual LTM Size") (0)
-    setup-plot-pen ("Visual LTM Avg. Depth") (0)
-    setup-plot-pen ("Action STM Node Count") (0)
-    setup-plot-pen ("Action LTM Size") (0)
-    setup-plot-pen ("Action LTM Avg. Depth") (0)
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ;;; SETUP RESULT VARIABLES ;;;
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
     
-;    output-debug-message (word "My 'current-visual-pattern' variable is set to: '" current-visual-pattern "'.") (who)
-    output-debug-message (word "My 'heading' variable is set to: '" heading "'.") (who)
-    output-debug-message (word "My 'episodic-memory' variable is set to: '" episodic-memory "'.") (who)
-    output-debug-message (word "My 'score' variable is set to: '" score "'.") (who)
-    output-debug-message (word "My 'time-to-perform-next-action' variable is set to: '" time-to-perform-next-action "'.") (who)
-    output-debug-message (word "My '_addProductionTime' CHREST variable is set to: '" chrest:get-add-production-time "' seconds.") (who)
-    output-debug-message (word "My '_discriminationTime' CHREST variable is set to: '" chrest:get-discrimination-time "' seconds.") (who)
-    output-debug-message (word "My '_familiarisationTime' CHREST variable is set to: '" chrest:get-familiarisation-time "' seconds.") (who)
-    output-debug-message (word "My '_reinforcementLearningTheory' CHREST variable is set to: '" chrest:get-reinforcement-learning-theory "'.") (who)
+    set turtles-result-directory (word 
+      (setup-and-results-directory) 
+      (directory-separator) 
+      ("Scenario") (current-scenario-number)
+      (directory-separator) 
+      ("Repeat") (current-repeat-number) 
+      (directory-separator)
+      ("Results")
+      (directory-separator)
+      ("Turtle") (who) 
+      (directory-separator)
+    )
+    
+    pathdir:create (turtles-result-directory)
+    
+    set previous-score (0)
+    set previous-time-spent-deliberating (0)
+    set previous-production-count (chrest:get-production-count (report-current-time))
+    set previous-frequency-of-problem-solving (0)
+    set previous-frequency-of-pattern-recognition (0)
+    set previous-visual-stm-count (chrest:Stm.get-count (chrest:Modality.value-of("VISUAL")) (report-current-time))
+    set previous-visual-ltm-size (chrest:get-ltm-modality-size (chrest:Modality.value-of("VISUAL")) (report-current-time))
+    set previous-avg-visual-ltm-depth (chrest:get-ltm-avg-depth (chrest:Modality.value-of("VISUAL")) (report-current-time))
+    set previous-action-stm-count (chrest:Stm.get-count (chrest:Modality.value-of("ACTION")) (report-current-time))
+    set previous-action-ltm-size (chrest:get-ltm-modality-size (chrest:Modality.value-of("ACTION")) (report-current-time))
+    set previous-avg-action-ltm-depth (chrest:get-ltm-avg-depth (chrest:Modality.value-of("ACTION")) (report-current-time))
+    
+    let score-results-file (word (turtles-result-directory) "score.csv" )
+    if(file-exists? score-results-file)[ file-delete score-results-file ]
+    file-open score-results-file
+    file-print (word "time,score")
+    file-print (word (report-current-time) "," (previous-score))
+    file-close
+    
+    let time-spent-deliberating-results-file (word (turtles-result-directory) "time-spent-deliberating.csv" )
+    if(file-exists? time-spent-deliberating-results-file)[ file-delete time-spent-deliberating-results-file ]
+    file-open time-spent-deliberating-results-file
+    file-print (word "time,time-spent-deliberating")
+    file-print (word (report-current-time) "," (previous-time-spent-deliberating))
+    file-close
+    
+    let production-count-results-file (word (turtles-result-directory) "production-count.csv" )
+    if(file-exists? production-count-results-file)[ file-delete production-count-results-file ]
+    file-open production-count-results-file
+    file-print (word "time,production-count")
+    file-print (word (report-current-time) "," (previous-production-count))
+    file-close
+    
+    let problem-solving-frequency-results-file (word (turtles-result-directory) "problem-solving-frequency.csv" )
+    if(file-exists? problem-solving-frequency-results-file)[ file-delete problem-solving-frequency-results-file ]
+    file-open problem-solving-frequency-results-file
+    file-print (word "time,problem-solving-frequency")
+    file-print (word (report-current-time) "," (previous-frequency-of-problem-solving))
+    file-close
+    
+    let pattern-recognition-frequency-results-file (word (turtles-result-directory) "pattern-recognition-frequency.csv" )
+    if(file-exists? pattern-recognition-frequency-results-file)[ file-delete pattern-recognition-frequency-results-file ]
+    file-open pattern-recognition-frequency-results-file
+    file-print (word "time,pattern-recognition-frequency")
+    file-print (word (report-current-time) "," (previous-frequency-of-pattern-recognition))
+    file-close
+    
+    let visual-stm-count-results-file (word (turtles-result-directory) "visual-stm-count.csv" )
+    if(file-exists? visual-stm-count-results-file)[ file-delete visual-stm-count-results-file ]
+    file-open visual-stm-count-results-file
+    file-print (word "time,visual-stm-count")
+    file-print (word (report-current-time) "," (previous-visual-stm-count))
+    file-close
+    
+    let visual-ltm-size-results-file (word (turtles-result-directory) "visual-ltm-size.csv" )
+    if(file-exists? visual-ltm-size-results-file)[ file-delete visual-ltm-size-results-file ]
+    file-open visual-ltm-size-results-file
+    file-print (word "time,visual-ltm-size")
+    file-print (word (report-current-time) "," (previous-visual-ltm-size))
+    file-close
+    
+    let avg-visual-ltm-depth-results-file (word (turtles-result-directory) "avg-visual-ltm-depth.csv" )
+    if(file-exists? avg-visual-ltm-depth-results-file)[ file-delete avg-visual-ltm-depth-results-file ]
+    file-open avg-visual-ltm-depth-results-file
+    file-print (word "time,avg-visual-ltm-depth")
+    file-print (word (report-current-time) "," (previous-avg-visual-ltm-depth))
+    file-close
+    
+    let action-stm-count-results-file (word (turtles-result-directory) "action-stm-count.csv" )
+    if(file-exists? action-stm-count-results-file)[ file-delete action-stm-count-results-file ]
+    file-open action-stm-count-results-file
+    file-print (word "time,action-stm-count")
+    file-print (word (report-current-time) "," (previous-action-stm-count))
+    file-close
+    
+    let action-ltm-size-results-file (word (turtles-result-directory) "action-ltm-size.csv" )
+    if(file-exists? action-ltm-size-results-file)[ file-delete action-ltm-size-results-file ]
+    file-open action-ltm-size-results-file
+    file-print (word "time,action-ltm-size")
+    file-print (word (report-current-time) "," (previous-action-ltm-size))
+    file-close
+    
+    let avg-action-ltm-depth-results-file (word (turtles-result-directory) "avg-action-ltm-depth.csv" )
+    if(file-exists? avg-action-ltm-depth-results-file)[ file-delete avg-action-ltm-depth-results-file ]
+    file-open avg-action-ltm-depth-results-file
+    file-print (word "time,avg-action-ltm-depth")
+    file-print (word (report-current-time) "," (previous-avg-action-ltm-depth))
+    file-close
  ]
 end
      
@@ -4244,17 +4395,17 @@ end
 ;
 ;@author  Martyn Lloyd-Kelly <martynlk@liverpool.ac.uk>  
 to setup-independent-variables
-  set debug-indent-level (debug-indent-level + 1)
-  output-debug-message ("EXECUTING THE 'setup-independent-variables' PROCEDURE...") ("")
-  set debug-indent-level (debug-indent-level + 1)
+  
+  
+  
   
   ifelse(testing?)[
     file-open (word "tests" (directory-separator) (item (0) (test-info)) (directory-separator) (item (1) (test-info)) ".txt")
   ]
   [
-    output-debug-message ("CHECKING TO SEE IF THE RELEVANT SCENARIO AND REPEAT DIRECTORY EXISTS") ("")
+    
     check-for-scenario-repeat-directory
-    output-debug-message (word "THE RELEVANT SCENARIO AND REPEAT DIRECTORY EXISTS.  ATTEMPTING TO OPEN " (setup-and-results-directory) "Scenario" (current-scenario-number) (directory-separator) "Scenario" (current-scenario-number) "Settings.txt" ) ("")
+    
     file-open (word (setup-and-results-directory) "Scenario" (current-scenario-number) (directory-separator) "Scenario" (current-scenario-number) "Settings.txt" )
   ]
   
@@ -4262,21 +4413,21 @@ to setup-independent-variables
   
   while[not file-at-end?][
     let line file-read-line
-    output-debug-message (word "LINE BEING READ FROM EXTERNAL FILE IS: '" line "'") ("")
     
-    output-debug-message (word "CHECKING TO SEE IF '" line "' CONTAINS ANYTHING OTHER THAN WHITE SPACE, IF IT DOESN'T THE NEXT LINE WILL BE PROCESSED") ("")
+    
+    
     ifelse( ( not (string:rex-match ("\\s+") (line)) ) and (line != "") )[
-      output-debug-message (word "'" line "' IS NOT EMPTY SO IT WILL BE PROCESSED.") ("")
       
-      output-debug-message (word "CHECKING TO SEE IF '" line "' STARTS WITH A SEMI-COLON INDICATING A NETLOGO COMMENT.  IF SO, THIS LINE WILL NOT BE PROCESSED FURTHER") ("")
+      
+      
       if( not string:rex-match ("^\\s*;.*") (line) )[
         ifelse( (string:rex-match "[a-zA-Z_\\-\\?]+" line) and (empty? variable-name) )[
           set variable-name line
-          output-debug-message (word "'" line "' ONLY CONTAINS EITHER ALPHABETICAL CHARACTERS, HYPHENS, UNDERSCORES OR QUESTION MARKS SO IT MUST BE A VARIABLE NAME.") ("")
-          output-debug-message (word "THE 'variable-name' VARIABLE IS NOW SET TO: '" variable-name "'.") ("")
+          
+          
         ]
         [
-          output-debug-message (word "CHECKING FOR <test> IN '" line "', IF ENCOUNTERED, ALL CONTENT UNTIL </test> TAG WILL BE IGNORED..." ) ("")
+          
           ifelse(string:rex-match ("^\\s*<test>.*") (line) )[
             while[ ( not (string:rex-match (".*<\\/test>\\s*$") (line)) ) ][
               set line file-read-line
@@ -4284,7 +4435,7 @@ to setup-independent-variables
           ]
           [
             ifelse(string:rex-match "^\\s*<run>.*" line)[
-              output-debug-message (word "'" line "' STARTS WITH <run> INDICATING THAT THIS IS A NETLOGO CODE TO BE RUN USING THE 'print-and-run' PROCEDURE.  CONCATONATING SUBSEQUENT LINES WITH '' UNTIL </run> TAG IS FOUND..." ) ("")
+              
               while[not (string:rex-match ("<.*\\/run>\\s*$") (line))][
                 set line (word line (file-read-line))
               ]
@@ -4292,23 +4443,23 @@ to setup-independent-variables
               print-and-run (line)
             ]
             [
-              output-debug-message (word "'" line "' MUST BE A VALUE.") ("")
+              
               
               ifelse( member? ":" line )[
-                output-debug-message (word "'" line "' CONTAINS A COLON SO THE VALUE IS TO BE SET FOR ONE OR MORE TURTLE VARIABLES.  CHECKING FORMATTING OF THE LINE...") ("")
                 
-                output-debug-message ("CHECKING FOR MATCHING PARENTHESIS...") ("")
+                
+                
                 if( (check-for-substring-in-string-and-report-occurrences "(" line) != (check-for-substring-in-string-and-report-occurrences ")" line) )[
                   error (word "ERROR: External model settings file line: '" line "' does not contain matching parenthesis!" )
                 ]
-                output-debug-message ("PARENTHESIS MATCH OR PARENTHESIS DO NOT EXIST...") ("")
                 
-                output-debug-message ("SPLITTING LINE ON FIRST COLON TO GET WHO(S) OF TURTLE(S) TO SET VALUE FOR AND THE VALUE") ("")
+                
+                
                 let whos-and-value (string:rex-split (line) (":+?"))
                 let whos (item (0) (whos-and-value))
                 let value (item (1) (whos-and-value))
                 
-                output-debug-message ("CHECKING FOR MORE THAN ONE PAIR OF MATCHING PARENTHESIS IN WHO SPECIFICATION...") ("")
+                
                 if(
                   (check-for-substring-in-string-and-report-occurrences ("(") (whos)) = (check-for-substring-in-string-and-report-occurrences (")") (whos)) and 
                   (check-for-substring-in-string-and-report-occurrences ("(") (whos)) > 1
@@ -4316,9 +4467,9 @@ to setup-independent-variables
                 [
                   error (word "ERROR: External model settings file line: '" line "' contains more than one pair of matching parenthesis in who specification!" )
                 ]
-                output-debug-message ("NO MORE THAN ONE PAIR OF MATCHING PARENTHESIS EXISTS IN WHO SPECIFICATION...") ("")
                 
-                output-debug-message ("CHECKING FOR A HYPHEN IN WHO SPECIFICATION IF MATCHING PARENTHESIS EXIST...") ("")
+                
+                
                 if(
                   (check-for-substring-in-string-and-report-occurrences ("(") (whos)) = (check-for-substring-in-string-and-report-occurrences (")") (whos)) and 
                   (check-for-substring-in-string-and-report-occurrences ("(") (whos)) = 1 and
@@ -4327,19 +4478,19 @@ to setup-independent-variables
                 [
                   error (word "ERROR: External model settings file line: '" line "' does not contain a hyphen in group who specification!" )
                 ]
-                output-debug-message ("GROUP WHO SPECIFICATION CONTAINS A HYPHEN AND ONE PAIR OF MATCHING PARENTHESIS...") ("")
                 
-                output-debug-message (word "'" whos "' IS FORMATTED CORRECTLY.") ("")
+                
+                
                 
                 ifelse( member? "(" whos )[
-                  output-debug-message (word "'" whos "' CONTAINS A '(' SO THE '" variable-name "' VARIABLE FOR A NUMBER OF TURTLES SHOULD BE SET...") ("")
+                  
                   
                   let current-who read-from-string ( substring whos ( (position "(" whos) + 1 ) (position "-" whos) )
                   let last-who read-from-string ( substring whos ( (position "-" whos) + 1 ) (position ")" whos) )
                   let value-specified ( quote-string-or-read-from-string (value) )
                   
                   while[current-who <= last-who][
-                    output-debug-message (word "TURTLE " current-who "'s '" variable-name "' VARIABLE WILL BE SET TO: '" value-specified "'.") ("")
+                    
                     
                     ask turtle current-who[ 
                       print-and-run (word "set " variable-name " " value-specified)
@@ -4349,11 +4500,11 @@ to setup-independent-variables
                   ]
                 ]
                 [
-                  output-debug-message (word "'" whos "' DOES NOT CONTAIN A '(' SO THE '" variable-name "' VARIABLE FOR ONE TURTLE SHOULD BE SET...") ("")
+                  
                   
                   let turtle-who read-from-string ( whos )
                   let value-specified (quote-string-or-read-from-string (value))
-                  output-debug-message (word "TURTLE " turtle-who "'s '" variable-name "' VARIABLE WILL BE SET TO: '" value-specified "'.") ("")
+                  
                   
                   ask turtle turtle-who[ 
                     print-and-run (word "set " variable-name " " value-specified)
@@ -4361,8 +4512,8 @@ to setup-independent-variables
                 ]
               ]
               [
-                output-debug-message (word "'" line "' DOES NOT CONTAIN A ':' SO '" variable-name "' IS A GLOBAL VARIABLE...") ("")
-                output-debug-message (word "'" variable-name "' will therefore be set to: " quote-string-or-read-from-string (line) "...") ("")
+                
+                
                 print-and-run (word "set " variable-name " " (quote-string-or-read-from-string (line) ) )
               ]
             ]
@@ -4371,7 +4522,7 @@ to setup-independent-variables
       ]
     ]
     [
-      output-debug-message (word "'" line "' IS EMPTY THEREFORE, THE 'variable-name' VARIABLE WILL BE SET TO EMPTY...") ("")
+      
       set variable-name ""
     ]
     
@@ -4384,7 +4535,7 @@ to setup-independent-variables
   ]
   
   file-close
-  set debug-indent-level (debug-indent-level - 2)
+  
 end
  
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -4403,10 +4554,10 @@ end
 ;
 ;@author  Martyn Lloyd-Kelly <martynlk@liverpool.ac.uk>  
 to setup-plot-pen [name-of-plot mode-of-pen]
-  set debug-indent-level (debug-indent-level + 1)
-  output-debug-message ("EXECUTING THE 'setup-plot-pen' PROCEDURE...") ("")
-  set debug-indent-level (debug-indent-level + 1)
-  output-debug-message (word "Setting my plot pen for the '" name-of-plot "' plot.") (who)
+  
+  
+  
+  
   
   set-current-plot name-of-plot
   create-temporary-plot-pen (word "Turtle " who)
@@ -4414,7 +4565,7 @@ to setup-plot-pen [name-of-plot mode-of-pen]
   set-plot-pen-color color
   set-plot-pen-mode (mode-of-pen)
   
-  set debug-indent-level (debug-indent-level - 2)
+  
 end
         
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -4453,13 +4604,13 @@ end
 ;
 ;@author  Martyn Lloyd-Kelly <martynlk@liverpool.ac.uk>  
 to update-plot-no-x-axis-value [name-of-plot value]
- set debug-indent-level (debug-indent-level + 1)
- output-debug-message ("EXECUTING THE 'update-plot' PROCEDURE...") ("")
- set debug-indent-level (debug-indent-level + 1)
  
- output-debug-message ("CHECKING TO SEE IF THE 'draw-plots?' VARIABLE IS SET TO FALSE, IF SO, I WON'T CONTINUE WITH THIS PROCEDURE...") ("")
+ 
+ 
+ 
+ 
  if(draw-plots?)[
-   output-debug-message (word "The name of the plot to update is: '" name-of-plot "'.") (who)
+   
    set-current-plot name-of-plot
    set-current-plot-pen (word "Turtle " who)
    
@@ -4471,7 +4622,7 @@ to update-plot-no-x-axis-value [name-of-plot value]
    ]
  ]
  
- set debug-indent-level (debug-indent-level - 2)
+ 
 end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -4492,13 +4643,13 @@ end
 ;
 ;@author  Martyn Lloyd-Kelly <martynlk@liverpool.ac.uk>  
 to update-plot-with-x-axis-value [name-of-plot x-value y-value]
- set debug-indent-level (debug-indent-level + 1)
- output-debug-message ("EXECUTING THE 'update-plot' PROCEDURE...") ("")
- set debug-indent-level (debug-indent-level + 1)
  
- output-debug-message ("CHECKING TO SEE IF THE 'draw-plots?' VARIABLE IS SET TO FALSE, IF SO, I WON'T CONTINUE WITH THIS PROCEDURE...") ("")
+ 
+ 
+ 
+ 
  if(draw-plots?)[
-   output-debug-message (word "The name of the plot to update is: '" name-of-plot "'.") (who)
+   
    set-current-plot name-of-plot
    set-current-plot-pen (word "Turtle " who)
    
@@ -4510,7 +4661,7 @@ to update-plot-with-x-axis-value [name-of-plot x-value y-value]
    ]
  ]
  
- set debug-indent-level (debug-indent-level - 2)
+ 
 end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -4522,22 +4673,22 @@ end
 ; 
 ;@author  Martyn Lloyd-Kelly <martynlk@liverpool.ac.uk>  
 to update-time
- set debug-indent-level (debug-indent-level + 1)
- output-debug-message ("EXECUTING 'update-environment' PROCEDURE...") ("")
- set debug-indent-level (debug-indent-level + 1)
- output-debug-message(word "CHECKING TO SEE IF GAME IS BEING PLAYED IN TRAINING CONTEXT I.E IS THE GLOBAL 'training?' VARIABLE (" training? ") SET TO TRUE?") ("")
+ 
+ 
+ 
+ 
  
  ifelse(training?)[
-   output-debug-message (word "GAME IS BEING PLAYED IN TRAINING CONTEXT.  INCREMENTING GLOBAL 'current-training-time' VARIABLE (" current-training-time ") BY 1...") ("")
+   
    set current-training-time ( precision (current-training-time + 1) (1) )
-   output-debug-message (word "GLOBAL 'current-training-time' VARIABLE NOW SET TO: " current-training-time ".") ("")
+   
  ]
  [
-   output-debug-message (word "GAME IS BEING PLAYED IN NON-TRAINING CONTEXT.  INCREMENTING GLOBAL 'current-game-time' VARIABLE (" current-game-time ") BY 1...") ("")
+   
    set current-game-time ( precision (current-game-time + 1) (1) )
-   output-debug-message (word "GLOBAL 'current-game-time' VARIABLE NOW SET TO: " current-game-time ".") ("")
+   
  ]
- set debug-indent-level (debug-indent-level - 2)
+ 
 end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;
@@ -4672,7 +4823,7 @@ to check-test-output [result expected test-description]
   ]
   
   foreach(result)[
-    output-debug-message (word "CHECKING IF '" ? "' IS A MEMBER OF '" expected "'") ("")
+    
     if(not member? ? expected )[
       print (testing-debug-messages)
       error (word "Result returned (" ? ") is not an expected value (" expected ") for test number " (item (1) (test-info)) " of '" (item (0) (test-info)) "' test (" test-description ").  Check command center in interface tab for detailed debug info.")
@@ -5116,7 +5267,7 @@ SWITCH
 201
 draw-plots?
 draw-plots?
-0
+1
 1
 -1000
 
