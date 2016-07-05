@@ -1,7 +1,0 @@
-<test>
-	create-chrest-turtles 1 [
-		let from-loc (word ";0;0")
-		let to-loc (word ";-1;0")
-		check-equal (heading-that-gives-shortest-distance-from-location-to-location (from-loc) (to-loc)) (270)
-	]
-</test>
