@@ -84,6 +84,7 @@ globals [
   tile-lifespan                  ;Stores the length of time (in milliseconds) that a tile lives for after creation.
   tile-token                     ;Stores the string used to indicate a tile in scene instances.
   training?                      ;Stores boolean true or false: true if the game is a training game, false if not (true by default).
+  tuition?                       ;Boolean: true if the game is currently in tuition mode, false if not.
   unknown-patch-token            ;Stores the string used to indicate an unknown patch (patch whose object status is unknown) for Scene instances created from a CHREST turtle's VisualSpatialField instance.
 ]
      
@@ -196,6 +197,8 @@ chrest-turtles-own [
                                                                                             ; Should be between 0.0 and 1.0.                                                  ;
   saccade-time                                                                              ; Stores the time (millisecond) it takes for the turtle to perform a saccade when ; Yes
                                                                                             ; fixating on the environment/its visual-spatial field.                           ;
+  save-ltm-state?                                                                           ; Stores a boolean that indicates if this turtle's long-term memory should be     ; Yes
+                                                                                            ; saved at the conclusion of its "life".                                          ;
   score                                                                                     ; Stores the score of the turtle (the number of holes that have been filled by    ; No
                                                                                             ; it).                                                                            ; 
   sight-radius                                                                              ; Stores the number of patches that can be seen to the north/east/south/west of   ; Yes
@@ -242,6 +245,10 @@ chrest-turtles-own [
   time-to-retrieve-item-from-stm                                                            ; Stores the time (milliseconds) taken to retrieve a Node from any STM modality   ; Yes
   time-to-update-stm                                                                        ; Stores the time (milliseconds) taken to put a Node into any STM modality        ; Yes
   training-time                                                                             ; Stores the length of time (in milliseconds) that the turtle can train for.      ; Yes
+  tutees                                                                                    ; Stores a list of turtle "who" numbers that are the tutees of this turtle (if it ; Yes
+                                                                                            ; is a tutor, see the "tutor?" variable).                                         ;
+  tutor?                                                                                    ; Stores a boolean indicating whether the turtle is a tutor or not; true if it    ; Yes
+                                                                                            ; is, false if it isn't.                                                          ;
   unknown-visual-spatial-field-object-replacement-probabilities                             ; Stores a list of lists of the form [[probability object-token]] used as input   ; Yes
                                                                                             ; to the "get-visual-spatial-field-as-scene" CHREST extension primitive.          ;
   unrecognised-visual-spatial-field-object-lifespan                                         ; Stores the length of time (in milliseconds) that an unrecognised visual-spatial ; Yes
@@ -664,9 +671,9 @@ to check-variable-values
       ( list ("time-taken-to-push-tile") (true) (1) (max-time) )
       ( list ("time-to-access-visual-spatial-field") (true) (1) (max-time) )
       ( list ("time-to-create-semantic-link") (true) (1) (max-time) )
-      ( list ("time-to-encode-recognised-scene-object-as-visual-spatial-field-object") (true) (1) (max-time) )
-      ( list ("time-to-encode-unrecognised-empty-square-scene-object-as-visual-spatial-field-object") (true) (1) (max-time) )
-      ( list ("time-to-encode-unrecognised-non-empty-square-scene-object-as-visual-spatial-field-object") (true) (1) (max-time) )
+      ( list ("time-to-encode-recognised-visual-spatial-field-object") (true) (1) (max-time) )
+      ( list ("time-to-encode-unrecognised-empty-square-as-visual-spatial-field-object") (true) (1) (max-time) )
+      ( list ("time-to-encode-unrecognised-visual-spatial-field-object") (true) (1) (max-time) )
       ( list ("time-to-generate-action-when-no-tile-seen") (true) (1) (max-time) )
       ( list ("time-to-generate-action-when-tile-seen") (true) (1) (max-time) )
       ( list ("time-to-move-visual-spatial-field-object") (true) (1) (max-time) )
@@ -3423,25 +3430,10 @@ to play
     setup (false)
     
     if(debug-message-output-file != 0)[ 
-      print "TURNING ON CHREST DEBUGGING"
       ask chrest-turtles [
-        print (word "Red " who " standing by")
         chrest:turn-on-debugging
         ]
     ]
-    
-;    if(save-output-data?)[
-;      output-debug-message ("SINCE THE MODEL'S OUTPUT DATA SHOULD BE SAVED THE USER NEEDS TO SPECIFY WHEN THE OUTPUT SHOULD BE UPDATED...") ("")
-;      set output-interval (read-from-string (user-input ("Model output should be generated every ____ seconds?")))
-;      output-debug-message ("CHECKING TO SEE IF THE MAXIMUM TRAINING/PLAY TIME OF ANY CHREST TURTLE IS GREATER THAN 0 AND IF SO WHETHER THE INTERVAL SPECIFIED FOR OUTPUTTING MODEL DATA IS GREATER THAN EITHER OF THESE TIMES...") ("")
-;      while[
-;        ( ( (max [training-time] of chrest-turtles) > 0) or ( (max [play-time] of chrest-turtles) > 0 ) ) and
-;        (output-interval > max [training-time] of chrest-turtles) or (output-interval > max [play-time] of chrest-turtles)
-;      ][
-;        user-message (word "The output interval specified (" output-interval ") is greater than the maximum value specified for 'training-time' (" max [training-time] of chrest-turtles ") or 'play-time' (" max [play-time] of chrest-turtles ").")
-;        set output-interval (read-from-string (user-input ("Model output should be generated every ____ seconds?")))
-;      ]
-;    ]
   ]
   
   output-debug-message ("") ("") ;Blank to seperate time increments for readability.
@@ -3488,6 +3480,16 @@ to play
   
   output-debug-message (word "CHECKING TO SEE IF THERE ARE ANY PLAYER TURTLES STILL PLAYING (VISIBLE)...") ("")
   ifelse(player-turtles-finished?)[
+    
+    ;====================;
+    ;== END OF TUITION ==;
+    ;====================;
+    if(tuition?)[
+      set tuition? (false)
+      ask turtles [
+        set hidden? (false)
+      ]
+    ]
     
     ;=====================;
     ;== END OF TRAINING ==;
@@ -3555,6 +3557,27 @@ to play
         output-debug-message (word "EXPORTING WORLD DATA TO: " setup-and-results-directory directory-separator "Scenario" current-scenario-number directory-separator "Repeat" current-repeat-number directory-separator "Repeat" current-repeat-number ".csv" "...")("")
         export-world (word setup-and-results-directory directory-separator "Scenario" current-scenario-number directory-separator "Repeat" current-repeat-number directory-separator "Repeat" current-repeat-number ".csv" )
       ]
+      
+      ; Save LTM states of CHREST turtles.
+      ask chrest-turtles[
+        output-print (word "Turtle " who " score: " score)
+      ]
+      let top-score (max [score] of chrest-turtles)
+      let ten-percent-cut-off ((top-score / 100) * 90)
+      
+      ask chrest-turtles with [save-ltm-state? = true and score >= ten-percent-cut-off][
+        chrest:save-ltm-state 
+          (word 
+            setup-and-results-directory
+            directory-separator
+            "Scenario" current-scenario-number
+            directory-separator
+            "Repeat" current-repeat-number
+            directory-separator
+            "Turtle" who "LtmState.ser"
+          ) 
+          (report-current-time)
+      ]
 
       output-debug-message (word "INCREMENTING THE GLOBAL 'current-repeat-number' (" current-repeat-number ") BY 1...") ("")
       set current-repeat-number (current-repeat-number + 1)
@@ -3597,8 +3620,52 @@ to play
     create-new-tiles-and-holes
     chrest-turtles-act
     
+    ;=============;
+    ;== TUITION ==;
+    ;=============;
+    
+    if(tuition?)[
+      teach-tutees
+      
+      ask turtles with [tutor? = false][
+      
+        ;================================;  
+        ;== LEARN FROM EPISODIC MEMORY ==;
+        ;================================;
+        
+        output-debug-message (word 
+          "Checking if my attention is free, if so, I'll attempt to learn from the "
+          "current state of my 'episodic-memory'"
+        ) (who)
+        
+        if(chrest:is-attention-free? (report-current-time))[
+          learn-from-episodic-memory
+        ]
+        
+        ;===========================;
+        ;== REINFORCE PRODUCTIONS ==;
+        ;===========================;
+        
+        output-debug-message (word 
+          "If I should reinforce productions (" reinforce-productions? ") and my "
+          "'reinforcement-learning-theory' turtle variable is not an empty string "
+          "(current value: '" reinforcement-learning-theory "'), I'll attempt to " 
+          "reinforce my productions"
+        ) (who)
+        
+        if(
+          reinforce-productions? and 
+          not empty? reinforcement-learning-theory and
+          chrest:is-attention-free? (report-current-time)
+        )[
+          reinforce-productions
+        ]
+      ]
+    ]
+    
     ask tiles [age]
     ask holes [age]
+    
     update-time
   ]
 end
@@ -4437,6 +4504,20 @@ to specify-debug-message-output-file
  ]
 end
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; "TEACH-TUTEES" PROCEDURE ;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+to teach-tutees
+  ask chrest-turtles with [tutor? = true][
+    foreach(tutees)[
+      ask turtle ? [
+        set episodic-memory ([episodic-memory] of myself)
+      ]
+    ]
+  ]
+end
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; "UPDATE-PLOT-NO-X-AXIS-VALUE" PROCEDURE ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -5116,7 +5197,7 @@ SWITCH
 201
 draw-plots?
 draw-plots?
-0
+1
 1
 -1000
 
