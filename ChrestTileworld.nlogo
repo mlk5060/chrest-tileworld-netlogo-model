@@ -23,13 +23,8 @@
 ;******************************************;
 ;******************************************;
 
-extensions [
-  chrest
-  extras
-  java
-  pathdir 
-  string 
-]
+; NOTE: declaration needs to be on one line for the pre-push Git check on whether extensions have been included to work!
+extensions [ chrest extras java pathdir string ]
 
 ;**************************************;
 ;**************************************;
