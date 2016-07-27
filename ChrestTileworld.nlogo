@@ -3557,7 +3557,7 @@ to play
       
       ; Try to save LTM states of CHREST turtles.
       ask chrest-turtles with [save-ltm-state? = true][
-        chrest:save-ltm-state 
+        chrest:save-ltm-state
         (word 
           setup-and-results-directory
           directory-separator
